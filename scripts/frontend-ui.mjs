@@ -231,27 +231,36 @@ section("B2. Catalog controls (mobile + sort + pagination)")
   check("catalog page has All Products heading", await page.getByRole("heading", { name: "All Products" }).isVisible(), "");
 
   const sortBtn = page.locator("select").filter({ hasText: /Sort|Featured|Price|Name/i }).first();
-  if (await sortBtn.count() > 0) {
-    check("sort select visible on catalog", true, "");
-  } else {
-    check("sort select visible on catalog (skip)", true, "no select found");
-  }
+  check("sort select present on catalog", (await sortBtn.count()) > 0, `found ${await sortBtn.count()}`);
 
   const filterBtn = page.getByRole("button", { name: /Filter/i }).first();
-  if (await filterBtn.isVisible().catch(() => false)) {
+  const filterVisible = await filterBtn.isVisible().catch(() => false);
+  if (filterVisible) {
     await filterBtn.click();
     await page.waitForTimeout(500);
-    check("mobile filter sheet opens", await page.getByText("Availability").first().isVisible().catch(() => false) || true, "");
-    const closeBtn = page.locator("[data-state=open] button").filter({ has: page.locator("svg") }).first();
+    const sheetContent = page.locator("[data-state=open]");
+    check("mobile filter sheet opens", (await sheetContent.count()) > 0, "");
+    const closeBtn = sheetContent.locator("button").filter({ has: page.locator("svg") }).first();
     if (await closeBtn.isVisible().catch(() => false)) {
       await closeBtn.click();
       await page.waitForTimeout(300);
     }
+  } else {
+    check("mobile filter button not visible on desktop (expected)", true, "desktop viewport");
   }
 
-  const page2Link = page.getByRole("link", { name: "2" }).first();
-  if (await page2Link.isVisible().catch(() => false)) {
-    check("pagination page 2 link present", true, "");
+  const paginationNav = page.locator('nav[aria-label="Pagination"]');
+  const paginationVisible = await paginationNav.isVisible().catch(() => false);
+  if (paginationVisible) {
+    const page2Link = paginationNav.getByRole("link", { name: "2" }).first();
+    const hasPage2 = await page2Link.isVisible().catch(() => false);
+    check("pagination page 2 link present", hasPage2, "");
+    if (hasPage2) {
+      const href = await page2Link.getAttribute("href");
+      check("page 2 link has valid href", href && href.includes("page=2"), href || "none");
+    }
+  } else {
+    check("no pagination (≤12 products expected)", true, "single page");
   }
 }
 
