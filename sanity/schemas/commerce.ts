@@ -106,8 +106,12 @@ export const order = {
           fields: [
             { name: "slug", title: "Slug", type: "string" },
             { name: "name", title: "Name", type: "string" },
-            { name: "price", title: "Price (USD)", type: "number" },
+            { name: "price", title: "Unit Price", type: "number" },
             { name: "quantity", title: "Quantity", type: "number" },
+            { name: "variantKey", title: "Variant Key", type: "string" },
+            { name: "variantName", title: "Variant Name", type: "string" },
+            { name: "variantSku", title: "Variant SKU", type: "string" },
+            { name: "lineTotal", title: "Line Total", type: "number" },
           ],
         },
       ],
@@ -120,17 +124,17 @@ export const order = {
     },
     {
       name: "subtotal",
-      title: "Subtotal (USD)",
+      title: "Subtotal",
       type: "number",
     },
     {
       name: "shipping",
-      title: "Shipping (USD)",
+      title: "Shipping",
       type: "number",
     },
     {
       name: "total",
-      title: "Total (USD)",
+      title: "Total",
       type: "number",
     },
     {

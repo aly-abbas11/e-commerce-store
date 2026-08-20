@@ -19,6 +19,7 @@ export function AddToCart({ product }: { product: Product }) {
   const outOfStock = product.stockStatus === "out-of-stock";
 
   function handleAdd() {
+    if (outOfStock) return;
     addItem(
       {
         slug: product.slug,

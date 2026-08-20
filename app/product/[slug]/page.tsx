@@ -2,22 +2,28 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
-import { RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { AddToCart } from "@/components/product/add-to-cart";
+import { PurchaseSection } from "@/components/product/purchase-section";
 import { FrequentlyBoughtTogether } from "@/components/product/frequently-bought-together";
-import { ProductGallery } from "@/components/product/product-gallery";
-import { ProductTabs } from "@/components/product/product-tabs";
-import { ProductViewTracker } from "@/components/product/product-view-tracker";
 import { RelatedProducts } from "@/components/product/related-products";
-import { StarRating } from "@/components/product/star-rating";
+import { ProductViewTracker } from "@/components/product/product-view-tracker";
+import {
+  CompatibilitySection,
+  DescriptionSection,
+  InTheBoxSection,
+  KeyFeaturesSection,
+  ProductFaqSection,
+  ProductVideoSection,
+  ReviewsSection,
+  SpecificationsSection,
+} from "@/components/product/product-info-sections";
 import { fetchFromSanity } from "@/lib/sanity/client";
 import { getWriteClient } from "@/lib/sanity/write";
 import { getSettings } from "@/lib/sanity/settings";
 import { cloudinaryImageUrl } from "@/lib/cloudinary";
 import { imageUrl } from "@/lib/sanity/image";
+import { normalizeSettings } from "@/lib/site-config";
 import {
   approvedReviewsQuery,
   productBySlugQuery,
@@ -25,7 +31,6 @@ import {
   productsQuery,
 } from "@/lib/sanity/queries";
 import type { Product, ProductReview } from "@/lib/types";
-import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -36,15 +41,6 @@ const StickyAddToCart = dynamic(
     ),
   { ssr: false, loading: () => null }
 );
-
-const STOCK_BADGE: Record<
-  string,
-  { label: string; variant: "success" | "warning" | "destructive" }
-> = {
-  "in-stock": { label: "In Stock", variant: "success" },
-  "low-stock": { label: "Low Stock — Order Soon", variant: "warning" },
-  "out-of-stock": { label: "Out of Stock", variant: "destructive" },
-};
 
 export async function generateStaticParams() {
   try {
@@ -109,7 +105,7 @@ export default async function ProductPage({
         : Promise.resolve<ProductReview[]>([]);
       [related, settings, approvedReviews] = await Promise.all([
         fetchFromSanity<Product[]>(productsQuery),
-        getSettings(),
+        getSettings().catch(() => null),
         reviewPromise,
       ]);
     }
@@ -132,14 +128,14 @@ export default async function ProductPage({
       }
     : product;
 
-  const stock = STOCK_BADGE[product.stockStatus] ?? STOCK_BADGE["in-stock"];
-  const returnPolicy =
-    settings?.returnPolicy || "Free returns within 7 days — no questions asked.";
-  const warrantyInfo = settings?.warrantyInfo || "2-year warranty included.";
-  const freeShippingThreshold = settings?.freeShippingThreshold ?? 50;
+  const config = normalizeSettings(settings);
 
   const relatedProducts = related
     .filter((p) => p._id !== product._id && p.category === product.category)
+    .sort((a, b) => {
+      const rank = (s: string) => (s === "out-of-stock" ? 1 : s === "low-stock" ? 1 : 0);
+      return rank(a.stockStatus) - rank(b.stockStatus);
+    })
     .slice(0, 8);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -152,14 +148,18 @@ export default async function ProductPage({
     ...(product.cloudinaryImages ?? []).map((id) => cloudinaryImageUrl(id, { w: 800 })),
     ...(product.images ?? []).map((img) => imageUrl(img, { w: 800 })),
   ];
+  const realReviews = (productWithReviews.reviews ?? []).filter(
+    (r) => !r.isDemo && r.name && typeof r.rating === "number"
+  );
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.shortDescription || product.name,
     image: productImages,
-    sku: product.slug,
-    brand: { "@type": "Brand", name: "VoltGear" },
+    sku: product.sku || product.slug,
+    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
     category: product.category,
     offers: {
       "@type": "Offer",
@@ -183,27 +183,25 @@ export default async function ProductPage({
           },
         }
       : {}),
-    ...((productWithReviews.reviews ?? []).length
+    ...(realReviews.length
       ? {
-          review: (productWithReviews.reviews ?? [])
-            .filter((r) => r.name && typeof r.rating === "number")
-            .map((r) => ({
-              "@type": "Review",
-              author: { "@type": "Person", name: r.name },
-              datePublished: r.date,
-              reviewRating: {
-                "@type": "Rating",
-                ratingValue: r.rating,
-                bestRating: 5,
-              },
-              reviewBody: r.comment,
-            })),
+          review: realReviews.map((r) => ({
+            "@type": "Review",
+            author: { "@type": "Person", name: r.name },
+            datePublished: r.date,
+            reviewRating: {
+              "@type": "Rating",
+              ratingValue: r.rating,
+              bestRating: 5,
+            },
+            reviewBody: r.comment,
+          })),
         }
       : {}),
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 lg:px-8">
+    <div className="container mx-auto px-4 py-6 lg:px-8">
       <ProductViewTracker
         slug={product.slug}
         name={product.name}
@@ -215,80 +213,44 @@ export default async function ProductPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Link
-        href={`/products/${product.category}`}
-        className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-primary"
-      >
-        ← {product.category.replace("-", " ")}
-      </Link>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-2">
-        <ProductGallery product={product} />
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Link href="/" className="flex items-center gap-1 transition-colors hover:text-primary">
+          <Home className="h-3.5 w-3.5" />
+          Home
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <Link
+          href={`/products/${product.category}`}
+          className="transition-colors hover:text-primary"
+        >
+          {product.category.replace("-", " ")}
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span aria-current="page" className="truncate font-medium text-foreground">
+          {product.name}
+        </span>
+      </nav>
 
-        <div className="space-y-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="#reviews"
-                className="flex items-center gap-2 rounded transition-colors hover:text-primary"
-              >
-                <StarRating rating={product.rating} size={18} />
-                <span className="text-sm text-muted-foreground">
-                  {product.rating ?? 0}/5
-                  {typeof productWithReviews.reviewCount === "number" &&
-                    productWithReviews.reviewCount > 0 &&
-                    ` · ${productWithReviews.reviewCount} reviews`}
-                </span>
-              </a>
-              <Badge variant={stock.variant}>{stock.label}</Badge>
-            </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-              {product.name}
-            </h1>
-            {product.shortDescription && (
-              <p className="mt-3 text-muted-foreground">
-                {product.shortDescription}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-baseline gap-3">
-            <span className="text-3xl font-bold">
-              {formatPrice(product.price)}
-            </span>
-            {product.compareAtPrice && (
-              <span className="text-lg text-muted-foreground line-through">
-                {formatPrice(product.compareAtPrice)}
-              </span>
-            )}
-          </div>
-
-          <Separator />
-
-          <AddToCart product={product} />
-
-          {/* Trust microcopy under the buy button */}
-          <p className="flex items-center gap-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-            <RotateCcw className="h-4 w-4 shrink-0 text-primary" />
-            {returnPolicy}
-          </p>
-
-          <div className="grid gap-3 rounded-lg border bg-muted/40 p-4 text-sm sm:grid-cols-2">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              Free shipping over {formatPrice(freeShippingThreshold)}
-            </div>
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              {warrantyInfo}
-            </div>
-          </div>
-
-          <ProductTabs product={productWithReviews} />
-        </div>
+      <div className="mt-4">
+        <PurchaseSection product={productWithReviews} config={config} />
       </div>
 
-      <FrequentlyBoughtTogether current={product} />
+      <KeyFeaturesSection product={productWithReviews} />
+      <CompatibilitySection product={productWithReviews} />
+      <InTheBoxSection product={productWithReviews} />
+      <SpecificationsSection product={productWithReviews} />
+      <DescriptionSection product={productWithReviews} />
+      <ProductVideoSection product={productWithReviews} />
+      <ReviewsSection
+        product={productWithReviews}
+        reviews={productWithReviews.reviews ?? []}
+        rating={product.rating}
+      />
+      <ProductFaqSection product={productWithReviews} />
+
+      <FrequentlyBoughtTogether current={productWithReviews} />
       <RelatedProducts products={relatedProducts} />
       <StickyAddToCart product={productWithReviews} />
     </div>

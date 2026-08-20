@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 
 import { CartProvider } from "@/components/cart/cart-provider";
+import { WishlistProvider } from "@/components/wishlist/wishlist-provider";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { getSettings, resolveFonts } from "@/lib/sanity/settings";
+import { normalizeSettings } from "@/lib/site-config";
 import { resolveTheme, themeCssVars, themePreviewScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import type { SiteSettings } from "@/lib/types";
@@ -36,18 +38,10 @@ const UrgencyTicker = dynamic(
   { ssr: false, loading: () => null }
 );
 
-const NewsletterPopup = dynamic(
+const CompareBarWrapper = dynamic(
   () =>
-    import("@/components/sections/newsletter-popup").then(
-      (m) => m.NewsletterPopup
-    ),
-  { ssr: false, loading: () => null }
-);
-
-const SocialProofNotifications = dynamic(
-  () =>
-    import("@/components/sections/social-proof-notifications").then(
-      (m) => m.SocialProofNotifications
+    import("@/components/product/compare-bar-wrapper").then(
+      (m) => m.CompareBarWrapper
     ),
   { ssr: false, loading: () => null }
 );
@@ -99,7 +93,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings: SiteSettings | null = await getSettings();
+  const settings: SiteSettings | null = await getSettings().catch(() => null);
+  const config = normalizeSettings(settings);
 
   if (settings?.seo?.title) {
     metadata.title = {
@@ -178,7 +173,8 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-screen flex-col bg-background font-sans antialiased">
         <CartProvider>
-          <UrgencyTicker />
+          <WishlistProvider>
+          <UrgencyTicker announcement={config.announcement} />
           <Navbar settings={settings} />
           <main className="flex-1">{children}</main>
           <TrustBar settings={settings} />
@@ -186,8 +182,8 @@ export default async function RootLayout({
           <CartDrawer />
           <ReviewReminderPopup />
           <CartEffects />
-          <NewsletterPopup />
-          <SocialProofNotifications />
+          <CompareBarWrapper />
+          </WishlistProvider>
         </CartProvider>
       </body>
     </html>

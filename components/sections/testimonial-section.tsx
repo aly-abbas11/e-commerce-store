@@ -12,7 +12,7 @@ export function TestimonialSection({
     <section className="container mx-auto px-4 py-16 lg:px-8">
       <div className="mb-8">
         <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Loved by Thousands
+          Customer Stories
         </p>
         <h2 className="mt-2 text-3xl font-bold tracking-tight">
           What Our Customers Say

@@ -15,6 +15,30 @@ export interface ProductReview {
   comment?: string;
   verified?: boolean;
   image?: string;
+  isDemo?: boolean;
+}
+
+export interface ProductVariant {
+  _key?: string;
+  name: string;
+  sku?: string;
+  price?: number;
+  compareAtPrice?: number;
+  stockStatus: StockStatus;
+  image?: SanityImageSource;
+  isDefault?: boolean;
+}
+
+export interface ProductVideo {
+  url?: string;
+  cloudinaryPublicId?: string;
+  poster?: SanityImageSource;
+}
+
+export interface ProductFaqItem {
+  _key?: string;
+  question: string;
+  answer: string;
 }
 
 export interface Product {
@@ -30,6 +54,13 @@ export interface Product {
   description?: PortableTextBlock[];
   features?: string[];
   specifications?: { label: string; value: string }[];
+  compatibility?: string[];
+  inTheBox?: string[];
+  productVideo?: ProductVideo;
+  variants?: ProductVariant[];
+  productFaq?: ProductFaqItem[];
+  sku?: string;
+  brand?: string;
   stockStatus: StockStatus;
   rating?: number;
   reviewCount?: number;
@@ -55,6 +86,7 @@ export interface Testimonial {
   rating: number;
   product?: string;
   verified?: boolean;
+  isDemo?: boolean;
 }
 
 export interface SiteSettings {
@@ -75,6 +107,17 @@ export interface SiteSettings {
   shippingFee?: number;
   returnPolicy?: string;
   warrantyInfo?: string;
+  codEnabled?: boolean;
+  whatsappNumber?: string;
+  warrantyMonths?: number;
+  returnWindowDays?: number;
+  announcement?: {
+    enabled?: boolean;
+    message?: string;
+    countdownEnabled?: boolean;
+    startsAt?: string;
+    endsAt?: string;
+  };
   seo?: { title?: string; description?: string };
 }
 
@@ -125,6 +168,10 @@ export interface OrderItem {
   name?: string;
   price?: number;
   quantity?: number;
+  variantKey?: string;
+  variantName?: string;
+  variantSku?: string;
+  lineTotal?: number;
 }
 
 export type OrderStatus =

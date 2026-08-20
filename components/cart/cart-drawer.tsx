@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
-import { useCart } from "@/components/cart/cart-provider";
-import { useSiteConfig } from "@/lib/site-config";
+import { useCart, cartLineKey } from "@/components/cart/cart-provider";
+import { useSiteConfig } from "@/lib/use-site-config";
+import { CartUpsell } from "@/components/cart/cart-upsell";
 
 function ConfirmRemoveDialog({
   open,
@@ -40,8 +41,10 @@ function ConfirmRemoveDialog({
             <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <p className="font-semibold">Products in huge demand</p>
-            <p className="text-sm text-muted-foreground">Might run out of stock.</p>
+            <p className="font-semibold">Remove item?</p>
+            <p className="text-sm text-muted-foreground">
+              It will be removed from your cart.
+            </p>
           </div>
         </div>
         <p className="mt-4 text-sm text-muted-foreground">
@@ -98,12 +101,13 @@ export function CartDrawer() {
   const { items, isOpen, closeCart, subtotal, updateQuantity, removeItem, clearCart } =
     useCart();
   const config = useSiteConfig();
-  const [confirmSlug, setConfirmSlug] = useState<string | null>(null);
-  const confirmItem = confirmSlug ? items.find((i) => i.slug === confirmSlug) : null;
+  const [confirmKey, setConfirmKey] = useState<string | null>(null);
+  const [orderNote, setOrderNote] = useState("");
+  const confirmItem = confirmKey ? items.find((i) => cartLineKey(i) === confirmKey) : null;
 
-  function requestRemove(slug: string) {
+  function requestRemove(key: string) {
     closeCart();
-    setConfirmSlug(slug);
+    setConfirmKey(key);
   }
 
   return (
@@ -124,9 +128,10 @@ export function CartDrawer() {
                 <p className="text-muted-foreground">Your cart is empty.</p>
               </div>
             ) : (
+              <>
               <ul className="space-y-4">
                 {items.map((item) => (
-                  <li key={item.slug} className="flex gap-4">
+                  <li key={cartLineKey(item)} className="flex gap-4">
                     {item.image ? (
                       <Image
                         src={item.image}
@@ -142,11 +147,16 @@ export function CartDrawer() {
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-sm font-medium leading-tight">
                           {item.name}
+                          {item.variantName && (
+                            <span className="block text-xs text-muted-foreground">
+                              {item.variantName}
+                            </span>
+                          )}
                         </p>
                         <button
-                          onClick={() => requestRemove(item.slug)}
+                          onClick={() => requestRemove(cartLineKey(item))}
                           className="flex h-11 w-11 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
-                          aria-label={`Remove ${item.name}`}
+                          aria-label={`Remove ${item.name}${item.variantName ? ` ${item.variantName}` : ""}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -160,7 +170,7 @@ export function CartDrawer() {
                           size="icon"
                           className="h-11 w-11"
                           onClick={() =>
-                            updateQuantity(item.slug, item.quantity - 1)
+                            updateQuantity(cartLineKey(item), item.quantity - 1)
                           }
                         >
                           <Minus className="h-4 w-4" />
@@ -173,7 +183,7 @@ export function CartDrawer() {
                           size="icon"
                           className="h-11 w-11"
                           onClick={() =>
-                            updateQuantity(item.slug, item.quantity + 1)
+                            updateQuantity(cartLineKey(item), item.quantity + 1)
                           }
                         >
                           <Plus className="h-4 w-4" />
@@ -183,6 +193,8 @@ export function CartDrawer() {
                   </li>
                 ))}
               </ul>
+              <CartUpsell excludeSlugs={items.map((i) => i.slug)} />
+              </>
             )}
           </div>
 
@@ -194,6 +206,19 @@ export function CartDrawer() {
                   subtotal={subtotal}
                   threshold={config.freeShippingThreshold}
                 />
+                <div>
+                  <label htmlFor="order-note" className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Order notes (optional)
+                  </label>
+                  <textarea
+                    id="order-note"
+                    value={orderNote}
+                    onChange={(e) => setOrderNote(e.target.value)}
+                    placeholder="Special instructions for your order..."
+                    rows={2}
+                    className="w-full rounded-lg border bg-muted/50 px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-primary focus:bg-background"
+                  />
+                </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Subtotal</span>
                   <span className="text-lg font-semibold">
@@ -204,6 +229,11 @@ export function CartDrawer() {
                   <Link href="/checkout" onClick={closeCart}>
                     Proceed to Checkout
                     <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/cart" onClick={closeCart}>
+                    View Cart
                   </Link>
                 </Button>
                 <Button
@@ -219,13 +249,13 @@ export function CartDrawer() {
         </SheetContent>
       </Sheet>
       <ConfirmRemoveDialog
-        open={!!confirmSlug}
+        open={!!confirmKey}
         itemName={confirmItem?.name ?? ""}
         onConfirm={() => {
-          if (confirmSlug) removeItem(confirmSlug);
-          setConfirmSlug(null);
+          if (confirmKey) removeItem(confirmKey);
+          setConfirmKey(null);
         }}
-        onCancel={() => setConfirmSlug(null)}
+        onCancel={() => setConfirmKey(null)}
       />
     </>
   );

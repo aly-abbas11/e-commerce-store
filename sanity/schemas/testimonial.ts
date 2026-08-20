@@ -41,6 +41,14 @@ export const testimonial = {
       type: "number",
       description: "Lower numbers appear first on the homepage",
     },
+    {
+      name: "isDemo",
+      title: "Demo/Fixture Testimonial",
+      type: "boolean",
+      description:
+        "Seeded demo content used for development and tests. Demo testimonials are NEVER shown on the production storefront (queries exclude them).",
+      initialValue: false,
+    },
   ],
   preview: {
     select: {

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { ShoppingCart, Check } from "lucide-react";
+import { ShoppingCart, Check, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fetchFromSanity } from "@/lib/sanity/client";
 import { imageUrl } from "@/lib/sanity/image";
 import { productsQuery } from "@/lib/sanity/queries";
+import { getDefaultVariant, getStockState } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/cart/cart-provider";
@@ -18,6 +19,11 @@ interface BundleItem {
   selected: boolean;
 }
 
+/**
+ * "Complete Your Setup" — same-category / compatible pairing suggestions
+ * driven by real category data. No purchase-history wording ("Frequently
+ * Bought Together"), no invented bundle discounts or savings.
+ */
 export function FrequentlyBoughtTogether({ current }: { current: Product }) {
   const [items, setItems] = useState<BundleItem[]>([]);
   const { addItem } = useCart();
@@ -25,11 +31,16 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
   useEffect(() => {
     fetchFromSanity<Product[]>(productsQuery)
       .then((products) => {
+        const addable = (p: Product) => {
+          if (p.stockStatus === "out-of-stock") return false;
+          const v = getDefaultVariant(p);
+          return v ? getStockState(v.stockStatus).purchasable : !(p.variants?.length);
+        };
         const sameCategory = products
-          .filter((p) => p._id !== current._id && p.category === current.category && p.stockStatus !== "out-of-stock")
+          .filter((p) => p._id !== current._id && p.category === current.category && addable(p))
           .slice(0, 2);
         const crossCategory = products
-          .filter((p) => p._id !== current._id && p.category !== current.category && p.stockStatus !== "out-of-stock")
+          .filter((p) => p._id !== current._id && p.category !== current.category && addable(p))
           .slice(0, 2);
         const suggestions = [...sameCategory, ...crossCategory].slice(0, 3);
         setItems(suggestions.map((p) => ({ product: p, selected: true })));
@@ -37,23 +48,38 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
       .catch(() => {});
   }, [current._id]);
 
+  const currentLine = useMemo(() => {
+    const v = getDefaultVariant(current);
+    if (v) {
+      return {
+        slug: current.slug,
+        name: current.name,
+        price: v.price ?? current.price,
+        image: current.images?.[0] ? imageUrl(current.images[0], { w: 128 }) : undefined,
+        variantKey: v._key,
+        variantName: v.name,
+        ...(v.sku ? { variantSku: v.sku } : {}),
+      };
+    }
+    if ((current.variants?.length ?? 0) > 0) return null;
+    return {
+      slug: current.slug,
+      name: current.name,
+      price: current.price,
+      image: current.images?.[0] ? imageUrl(current.images[0], { w: 128 }) : undefined,
+    };
+  }, [current]);
+
   const bundlePrice = useMemo(() => {
-    const base = current.price;
+    const base = currentLine?.price ?? 0;
     const extras = items
       .filter((i) => i.selected)
-      .reduce((sum, i) => sum + i.product.price, 0);
+      .reduce((sum, i) => {
+        const v = getDefaultVariant(i.product);
+        return sum + (v?.price ?? i.product.price);
+      }, 0);
     return base + extras;
-  }, [current.price, items]);
-
-  const originalPrice = useMemo(() => {
-    const base = current.price;
-    const extras = items
-      .filter((i) => i.selected)
-      .reduce((sum, i) => sum + (i.product.compareAtPrice || i.product.price), 0);
-    return base + extras;
-  }, [current.price, items]);
-
-  const savings = originalPrice - bundlePrice;
+  }, [currentLine, items]);
 
   if (items.length === 0) return null;
 
@@ -64,29 +90,35 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
   }
 
   function addBundleToCart() {
-    addItem({
-      slug: current.slug,
-      name: current.name,
-      price: current.price,
-      image: current.images?.[0] ? imageUrl(current.images[0], { w: 128 }) : undefined,
-    });
+    if (!currentLine) return;
+    addItem(currentLine);
     items
       .filter((i) => i.selected)
-      .forEach((i) =>
+      .forEach((i) => {
+        const v = getDefaultVariant(i.product);
         addItem({
           slug: i.product.slug,
           name: i.product.name,
-          price: i.product.price,
+          price: v?.price ?? i.product.price,
           image: i.product.images?.[0] ? imageUrl(i.product.images[0], { w: 128 }) : undefined,
-        })
-      );
+          ...(v
+            ? {
+                variantKey: v._key,
+                variantName: v.name,
+                ...(v.sku ? { variantSku: v.sku } : {}),
+              }
+            : {}),
+        });
+      });
   }
 
   return (
-    <section className="mt-16">
-      <h2 className="text-2xl font-bold tracking-tight">Frequently Bought Together</h2>
+    <section className="mt-16" aria-labelledby="complete-your-setup">
+      <h2 id="complete-your-setup" className="text-2xl font-bold tracking-tight">
+        Complete Your Setup
+      </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Bundle and save on products that go perfectly together.
+        Products that pair naturally with {current.name} — all in stock.
       </p>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_auto_1fr]">
@@ -105,9 +137,11 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 text-sm font-medium">{current.name}</p>
-            <p className="mt-1 font-semibold">{formatPrice(current.price)}</p>
+            <p className="mt-1 font-semibold">
+              {formatPrice(currentLine?.price ?? current.price)}
+            </p>
           </div>
-          <Check className="h-5 w-5 shrink-0 text-primary" />
+          {currentLine && <Check className="h-5 w-5 shrink-0 text-primary" />}
         </Card>
 
         {/* Suggested items */}
@@ -154,23 +188,22 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
         {/* Summary */}
         <Card className="flex flex-col items-center justify-center gap-3 p-6 text-center">
           <div>
-            <p className="text-sm text-muted-foreground">Bundle Price</p>
+            <p className="text-sm text-muted-foreground">Combined Price</p>
             <p className="mt-1 text-2xl font-bold">{formatPrice(bundlePrice)}</p>
-            {savings > 0 && (
-              <>
-                <p className="text-sm text-muted-foreground line-through">
-                  {formatPrice(originalPrice)}
-                </p>
-                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                  Save {formatPrice(savings)}
-                </p>
-              </>
-            )}
           </div>
-          <Button className="w-full gap-2" onClick={addBundleToCart}>
+          <Button
+            className="w-full gap-2"
+            onClick={addBundleToCart}
+            disabled={!currentLine}
+            title={currentLine ? undefined : "Choose an option for this product first"}
+          >
             <ShoppingCart className="h-4 w-4" />
-            Add Bundle to Cart
+            {currentLine ? "Add All to Cart" : "Options Required"}
           </Button>
+          <p className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Plus className="h-3 w-3" />
+            {items.filter((i) => i.selected).length + 1} items
+          </p>
         </Card>
       </div>
     </section>

@@ -45,7 +45,7 @@ const pages = [
       list("bullet", [
         "Honesty — real specs, real photos, real reviews. No inflated mAh numbers.",
         "Quality control — every batch is sample-tested before we sell it.",
-        "Customer-first support — real humans answer within 24 hours.",
+        "Customer-first support — real humans answer every message.",
         "Fair prices — we skip middlemen and pass the difference on to you.",
       ]),
       callout(
@@ -69,17 +69,17 @@ const pages = [
     slug: "contact",
     title: "Contact",
     excerpt:
-      "Questions about an order, a product, or anything else? We reply within one business day.",
+      "Questions about an order, a product, or anything else? Send us a message and we'll help.",
     sections: [
       p(
-        "Whether you need help with an order, a product question, or something else entirely, we'd love to hear from you. We reply to every message within one business day — usually much faster."
+        "Whether you need help with an order, a product question, or something else entirely, we'd love to hear from you. Send us a message and we'll help out."
       ),
       form(),
       h("h2", "Prefer to reach us directly?"),
       list("bullet", [
         "Email: support@voltgear.store — for order issues and returns",
         "Business hours: Monday – Saturday, 9:00 AM – 6:00 PM (PKT)",
-        "Response time: within 24 hours, every message answered",
+        "Response: every message is read and answered",
       ]),
       callout(
         "Order support",
@@ -101,7 +101,7 @@ const pages = [
       list("bullet", [
         "Account information — name, email address and password (if you create an account).",
         "Order information — delivery address, phone number and order history.",
-        "Payment information — collected and processed by our payment providers; we never store full card details.",
+        "Payment information — for Cash on Delivery orders we record the order total and delivery details; no card details are involved.",
         "Contact messages — name, email and message content you submit through our contact form.",
         "Usage data — pages visited and device type, used in aggregate to improve the site.",
       ]),
@@ -167,7 +167,7 @@ const pages = [
       ),
       h("h2", "Shipping and returns"),
       p(
-        "Delivery times and costs are described on the Shipping & Returns page, which is part of these terms. Our 30-day return policy applies to all orders — see that page for details."
+        "Delivery costs and how returns work are described on the Shipping & Returns page, which is part of these terms. Return eligibility is confirmed per order — see that page for details."
       ),
       h("h2", "Warranty"),
       p(
@@ -202,17 +202,16 @@ const pages = [
     slug: "shipping-returns",
     title: "Shipping & Returns",
     excerpt:
-      "Delivery times, costs, tracking, and our 30-day return policy — all in one place.",
+      "Delivery costs, tracking, and how returns work — all in one place.",
     sections: [
       h("h2", "Shipping"),
       p(
-        "We dispatch orders from our warehouse within 1–2 business days (Monday to Saturday). During busy periods such as sales, dispatch can take up to 3 business days — we'll always let you know if there's a delay."
+        "We dispatch orders from our warehouse as quickly as possible after confirmation. You'll always get a tracking link by email as soon as your order ships."
       ),
       list("bullet", [
-        "Standard delivery: 3–5 business days — PKR 199 flat rate.",
-        "Express delivery: 1–2 business days — PKR 499 flat rate.",
+        "Standard delivery — PKR 199 flat rate.",
         "Free standard delivery on all orders over PKR 5,000.",
-        "Cash on Delivery is available nationwide (PKR 99 fee applies).",
+        "Cash on Delivery is available — pay when your order arrives.",
       ]),
       h("h2", "Tracking"),
       p(
@@ -220,32 +219,31 @@ const pages = [
       ),
       callout(
         "Delivery issues",
-        "If your order hasn't arrived within the estimated window, contact us within 2 days of the delivery estimate passing — we'll open a trace with the courier right away."
+        "If your order hasn't arrived when you'd expect, contact us and we'll open a trace with the courier."
       ),
-      h("h2", "Returns — 30 days, no fuss"),
+      h("h2", "Returns"),
       p(
-        "You can return any item within 30 days of delivery for a refund or exchange, no matter the reason. The item must be unused, in its original packaging, with all accessories included."
+        "If you're not happy with your order, contact us and we'll make it right. Returned items must be unused and in their original packaging, with all accessories included."
       ),
       h("h2", "How to return"),
       list("number", [
         "Email support@voltgear.store with your order number and the reason for the return.",
-        "We'll confirm the return and email you a prepaid return label (or arrange a pickup).",
+        "We'll confirm the return and tell you how to send the item back.",
         "Pack the item securely with its original packaging and hand it to the courier.",
-        "Once we receive and check the item, your refund is processed within 3–5 business days.",
+        "Once we receive and check the item, your refund is processed.",
       ]),
       h("h2", "Refunds"),
       list("bullet", [
-        "Refunds go back to your original payment method.",
-        "COD orders are refunded via bank transfer — you'll receive the details with your return confirmation.",
-        "If you used a discount or gift card, the value is credited back accordingly.",
+        "COD orders are refunded via bank transfer.",
+        "You'll receive the refund details with your return confirmation.",
       ]),
       h("h2", "Damaged or faulty items"),
       p(
-        "Received something damaged, or a product that stops working? Tell us within 48 hours of delivery with a photo or video, and we'll send a replacement or refund immediately — you don't need to return the damaged item first."
+        "Received something damaged, or a product that stops working? Contact us right away with a photo or video, and we'll arrange a replacement or refund."
       ),
       h("h2", "Warranty"),
       p(
-        "Beyond the 30-day return window, every product carries the warranty stated on its product page. Contact us with your order number and we'll handle it under warranty."
+        "Every product carries the warranty stated on its product page where applicable. Contact us with your order number and we'll handle it."
       ),
       callout(
         "Questions?",
@@ -261,44 +259,44 @@ const pages = [
       "Answers to the questions we get most: shipping, returns, payments, warranty and more.",
     sections: [
       p(
-        "Quick answers to the questions we hear most. Can't find yours? Send us a message and a real human will reply within 24 hours."
+        "Quick answers to the questions we hear most. Can't find yours? Send us a message and a real human will reply."
       ),
       faq([
         [
           "How long does delivery take?",
-          "Orders dispatch within 1–2 business days. Standard delivery takes 3–5 business days; express takes 1–2 business days after dispatch. You'll get a tracking link by email as soon as your order ships.",
+          "Orders are dispatched once confirmed, and you'll get a tracking link by email as soon as your order ships. Delivery times vary by courier and destination.",
         ],
         [
           "Do you offer Cash on Delivery?",
-          "Yes. COD is available nationwide with a PKR 99 fee, and it's our most popular payment method. A store representative may call to confirm larger orders before dispatch.",
+          "Yes, cash on delivery is available. A store representative may call to confirm larger orders before dispatch.",
         ],
         [
           "Do you deliver outside major cities?",
-          "Yes — our courier network covers all major cities and most smaller towns. Delivery to remote areas can take an extra 1–3 business days. Enter your address at checkout to see the exact estimate.",
+          "Yes — our courier network covers all major cities and most smaller towns. Enter your address at checkout and we'll confirm availability for your area.",
         ],
         [
           "What is your return policy?",
-          "You can return any item within 30 days of delivery, in its original condition, for a full refund or exchange. The return is free — we provide the label or arrange pickup. See the Shipping & Returns page for the full process.",
+          "If you're not happy with your order, contact us and we'll make it right. See the Shipping & Returns page for the full process.",
         ],
         [
           "How long do refunds take?",
-          "Once we receive and check the returned item, refunds are processed within 3–5 business days. Card payments go back to your card; COD orders are refunded via bank transfer.",
+          "Once we receive and check the returned item, we'll process your refund. COD orders are refunded via bank transfer.",
         ],
         [
           "Are your products genuine?",
-          "Every product is sourced from the brand or an authorized distributor, and each batch is sample-tested before we list it. If an item is ever not as described, you're covered by our 30-day policy.",
+          "Every product is sample-tested by our team before we list it. If an item is ever not as described, contact us and we'll make it right.",
         ],
         [
           "Is my payment information secure?",
-          "Yes. Payments are processed by our payment providers over encrypted connections, and we never store full card details on our servers.",
+          "Yes. Orders are paid by cash on delivery, so no card details are ever involved.",
         ],
         [
           "What warranty comes with my purchase?",
-          "Every product carries the warranty stated on its product page, covering manufacturing defects under normal use. Beyond the 30-day window, just contact us with your order number and we'll handle it under warranty.",
+          "Every product carries the warranty stated on its product page where applicable, covering manufacturing defects under normal use. Contact us with your order number and we'll handle it.",
         ],
         [
           "What if I receive a damaged item?",
-          "Tell us within 48 hours of delivery with a photo or video and we'll send a replacement or refund immediately — no need to return the damaged item first.",
+          "Contact us with a photo or video and we'll arrange a replacement or refund.",
         ],
         [
           "Can I change or cancel my order?",
@@ -315,7 +313,7 @@ const pages = [
       ]),
       callout(
         "Still have a question?",
-        "Email support@voltgear.store or use the contact form — we answer every message within one business day."
+        "Email support@voltgear.store or use the contact form — we answer every message."
       ),
       cta("Contact us", "/contact"),
     ],

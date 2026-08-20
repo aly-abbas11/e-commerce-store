@@ -87,6 +87,7 @@ const review = (name, rating, date, comment, verified) => ({
   date,
   comment,
   verified,
+  isDemo: true,
 });
 
 const upsert = async (doc) => {
@@ -1248,12 +1249,22 @@ const settings = {
   ],
   freeShippingThreshold: 5000,
   shippingFee: 199,
-  returnPolicy: "Free returns within 30 days — no questions asked.",
-  warrantyInfo: "2-year warranty on every product.",
+  codEnabled: true,
+  returnPolicy: "",
+  warrantyInfo: "",
+  warrantyMonths: null,
+  returnWindowDays: null,
+  announcement: {
+    enabled: false,
+    message: "",
+    countdownEnabled: false,
+    startsAt: null,
+    endsAt: null,
+  },
   seo: {
     title: "VoltGear — Premium Electronics Accessories",
     description:
-      "Shop smartwatches, power banks, GaN chargers and wireless earbuds. Premium electronics accessories with fast shipping and a 2-year warranty.",
+      "Shop smartwatches, power banks, GaN chargers and wireless earbuds. Premium electronics accessories with fast shipping.",
   },
 };
 await upsertWithCount(settings);
@@ -1281,8 +1292,11 @@ for (const p of PRODUCTS) {
     features: p.features,
     specifications: p.specifications,
     stockStatus: p.stockStatus,
-    rating: p.rating,
-    reviewCount: p.reviewCount,
+    // Demo products carry no real customer reviews — rating/count are 0 so the
+    // storefront never shows fabricated aggregates. The embedded reviews below
+    // are marked isDemo and excluded from all production queries.
+    rating: 0,
+    reviewCount: 0,
     reviews: p.reviews,
     featured: p.featured,
     badge: p.badge,
@@ -1299,15 +1313,10 @@ await upsertWithCount({
   _type: "heroSection",
   headline: "Power Your Everyday",
   subheadline:
-    "Smartwatches, power banks, GaN chargers and wireless earbuds — engineered properly, priced honestly, and backed by a 2-year warranty.",
+    "Smartwatches, power banks, GaN chargers and wireless earbuds — engineered properly, priced honestly.",
   ...(heroImageId ? { backgroundImage: img(heroImageId) } : {}),
   primaryCta: { _key: key(), label: "Shop Best Sellers", href: "/products" },
   secondaryCta: { _key: key(), label: "Browse Smartwatches", href: "/products/smartwatch" },
-  stats: [
-    { _key: key(), value: "12,000+", label: "Happy Customers" },
-    { _key: key(), value: "4.8/5", label: "Average Rating" },
-    { _key: key(), value: "30-Day", label: "Free Returns" },
-  ],
   featuredProduct: { _type: "reference", _ref: heroProductRef },
 });
 
@@ -1326,6 +1335,7 @@ for (let i = 0; i < TESTIMONIALS.length; i++) {
     product: t.product,
     verified: t.verified,
     sortOrder: i + 1,
+    isDemo: true,
   });
   console.log(`  ✓ ${t.customerName}`);
 }

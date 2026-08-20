@@ -36,14 +36,14 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
               "Premium electronics accessories. Smarter tech for everyday life."}
           </p>
           <div className="flex gap-2">
-            {(settings?.socialLinks?.length
-              ? settings.socialLinks
-              : [
-                  { platform: "facebook", url: "#" },
-                  { platform: "instagram", url: "#" },
-                  { platform: "twitter", url: "#" },
-                ]
-            ).map(
+            {(settings?.socialLinks ?? [])
+              .filter(
+                (social) =>
+                  social.platform &&
+                  social.url &&
+                  social.url.startsWith("http")
+              )
+              .map(
               (social) =>
                 social.platform &&
                 social.url && (
@@ -116,6 +116,14 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
                 FAQ
               </Link>
             </li>
+            <li>
+              <Link
+                href="/bulk-order"
+                className="flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Bulk Orders
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -127,7 +135,15 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
                 href="/track"
                 className="flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
-                Track Your Order
+                Track Order
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/warranty"
+                className="flex min-h-11 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Warranty &amp; Returns
               </Link>
             </li>
             <li>

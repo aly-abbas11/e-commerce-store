@@ -11,9 +11,13 @@
  *   F. Review reminder popup (10s delay, dismiss, persistence)
  *   G. Mobile nav drawer + theme toggle
  *   H. Force/negative (404, out-of-stock, API guards)
+ *   J. PDP purchase flow (Buy Now, sticky CTA, lightbox, sold-out PDP)
  *   K. Content & extras (hero video/CTA, related-products carousel, contact
  *      form, blog reading incl. empty state + temp post, review photo upload
  *      graceful failure w/o Cloudinary creds, abandoned-cart beacon, XSS probe)
+ *   L. Variant cart & checkout integrity (fixture product: variant selection,
+ *      distinct lines, persistence, Buy Now, server price/stock authority,
+ *      stale price/stock, stored order metadata)
  *
  * Section K temporarily patches the seeded hero (backgroundVideo) to verify the
  * background-video render path, then restores it; exercises the related-product
@@ -301,18 +305,18 @@ async function sanityProductPrice(slug) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-section("D. Product page Reviews tab")
+section("D. Product page review form")
 {
   await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
-  await page.getByRole("tab", { name: /Reviews/ }).click();
+  await page.evaluate(() => document.querySelector("#reviews")?.scrollIntoView());
   const submitBtn = page.getByRole("button", { name: "Submit review" });
   await submitBtn.waitFor({ timeout: 5000 });
   check("submit disabled without rating", await submitBtn.isDisabled(), "");
 
   await page.getByRole("button", { name: "5 stars" }).click();
   check("submit enabled after rating", !(await submitBtn.isDisabled()), "");
-  await page.getByLabel("Name").fill("UI Harness Tester");
-  await page.getByLabel("Email").fill(TEST_EMAIL);
+  await page.locator("#review-name").fill("UI Harness Tester");
+  await page.locator("#review-email").fill(TEST_EMAIL);
   await page.locator("#review-comment").fill("This is an automated UI harness test review.");
   await submitBtn.click();
   await page.getByText("Thanks for your review!").waitFor({ timeout: 10000 });
@@ -443,7 +447,7 @@ section("H. Force / negative")
   await page.goto(`${BASE}/product/${OUT_OF_STOCK_SLUG}`, { waitUntil: "networkidle" });
   const atc = page.getByRole("button", { name: "Sold Out" }).first();
   check("out-of-stock shows Sold Out", await atc.isVisible(), "");
-  check("out-of-stock AddToCart disabled", await atc.isDisabled(), "");
+  check("out-of-stock Sold Out disabled", !(await atc.isEnabled()), "");
 
   // API guards (browser-native fetch, hits real endpoints)
   const empty = await page.evaluate(() =>
@@ -498,30 +502,79 @@ section("H. Force / negative")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
+section("J. PDP purchase flow")
+{
+  // J1. Buy Now on an in-stock product lands on /checkout with cart intact
+  await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
+  await page.evaluate(() => localStorage.setItem("ecomm-cart", "[]"));
+  await page.reload({ waitUntil: "networkidle" });
+
+  check("PDP COD copy visible", await page.getByText("Cash on Delivery available", { exact: false }).first().isVisible(), "");
+  const buyNow = page.getByRole("button", { name: "Buy Now" }).first();
+  check("Buy Now visible on in-stock PDP", await buyNow.isVisible(), "");
+  await buyNow.click();
+  await page.waitForURL("**/checkout", { timeout: 8000 });
+  check("Buy Now navigates to /checkout", (await page.url()).includes("/checkout"), page.url());
+  const bnCart = await page.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check("Buy Now added product to cart", bnCart.length === 1 && bnCart[0].slug === IN_STOCK_SLUG && bnCart[0].quantity === 1, JSON.stringify(bnCart));
+
+  // J2. Buy Now preserves an existing cart (never wipes it)
+  await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
+  await page.evaluate(() => localStorage.setItem("ecomm-cart", JSON.stringify([{ slug: "old-item", name: "Old Item", price: 99, quantity: 1 }])));
+  await page.reload({ waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Buy Now" }).first().click();
+  await page.waitForURL("**/checkout", { timeout: 8000 });
+  const bnCart2 = await page.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check("Buy Now preserves existing cart", bnCart2.some((i) => i.slug === "old-item") && bnCart2.some((i) => i.slug === IN_STOCK_SLUG), JSON.stringify(bnCart2));
+  await page.evaluate(() => localStorage.setItem("ecomm-cart", "[]"));
+
+  // J3. Out-of-stock PDP: no Buy Now anywhere (panel or sticky)
+  await page.goto(`${BASE}/product/${OUT_OF_STOCK_SLUG}`, { waitUntil: "networkidle" });
+  check("no Buy Now on out-of-stock PDP", (await page.getByRole("button", { name: "Buy Now" }).count()) === 0, "");
+  check("Sold Out badge on out-of-stock PDP", await page.getByText("Sold Out", { exact: true }).first().isVisible(), "");
+
+  // J4. Gallery lightbox opens, navigates, closes via Escape
+  await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Open image viewer" }).first().click();
+  const lightboxCounter = page.getByText(/\d+ \/ \d+/).first();
+  await lightboxCounter.waitFor({ timeout: 5000 });
+  check("lightbox dialog opens", await lightboxCounter.isVisible(), "");
+  await page.getByRole("button", { name: "Next image" }).click();
+  await page.waitForTimeout(300);
+  check("lightbox next image works", await lightboxCounter.isVisible(), "");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  check("lightbox closes on Escape", (await page.getByText(/\d+ \/ \d+/).count()) === 0, "");
+
+  // J5. Sticky CTA (mobile-first bar) shows Buy Now when scrolled mid-page
+  await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
+  await page.evaluate(() => window.scrollTo(0, Math.floor(document.body.scrollHeight / 3)));
+  await page.waitForTimeout(600);
+  const stickyBar = page.locator("#sticky-add-bar");
+  check("sticky CTA bar visible mid-scroll", await stickyBar.isVisible(), "");
+  check("sticky CTA has Buy Now", await stickyBar.getByRole("button", { name: "Buy Now" }).isVisible(), "");
+  await page.evaluate(() => window.scrollTo(0, 0));
+}
+
+// ─────────────────────────────────────────────────────────────────────────
 section("K. Content & extras")
 try {
-  // K1. Hero CTA + background-video path ------------------------------------
+  // K1. Hero CTA + featured product card ---------------------------------
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  const heroCta = page.getByRole("link", { name: /Shop Best Sellers/ }).first();
-  check("hero CTA (Shop Best Sellers) visible", await heroCta.isVisible(), "");
+  const heroCta = page.getByRole("link", { name: /Shop Featured Products/ }).first();
+  check("hero CTA (Shop Featured Products) visible", await heroCta.isVisible(), "");
   await heroCta.click();
   await page.waitForURL("**/products", { timeout: 8000 });
   check("hero CTA -> /products", (await page.url()).includes("/products"), page.url());
 
-  await writeClient.patch(HERO_DOC_ID).set({ backgroundVideo: TEST_VIDEO_URL }).commit();
-  const videoShown = await until(async () => {
-    await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(800);
-    return (await page.locator("video").count()) > 0;
-  }, 40, 3000);
-  check("hero backgroundVideo renders <video>", videoShown, "");
-  if (videoShown) {
-    const src = await page.locator("video").getAttribute("src");
-    check("video src is the configured mp4", (src || "").includes("ForBiggerEscapes"), src || "none");
-    check("video is muted & looped for autoplay", await page.locator("video").getAttribute("muted") !== null && await page.locator("video").getAttribute("loop") !== null, "");
-    check("hero headline on top of video", await page.getByRole("heading", { name: "Power Your Everyday" }).first().isVisible(), "");
-  }
-  await writeClient.patch(HERO_DOC_ID).set({ backgroundVideo: null }).commit();
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  const heroProductCard = page.getByRole("link", { name: /View Product/ }).first();
+  check("hero featured product card visible", await heroProductCard.isVisible(), "");
+  const heroProductLink = await heroProductCard.getAttribute("href");
+  check("hero product card links to product page", (heroProductLink || "").startsWith("/product/"), heroProductLink || "none");
+  await heroProductCard.click();
+  await page.waitForURL("**/product/**", { timeout: 8000 });
+  check("hero product card navigates to PDP", (await page.url()).includes("/product/"), page.url());
 
   // K2. Related products carousel ------------------------------------------
   await page.setViewportSize({ width: 390, height: 844 });
@@ -595,10 +648,10 @@ try {
 
   // K5. Review photo upload (real Cloudinary creds) -------------------------
   await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
-  await page.getByRole("tab", { name: /Reviews/ }).click();
+  await page.evaluate(() => document.querySelector("#reviews")?.scrollIntoView());
   await page.getByRole("button", { name: "5 stars" }).click();
-  await page.getByLabel("Name").fill("UI Photo Tester");
-  await page.getByLabel("Email").fill(PHOTO_EMAIL);
+  await page.locator("#review-name").fill("UI Photo Tester");
+  await page.locator("#review-email").fill(PHOTO_EMAIL);
   await page.locator("#review-comment").fill("Photo upload end-to-end test.");
   await page.setInputFiles('input[type="file"]', {
     name: "ui-test.png",
@@ -659,10 +712,10 @@ try {
   // K7. XSS / render-safety probe -------------------------------------------
   await page.goto(`${BASE}/product/${IN_STOCK_SLUG}`, { waitUntil: "networkidle" });
   const tabHtml = await page.evaluate(() => {
-    const el = document.querySelector('[role="tabpanel"]');
+    const el = document.querySelector('section[aria-labelledby="description"]');
     return el ? el.innerHTML : "";
   });
-  check("description panel renders (non-empty)", tabHtml.length > 0, `len=${tabHtml.length}`);
+  check("description section renders (non-empty)", tabHtml.length > 0, `len=${tabHtml.length}`);
   check("no <script> injected in description", !/<script/i.test(tabHtml), "");
   check("no inline event handlers in description", !/onerror\s*=|onload\s*=/i.test(tabHtml), "");
   check("no javascript: URIs in description", !/javascript:/i.test(tabHtml), "");
@@ -670,6 +723,279 @@ try {
   failed++;
   failures.push(`section K crashed: ${err.message}`);
   console.log(`  FAIL section K crashed: ${err.message}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("L. Variant cart & checkout integrity")
+let variantFixtureId = "";
+let variantFixtureSlug = "";
+{
+  const slug = `vg-variant-ui-${Date.now().toString(36)}`;
+  variantFixtureSlug = slug;
+  const doc = await writeClient.create({
+    _type: "product",
+    name: "Variant Test Product",
+    slug: { _type: "slug", current: slug },
+    category: "earbuds",
+    price: 5000,
+    stockStatus: "in-stock",
+    variants: [
+      { _key: "variant-black", name: "Black", sku: "VG-TST-BLK", price: 4999, stockStatus: "in-stock", isDefault: true },
+      { _key: "variant-white", name: "White", sku: "VG-TST-WHT", price: 7500, stockStatus: "in-stock" },
+      { _key: "variant-sold", name: "Sold Out", sku: "VG-TST-SOLD", price: 8000, stockStatus: "out-of-stock" },
+    ],
+  });
+  variantFixtureId = doc._id;
+  check("variant fixture product created", !!variantFixtureId, variantFixtureId);
+
+  // The PDP is SSR via the CDN-backed fetch; poll until the new doc is visible.
+  let pdpUp = false;
+  for (let i = 0; i < 100 && !pdpUp; i++) {
+    try {
+      const res = await fetch(`${BASE}/product/${slug}`);
+      if (res.status === 200) pdpUp = true;
+    } catch {}
+    if (!pdpUp) await new Promise((r) => setTimeout(r, 1000));
+  }
+  check("variant fixture PDP reachable", pdpUp, slug);
+
+  const V_EMAIL = `variant.${Date.now()}@voltgear.store`;
+  createdEmails.push(V_EMAIL);
+
+  async function fillCheckoutDetails(p) {
+    await p.getByRole("button", { name: /Continue to Details/ }).click();
+    await p.getByLabel("Full name").fill("Variant UI Buyer");
+    await p.getByLabel("Email").fill(V_EMAIL);
+    await p.getByLabel("Phone").fill("0300-7654321");
+    await p.getByLabel("Street address").fill("4 Variant Lane");
+    await p.getByLabel("City").fill("Lahore");
+    await p.getByLabel("Postal code").fill("54000");
+  }
+
+  // L1. PDP variant selection -> cart line with variant metadata --------------
+  const ctxL = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const pL = await ctxL.newPage();
+  await pL.goto(`${BASE}/product/${slug}`, { waitUntil: "networkidle" });
+  check("variant buttons render", await pL.getByRole("button", { name: "Black", exact: true }).isVisible(), "");
+  check("sold-out variant disabled", await pL.getByRole("button", { name: /^Sold Out \(sold out\)/ }).isDisabled(), "");
+  check("default variant price shown", await pL.getByText("Rs 4,999").first().isVisible(), "");
+  await pL.getByRole("button", { name: "White", exact: true }).click();
+  check("selected variant price shown", await pL.getByText("Rs 7,500").first().isVisible(), "");
+  await pL.getByRole("button", { name: "Increase quantity" }).first().click();
+  await pL.getByRole("button", { name: "Add to Cart" }).first().click();
+  await pL.waitForTimeout(400);
+  check("cart badge = 2", (await badgeCount(pL, "2")) === "2", "");
+
+  const cartAfterAdd = await pL.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check(
+    "cart line carries variant identity",
+    cartAfterAdd.length === 1 &&
+      cartAfterAdd[0].slug === slug &&
+      cartAfterAdd[0].variantKey === "variant-white" &&
+      cartAfterAdd[0].variantName === "White" &&
+      cartAfterAdd[0].variantSku === "VG-TST-WHT" &&
+      cartAfterAdd[0].price === 7500 &&
+      cartAfterAdd[0].quantity === 2,
+    JSON.stringify(cartAfterAdd)
+  );
+
+  // L2. Persistence across reload --------------------------------------------
+  await pL.reload({ waitUntil: "networkidle" });
+  check("cart badge persists after reload", (await badgeCount(pL, "2")) === "2", "");
+  await pL.getByRole("button", { name: /Open cart/ }).click();
+  const drawerL = pL.locator('[role="dialog"]');
+  await drawerL.waitFor({ timeout: 5000 });
+  check("drawer shows variant line after reload", await drawerL.getByText("Variant Test Product").first().isVisible() && await drawerL.getByText("White", { exact: true }).first().isVisible(), "");
+  check("drawer quantity persists", await drawerL.getByText("2", { exact: true }).first().isVisible(), "");
+
+  // L3. Multi-variant cart: add Black x1 -> two distinct lines, remove White --
+  await pL.keyboard.press("Escape");
+  await pL.getByRole("button", { name: "Black", exact: true }).click();
+  await pL.getByRole("button", { name: "Decrease quantity" }).first().click();
+  await pL.getByRole("button", { name: "Add to Cart" }).first().click();
+  await pL.waitForTimeout(400);
+  const multiCart = await pL.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check(
+    "two distinct variant lines (Black + White)",
+    multiCart.length === 2 &&
+      multiCart.some((i) => i.variantKey === "variant-white" && i.quantity === 2) &&
+      multiCart.some((i) => i.variantKey === "variant-black" && i.quantity === 1 && i.price === 4999),
+    JSON.stringify(multiCart)
+  );
+  check("badge count = 3 (sum of quantities)", (await badgeCount(pL, "3")) === "3", "");
+
+  await pL.goto(`${BASE}/checkout`, { waitUntil: "networkidle" });
+  await pL.getByRole("heading", { name: "Your Cart" }).waitFor({ timeout: 5000 });
+  const whiteCheckoutLine = pL
+    .locator("li")
+    .filter({ hasText: "White" })
+    .filter({ has: pL.getByRole("button", { name: /Remove Variant Test Product White/ }) });
+  check("checkout lists variant line", await whiteCheckoutLine.count() === 1, "");
+  await whiteCheckoutLine.getByRole("button", { name: "Remove Variant Test Product White" }).click();
+  await pL.waitForTimeout(400);
+  const afterRemove = await pL.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check(
+    "removing White leaves Black only",
+    afterRemove.length === 1 && afterRemove[0].variantKey === "variant-black",
+    JSON.stringify(afterRemove)
+  );
+  await ctxL.close();
+
+  // L4. Buy Now with non-default variant --------------------------------------
+  const ctxL4 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const p4 = await ctxL4.newPage();
+  await p4.goto(`${BASE}/product/${slug}`, { waitUntil: "networkidle" });
+  await p4.getByRole("button", { name: "White", exact: true }).click();
+  await p4.getByRole("button", { name: "Buy Now" }).first().click();
+  await p4.waitForURL("**/checkout", { timeout: 8000 });
+  const bnCart = await p4.evaluate(() => JSON.parse(localStorage.getItem("ecomm-cart") ?? "[]"));
+  check(
+    "Buy Now carries the selected variant (White)",
+    bnCart.length === 1 &&
+      bnCart[0].variantKey === "variant-white" &&
+      bnCart[0].variantName === "White" &&
+      bnCart[0].price === 7500,
+    JSON.stringify(bnCart)
+  );
+  await ctxL4.close();
+
+  // L5. Checkout end-to-end with a variant line --------------------------------
+  const ctxL5 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const p5 = await ctxL5.newPage();
+  await p5.goto(`${BASE}/product/${slug}`, { waitUntil: "networkidle" });
+  await p5.getByRole("button", { name: "White", exact: true }).click();
+  await p5.getByRole("button", { name: "Increase quantity" }).first().click();
+  await p5.getByRole("button", { name: "Add to Cart" }).first().click();
+  await p5.waitForTimeout(300);
+  await p5.goto(`${BASE}/checkout`, { waitUntil: "networkidle" });
+  await fillCheckoutDetails(p5);
+  await p5.getByRole("button", { name: /Review Order/ }).click();
+  await p5.getByText("Review & Confirm").waitFor({ timeout: 5000 });
+  check("checkout summary shows variant name", await p5.getByText("White").first().isVisible(), "");
+  await p5.getByRole("button", { name: /Place Order/ }).click();
+  let variantConfirmed = false;
+  try {
+    await p5.getByRole("heading", { name: "Order Confirmed!" }).waitFor({ timeout: 12000 });
+    variantConfirmed = true;
+  } catch {}
+  check("variant checkout reaches Order Confirmed!", variantConfirmed, "");
+  if (variantConfirmed) {
+    const orderId = await p5.locator("p.font-mono").first().innerText();
+    createdOrderIds.push(orderId);
+    check("order id rendered", /^VG-/.test(orderId), orderId);
+    check("success screen shows server total (2 x 7,500 = 15,000)", await p5.getByText("Rs 15,000").first().isVisible(), "");
+    await p5.waitForTimeout(1500);
+    const stored = await writeClient.fetch(
+      `*[_type=="order" && orderId==$id][0]{subtotal,shipping,total,items}`,
+      { id: orderId }
+    );
+    const line = stored?.items?.[0];
+    check("stored order line has variant metadata", line?.variantKey === "variant-white" && line?.variantName === "White" && line?.variantSku === "VG-TST-WHT", JSON.stringify(line));
+    check("stored line price/qty/lineTotal server-resolved", line?.price === 7500 && line?.quantity === 2 && line?.lineTotal === 15000, JSON.stringify(line));
+    check("stored totals server-computed", stored?.subtotal === 15000 && stored?.shipping === 0 && stored?.total === 15000, JSON.stringify({ subtotal: stored?.subtotal, shipping: stored?.shipping, total: stored?.total }));
+
+    // track UI shows the variant
+    await p5.goto(`${BASE}/track`, { waitUntil: "networkidle" });
+    await p5.getByLabel("Order ID").fill(orderId);
+    await p5.getByLabel("Email used at checkout").fill(V_EMAIL);
+    await p5.getByRole("button", { name: "Track order" }).click();
+    await p5.getByText("Order placed").first().waitFor({ timeout: 8000 });
+    check("track shows variant name", await p5.getByText(/Variant Test Product — White/).first().isVisible(), "");
+  }
+  await ctxL5.close();
+
+  // L6. Stale price reconfirmation: cart says 7,500, Sanity now says 8,250 ->
+  // 409 with an in-page notice, cart/checkout refresh to 8,250, then reconfirm -> 200 (Part 44)
+  const ctxL6 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const p6 = await ctxL6.newPage();
+  await p6.goto(`${BASE}/product/${slug}`, { waitUntil: "networkidle" });
+  await p6.getByRole("button", { name: "White", exact: true }).click();
+  await p6.getByRole("button", { name: "Add to Cart" }).first().click();
+  await p6.waitForTimeout(300);
+  await p6.goto(`${BASE}/checkout`, { waitUntil: "networkidle" });
+  await fillCheckoutDetails(p6);
+  const variantsNow = await writeClient.fetch(`*[_id==$id][0].variants`, { id: variantFixtureId });
+  await writeClient.patch(variantFixtureId).set({
+    variants: variantsNow.map((v) => (v._key === "variant-white" ? { ...v, price: 8250 } : v)),
+  }).commit();
+  await p6.getByRole("button", { name: /Review Order/ }).click();
+  await p6.getByRole("button", { name: /Place Order/ }).click();
+  let staleOrderConfirmed = false;
+  try {
+    await p6.getByRole("heading", { name: "Order Confirmed!" }).waitFor({ timeout: 6000 });
+    staleOrderConfirmed = true;
+  } catch {}
+  check("stale price: first attempt does NOT place order (409, no auto-resubmit)", staleOrderConfirmed === false, "");
+  // in-page 409 notice (located by its title text — avoids the Next.js
+  // route-announcer div that also exposes role="alert")
+  const noticeContainer = p6.locator('div[role="alert"]').filter({ hasText: "Prices changed while you were checking out." });
+  check("stale price: 409 notice visible", await noticeContainer.isVisible(), "");
+  check("stale price: notice shows White", await noticeContainer.getByText("White").first().isVisible(), "");
+  check("stale price: notice shows old (7,500) and new (8,250) prices", await noticeContainer.getByText("7,500").isVisible() && await noticeContainer.getByText("8,250").first().isVisible(), "");
+  // checkout summary refreshed to the new total
+  await p6.waitForTimeout(500);
+  check("stale price: checkout summary total refreshed to 8,250", await p6.getByText("Rs 8,250").first().isVisible(), "");
+  // cart line price persisted in localStorage to the authoritative value
+  const cartPriceJson = await p6.evaluate(() => localStorage.getItem("ecomm-cart"));
+  const cartPrice = cartPriceJson ? JSON.parse(cartPriceJson) : null;
+  check("stale price: cart line price persisted to 8,250", cartPrice?.[0]?.price === 8250, JSON.stringify(cartPrice?.[0]?.price));
+  // orders before reconfirm
+  const ordersBeforeRec = await writeClient.fetch(`count(*[_type=="order" && customer.email==$e])`, { e: V_EMAIL });
+  // second confirmation uses the refreshed line price -> server resolves, 200
+  await p6.getByRole("button", { name: /Place Order/ }).click();
+  let reconConfirmed = false;
+  try {
+    await p6.getByRole("heading", { name: "Order Confirmed!" }).waitFor({ timeout: 12000 });
+    reconConfirmed = true;
+  } catch {}
+  check("stale price: reconfirm -> order placed", reconConfirmed, "");
+  const ordersAfterRec = await writeClient.fetch(`count(*[_type=="order" && customer.email==$e])`, { e: V_EMAIL });
+  check("stale price: exactly one new order created", ordersAfterRec === ordersBeforeRec + 1, `before=${ordersBeforeRec} after=${ordersAfterRec}`);
+  if (reconConfirmed) {
+    const orderId = await p6.locator("p.font-mono").first().innerText();
+    createdOrderIds.push(orderId);
+    check("stale price: success screen shows current price (8,250)", await p6.getByText("Rs 8,250").first().isVisible(), "");
+    await p6.waitForTimeout(1500);
+    const stored = await writeClient.fetch(
+      `*[_type=="order" && orderId==$id][0]{subtotal,total,items}`,
+      { id: orderId }
+    );
+    check("stale price: stored line at 8,250 (not the cart's 7,500)", stored?.items?.[0]?.price === 8250 && stored?.subtotal === 8250 && stored?.total === 8250, JSON.stringify(stored));
+  }
+  await ctxL6.close();
+
+  // L7. Stale stock: variant goes out-of-stock before checkout -> rejected
+  const ctxL7 = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+  const p7 = await ctxL7.newPage();
+  await p7.goto(`${BASE}/product/${slug}`, { waitUntil: "networkidle" });
+  await p7.getByRole("button", { name: "White", exact: true }).click();
+  await p7.getByRole("button", { name: "Add to Cart" }).first().click();
+  await p7.waitForTimeout(300);
+  await p7.goto(`${BASE}/checkout`, { waitUntil: "networkidle" });
+  await fillCheckoutDetails(p7);
+  const variantsNow2 = await writeClient.fetch(`*[_id==$id][0].variants`, { id: variantFixtureId });
+  await writeClient.patch(variantFixtureId).set({
+    variants: variantsNow2.map((v) => (v._key === "variant-white" ? { ...v, stockStatus: "out-of-stock" } : v)),
+  }).commit();
+  let soldOutMsg = "";
+  p7.once("dialog", async (d) => {
+    soldOutMsg = d.message();
+    await d.accept();
+  });
+  const ordersBeforeAttempt = await writeClient.fetch(`count(*[_type=="order" && customer.email==$e])`, { e: V_EMAIL });
+  await p7.getByRole("button", { name: /Review Order/ }).click();
+  await p7.getByRole("button", { name: /Place Order/ }).click();
+  await p7.waitForTimeout(2000);
+  check("stale stock: customer-safe sold-out message shown", /sold out/i.test(soldOutMsg), soldOutMsg);
+  const ordersAfterAttempt = await writeClient.fetch(`count(*[_type=="order" && customer.email==$e])`, { e: V_EMAIL });
+  check("stale stock: no new order created", ordersAfterAttempt === ordersBeforeAttempt, `before=${ordersBeforeAttempt} after=${ordersAfterAttempt}`);
+  await ctxL7.close();
+
+  // restore the fixture variants for cleanliness
+  const variantsNow3 = await writeClient.fetch(`*[_id==$id][0].variants`, { id: variantFixtureId });
+  await writeClient.patch(variantFixtureId).set({
+    variants: variantsNow3.map((v) => (v._key === "variant-white" ? { ...v, stockStatus: "in-stock", price: 7500 } : v)),
+  }).commit();
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -710,6 +1036,7 @@ section("J. Cleanup")
     ...(strayReviews ?? []).map((d) => d._id),
     BLOG_DOC_ID,
   ];
+  if (variantFixtureId) toDelete.push(variantFixtureId);
   for (const id of new Set(toDelete)) {
     try {
       await writeClient.delete(id);
@@ -732,6 +1059,16 @@ section("J. Cleanup")
     { emails: createdEmails }
   );
   check("no test-email events remain", afterEvents === 0, `count=${afterEvents}`);
+  const fixtureGone = await writeClient.fetch(
+    `count(*[_id==$id])`,
+    { id: variantFixtureId ?? "none" }
+  );
+  check("variant fixture product removed", fixtureGone === 0, `count=${fixtureGone}`);
+  const fixtureSlugGone = await writeClient.fetch(
+    `count(*[_type=="product" && slug.current==$slug])`,
+    { slug: variantFixtureSlug || "none" }
+  );
+  check("no leftover variant fixture by slug", fixtureSlugGone === 0, `count=${fixtureSlugGone}`);
   const heroCount = await writeClient.fetch(`count(*[_id==$id])`, { id: HERO_DOC_ID });
   check("seeded hero doc still present", heroCount === 1, `count=${heroCount}`);
   const heroState = await writeClient.fetch(

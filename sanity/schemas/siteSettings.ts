@@ -144,13 +144,83 @@ export const siteSettings = {
       name: "returnPolicy",
       title: "Return Policy (short summary)",
       type: "string",
-      description: "Shown on every product page and in the cart, e.g. 'Free returns within 7 days'",
+      description: "Legacy free-text note. The structured 'Return Window (days)' field below is what the storefront displays.",
     },
     {
       name: "warrantyInfo",
       title: "Warranty Info (short summary)",
       type: "string",
-      description: "Shown on every product page, e.g. '2-year warranty included'",
+      description: "Legacy free-text note. The structured 'Warranty Duration (months)' field below is what the storefront displays.",
+    },
+    {
+      name: "warrantyMonths",
+      title: "Warranty Duration (months)",
+      type: "number",
+      description: "E.g. 24 for a 2-year warranty. Leave empty if warranty terms are not yet confirmed — the storefront will not display any duration claim.",
+      validation: (Rule: any) =>
+        Rule.min(1).warning("Must be a positive number of months"),
+    },
+    {
+      name: "returnWindowDays",
+      title: "Return Window (days)",
+      type: "number",
+      description: "E.g. 7 or 30. Leave empty if return terms are not yet confirmed — the storefront will not display any return-period claim.",
+      validation: (Rule: any) =>
+        Rule.min(1).warning("Must be a positive number of days"),
+    },
+    {
+      name: "codEnabled",
+      title: "Cash on Delivery",
+      type: "boolean",
+      initialValue: true,
+      description: "Whether cash on delivery is offered at checkout.",
+    },
+    {
+      name: "whatsappNumber",
+      title: "WhatsApp Number",
+      type: "string",
+      description: "E.g. +92 300 0000000. Used for customer assistance links.",
+    },
+    {
+      name: "announcement",
+      title: "Announcement Bar",
+      type: "object",
+      description:
+        "Optional announcement shown across the top of every page. A countdown is only shown while the promotion window is active.",
+      fields: [
+        {
+          name: "enabled",
+          title: "Show Announcement",
+          type: "boolean",
+          initialValue: false,
+        },
+        {
+          name: "message",
+          title: "Message",
+          type: "string",
+          description: "E.g. 'Free shipping on orders over Rs 5,000'",
+        },
+        {
+          name: "countdownEnabled",
+          title: "Show Countdown",
+          type: "boolean",
+          initialValue: false,
+          description: "Only shown while the promotion window below is active.",
+        },
+        {
+          name: "startsAt",
+          title: "Starts At",
+          type: "datetime",
+          description: "Promotion start (countdown hidden before this).",
+        },
+        {
+          name: "endsAt",
+          title: "Ends At",
+          type: "datetime",
+          description: "Promotion end (countdown disappears after this — it never restarts).",
+        },
+      ],
+      initialValue: { enabled: false, countdownEnabled: false },
     },
     {
       name: "seo",

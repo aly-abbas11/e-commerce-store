@@ -1,39 +1,24 @@
 import { fetchFromSanity } from "@/lib/sanity/client";
 import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { normalizeSettings } from "@/lib/site-config";
 import type { SiteSettings } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Public site configuration for client components (cart drawer, checkout).
- * Only non-sensitive fields are exposed. Falls back to sane defaults when
- * Sanity is not configured so the storefront still works without it.
+ * All normalization and fallback logic lives in normalizeSettings() so the
+ * storefront has exactly one source of truth. Falls back to the canonical
+ * operational defaults (PKR 5,000 free-shipping threshold, Rs 199 shipping
+ * fee) when Sanity is not configured.
  */
 export async function GET() {
   try {
     const settings = await fetchFromSanity<SiteSettings | null>(
       siteSettingsQuery
     );
-    return Response.json({
-      brandName: settings?.brandName || "VoltGear",
-      freeShippingThreshold: settings?.freeShippingThreshold ?? 5000,
-      shippingFee: settings?.shippingFee ?? 199,
-      returnPolicy:
-        settings?.returnPolicy ||
-        "Free returns within 7 days — no questions asked.",
-      warrantyInfo: settings?.warrantyInfo || "2-year warranty included.",
-      currency: settings?.currency || "PKR",
-      email: settings?.email || "",
-    });
+    return Response.json(normalizeSettings(settings));
   } catch {
-    return Response.json({
-      brandName: "VoltGear",
-      freeShippingThreshold: 5000,
-      shippingFee: 199,
-      returnPolicy: "Free returns within 7 days — no questions asked.",
-      warrantyInfo: "2-year warranty included.",
-      currency: "PKR",
-      email: "",
-    });
+    return Response.json(normalizeSettings(null));
   }
 }

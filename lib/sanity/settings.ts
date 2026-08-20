@@ -11,11 +11,7 @@ import { headingFont as headingSpaceGrotesk } from "@/lib/fonts/heading-space-gr
 
 export const getSettings = unstable_cache(
   async () => {
-    try {
-      return await fetchFromSanity<SiteSettings | null>(siteSettingsQuery);
-    } catch {
-      return null;
-    }
+    return await fetchFromSanity<SiteSettings | null>(siteSettingsQuery);
   },
   ["site-settings"],
   { revalidate: 60 }

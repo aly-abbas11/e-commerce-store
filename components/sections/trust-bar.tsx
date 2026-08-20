@@ -1,20 +1,21 @@
-import { RotateCcw, ShieldCheck, Truck, Award } from "lucide-react";
+import { Banknote, RotateCcw, ShieldCheck, Truck, Award } from "lucide-react";
 
 import { Separator } from "@/components/ui/separator";
+import {
+  normalizeSettings,
+  returnsLabel,
+  warrantyLabel,
+} from "@/lib/site-config";
 import type { SiteSettings } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
-const FREE_SHIPPING_DEFAULT = 50;
-const RETURNS_LABEL = "Easy 30-day returns";
-
 export function TrustBar({ settings }: { settings: SiteSettings | null }) {
-  const threshold =
-    settings?.freeShippingThreshold ?? FREE_SHIPPING_DEFAULT;
+  const config = normalizeSettings(settings);
 
   const items = [
     {
       icon: Truck,
-      label: `Free shipping over ${formatPrice(threshold)}`,
+      label: `Free shipping over ${formatPrice(config.freeShippingThreshold)}`,
       sub: "Fast delivery, tracked",
     },
     {
@@ -22,16 +23,33 @@ export function TrustBar({ settings }: { settings: SiteSettings | null }) {
       label: "Secure checkout",
       sub: "SSL encrypted payments",
     },
-    {
-      icon: Award,
-      label: "1-Year warranty",
-      sub: "Full manufacturer coverage",
-    },
-    {
-      icon: RotateCcw,
-      label: RETURNS_LABEL,
-      sub: "No questions asked",
-    },
+    ...(config.codEnabled
+      ? [
+          {
+            icon: Banknote,
+            label: "Cash on Delivery",
+            sub: "Pay when it arrives",
+          },
+        ]
+      : []),
+    ...(config.warrantyMonths
+      ? [
+          {
+            icon: Award,
+            label: warrantyLabel(config.warrantyMonths),
+            sub: "Full manufacturer coverage",
+          },
+        ]
+      : []),
+    ...(config.returnWindowDays
+      ? [
+          {
+            icon: RotateCcw,
+            label: returnsLabel(config.returnWindowDays),
+            sub: "No questions asked",
+          },
+        ]
+      : []),
   ];
 
   return (

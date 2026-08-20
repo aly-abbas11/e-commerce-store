@@ -16,6 +16,19 @@ export interface CartItem {
   price: number;
   image?: string;
   quantity: number;
+  variantKey?: string;
+  variantName?: string;
+  variantSku?: string;
+}
+
+/**
+ * Identity of a cart line. Products without variants use the slug alone;
+ * variant lines are keyed by `slug::variantKey` so two variants of the
+ * same product never merge into one line (and one variant never merges
+ * into the base line).
+ */
+export function cartLineKey(item: { slug: string; variantKey?: string }): string {
+  return item.variantKey ? `${item.slug}::${item.variantKey}` : item.slug;
 }
 
 interface CartContextValue {
@@ -26,8 +39,9 @@ interface CartContextValue {
   openCart: () => void;
   closeCart: () => void;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (slug: string) => void;
-  updateQuantity: (slug: string, quantity: number) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
+  updateItemPrice: (key: string, price: number) => void;
   clearCart: () => void;
 }
 
@@ -61,10 +75,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addItem = useCallback(
     (item: Omit<CartItem, "quantity">, quantity = 1) => {
       setItems((prev) => {
-        const existing = prev.find((i) => i.slug === item.slug);
+        const key = cartLineKey(item);
+        const existing = prev.find((i) => cartLineKey(i) === key);
         if (existing) {
           return prev.map((i) =>
-            i.slug === item.slug ? { ...i, quantity: i.quantity + quantity } : i
+            cartLineKey(i) === key ? { ...i, quantity: i.quantity + quantity } : i
           );
         }
         return [...prev, { ...item, quantity }];
@@ -73,15 +88,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const removeItem = useCallback((slug: string) => {
-    setItems((prev) => prev.filter((i) => i.slug !== slug));
+  const removeItem = useCallback((key: string) => {
+    setItems((prev) => prev.filter((i) => cartLineKey(i) !== key));
   }, []);
 
-  const updateQuantity = useCallback((slug: string, quantity: number) => {
+  const updateQuantity = useCallback((key: string, quantity: number) => {
     setItems((prev) =>
       quantity <= 0
-        ? prev.filter((i) => i.slug !== slug)
-        : prev.map((i) => (i.slug === slug ? { ...i, quantity } : i))
+        ? prev.filter((i) => cartLineKey(i) !== key)
+        : prev.map((i) => (cartLineKey(i) === key ? { ...i, quantity } : i))
+    );
+  }, []);
+
+  const updateItemPrice = useCallback((key: string, price: number) => {
+    setItems((prev) =>
+      prev.map((i) => (cartLineKey(i) === key ? { ...i, price } : i))
     );
   }, []);
 
@@ -109,9 +130,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       addItem,
       removeItem,
       updateQuantity,
+      updateItemPrice,
       clearCart,
     }),
-    [items, count, subtotal, isOpen, openCart, closeCart, addItem, removeItem, updateQuantity, clearCart]
+    [items, count, subtotal, isOpen, openCart, closeCart, addItem, removeItem, updateQuantity, updateItemPrice, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

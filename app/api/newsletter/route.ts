@@ -12,7 +12,10 @@ export async function POST(req: NextRequest) {
     // Store as a simple log — in production, wire to Mailchimp/Resend lists
     console.log(`[newsletter] New subscriber: ${email}`);
 
-    return NextResponse.json({ ok: true, message: "Subscribed successfully" });
+    return NextResponse.json({
+      ok: true,
+      message: "Request received — we'll be in touch.",
+    });
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }

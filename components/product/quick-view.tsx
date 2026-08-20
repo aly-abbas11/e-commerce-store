@@ -13,21 +13,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/product/star-rating";
 import { imageUrl } from "@/lib/sanity/image";
+import { getStockState, getDefaultVariant } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/cart/cart-provider";
 
-const STOCK_LABEL: Record<string, { label: string; variant: "success" | "warning" | "destructive" }> = {
-  "in-stock": { label: "In Stock", variant: "success" },
-  "low-stock": { label: "Low Stock", variant: "warning" },
-  "out-of-stock": { label: "Out of Stock", variant: "destructive" },
-};
-
 export function QuickViewButton({ product }: { product: Product }) {
   const { addItem } = useCart();
   const image = product.images?.[0];
-  const outOfStock = product.stockStatus === "out-of-stock";
-  const stock = STOCK_LABEL[product.stockStatus] ?? STOCK_LABEL["in-stock"];
+  const stock = getStockState(product.stockStatus);
+  const outOfStock = stock.soldOut;
+  const defaultVariant = getDefaultVariant(product);
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  const variantPurchasable =
+    defaultVariant && getStockState(defaultVariant.stockStatus).purchasable;
+  const canDirectAdd = !hasVariants || variantPurchasable;
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
@@ -37,7 +37,7 @@ export function QuickViewButton({ product }: { product: Product }) {
     <Dialog>
       <DialogTrigger asChild>
         <button
-          className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-md backdrop-blur transition-all hover:bg-background hover:shadow-lg opacity-0 group-hover:opacity-100"
+          className="absolute bottom-3 left-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-md backdrop-blur transition-all hover:bg-background hover:shadow-lg max-sm:opacity-100 opacity-0 group-hover:opacity-100"
           aria-label={`Quick view ${product.name}`}
         >
           <Eye className="h-4 w-4" />
@@ -75,10 +75,13 @@ export function QuickViewButton({ product }: { product: Product }) {
             <h3 className="mt-1 text-lg font-bold leading-snug">{product.name}</h3>
 
             <div className="mt-2 flex items-center gap-2">
-              <StarRating rating={product.rating} size={14} />
-              {typeof product.reviewCount === "number" && product.reviewCount > 0 && (
-                <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
-              )}
+              {typeof product.reviewCount === "number" &&
+                product.reviewCount > 0 && (
+                  <>
+                    <StarRating rating={product.rating} size={14} />
+                    <span className="text-xs text-muted-foreground">({product.reviewCount})</span>
+                  </>
+                )}
             </div>
 
             <div className="mt-3 flex items-baseline gap-2">
@@ -90,7 +93,7 @@ export function QuickViewButton({ product }: { product: Product }) {
               )}
             </div>
 
-            <Badge variant={stock.variant} className="mt-2 w-fit">
+            <Badge variant={stock.badgeVariant} className="mt-2 w-fit">
               {stock.label}
             </Badge>
 
@@ -101,21 +104,37 @@ export function QuickViewButton({ product }: { product: Product }) {
             )}
 
             <div className="mt-auto flex flex-col gap-2 pt-4">
+              {outOfStock || !canDirectAdd ? (
+              <Button asChild className="w-full" variant={outOfStock ? "default" : "outline"}>
+                <Link href={`/product/${product.slug}`}>
+                  {outOfStock ? "Sold Out" : "View Options"}
+                </Link>
+              </Button>
+            ) : (
               <Button
                 className="w-full"
-                disabled={outOfStock}
                 onClick={() => {
                   addItem({
                     slug: product.slug,
                     name: product.name,
-                    price: product.price,
+                    price: defaultVariant?.price ?? product.price,
                     image: image ? imageUrl(image, { w: 128 }) : undefined,
+                    ...(defaultVariant
+                      ? {
+                          variantKey: defaultVariant._key,
+                          variantName: defaultVariant.name,
+                          ...(defaultVariant.sku
+                            ? { variantSku: defaultVariant.sku }
+                            : {}),
+                        }
+                      : {}),
                   });
                 }}
               >
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                {outOfStock ? "Sold Out" : "Add to Cart"}
+                Add to Cart
               </Button>
+            )}
               <Button asChild variant="outline" className="w-full">
                 <Link href={`/product/${product.slug}`}>View Full Details</Link>
               </Button>

@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { sendOrderConfirmationEmail } from "@/lib/email";
-import {
-  createOrder,
-  enqueueEmailEvent,
-} from "@/lib/order-store";
-import type { OrderItem } from "@/lib/types";
+import { createOrder, enqueueEmailEvent } from "@/lib/order-store";
+import { resolveCheckout, CHECKOUT_PRICE_CHANGED_ERROR } from "@/lib/checkout-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,9 +17,11 @@ interface CheckoutCustomer {
 }
 
 interface CheckoutBody {
-  items?: OrderItem[];
+  items?: { slug?: string; quantity?: number; variantKey?: string }[];
   customer?: CheckoutCustomer;
   payment?: { method?: string };
+  giftWrap?: boolean;
+  // Present only for backwards-compatible clients; never trusted.
   subtotal?: number;
   shipping?: number;
   total?: number;
@@ -33,6 +32,11 @@ interface CheckoutBody {
  * add a gateway by extending the `payment.method` switch — the checkout UI
  * and order persistence need no changes.
  *
+ * The browser is never authoritative: every line is resolved against current
+ * Sanity data (product ownership, selected variant, unit price, stock) and
+ * subtotal / shipping / total are computed server-side. Client-supplied
+ * prices and totals are ignored.
+ *
  * On success the order is persisted and the customer's email is captured for
  * retention automations (order confirmation now, post-purchase / win-back
  * via the flow runner).
@@ -40,7 +44,7 @@ interface CheckoutBody {
 export async function POST(request: Request) {
   try {
     const body: CheckoutBody = await request.json();
-    const { items = [], customer, payment, subtotal, shipping, total } = body;
+    const { items = [], customer, payment, giftWrap } = body;
 
     if (!items.length) {
       return NextResponse.json(
@@ -61,22 +65,33 @@ export async function POST(request: Request) {
       );
     }
 
+    const resolution = await resolveCheckout(items, giftWrap === true);
+
+    // Stock / availability errors and invalid quantities are blocking 400s.
+    // A price change is a 409: no order is created and no email is sent.
+    if (resolution.ok === "price_changed") {
+      return NextResponse.json(
+        {
+          code: "PRICE_CHANGED" as const,
+          error: CHECKOUT_PRICE_CHANGED_ERROR,
+          items: resolution.items,
+          lines: resolution.checkout.lines,
+          subtotal: resolution.checkout.subtotal,
+          shipping: resolution.checkout.shipping,
+          total: resolution.checkout.total,
+        },
+        { status: 409 }
+      );
+    }
+    if (!resolution.ok) {
+      return NextResponse.json({ error: resolution.error }, { status: 400 });
+    }
+
+    const { lines, subtotal, shipping, total } = resolution.checkout;
+
     const orderId = `VG-${Date.now().toString(36).toUpperCase()}${Math.floor(
       Math.random() * 10000
     )}`;
-
-    // Guard: never persist a silent 0-total order if totals are missing.
-    const computedSubtotal = items.reduce(
-      (sum, i) => sum + Number(i.price ?? 0) * Number(i.quantity ?? 1),
-      0
-    );
-    const orderSubtotal =
-      subtotal !== undefined ? Number(subtotal) : computedSubtotal;
-    const orderShipping = shipping !== undefined ? Number(shipping) : 0;
-    const orderTotal =
-      total !== undefined
-        ? Number(total)
-        : orderSubtotal + orderShipping;
 
     const order = {
       orderId,
@@ -88,11 +103,11 @@ export async function POST(request: Request) {
         city: customer.city,
         postal: customer.postal,
       },
-      items,
+      items: lines,
       payment: "cod",
-      subtotal: orderSubtotal,
-      shipping: orderShipping,
-      total: orderTotal,
+      subtotal,
+      shipping,
+      total,
     };
 
     const persisted = await createOrder(order);
@@ -101,11 +116,12 @@ export async function POST(request: Request) {
     const emailPayload = {
       orderId,
       name: order.customer.name ?? "there",
-      items: items.map((i) => ({
-        name: i.name ?? "",
-        price: Number(i.price ?? 0),
-        quantity: Number(i.quantity ?? 1),
+      items: lines.map((i) => ({
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
         ...(i.slug ? { slug: i.slug } : {}),
+        ...(i.variantName ? { variantName: i.variantName } : {}),
       })),
       total: order.total,
     };
@@ -118,7 +134,7 @@ export async function POST(request: Request) {
     );
 
     if (persisted) {
-      return NextResponse.json({ ok: true, orderId });
+      return NextResponse.json({ ok: true, orderId, subtotal, shipping, total, lines });
     }
     return NextResponse.json(
       { error: "We couldn't store your order. Please try again." },

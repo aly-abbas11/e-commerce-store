@@ -34,7 +34,12 @@ interface TrackResponse {
   statusUpdatedAt: string | null;
   statusHistory: HistoryEntry[];
   createdAt: string | null;
-  items: { name: string; price: number; quantity: number }[];
+  items: {
+    name: string;
+    price: number;
+    quantity: number;
+    variantName?: string;
+  }[];
   subtotal: number;
   shipping: number;
   total: number;
@@ -268,6 +273,9 @@ export function TrackOrder() {
                 >
                   <span>
                     {item.name}
+                    {item.variantName && (
+                      <span className="text-muted-foreground"> — {item.variantName}</span>
+                    )}
                     <span className="ml-2 text-muted-foreground">× {item.quantity}</span>
                   </span>
                   <span className="font-semibold">

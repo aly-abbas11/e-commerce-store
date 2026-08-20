@@ -4,6 +4,7 @@ import { Search, SearchX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
+import { SearchSuggestions } from "@/components/search/search-suggestions";
 import { fetchFromSanity } from "@/lib/sanity/client";
 import { searchProductsQuery } from "@/lib/sanity/queries";
 import type { Product } from "@/lib/types";
@@ -56,9 +57,7 @@ export default async function SearchPage({
       </div>
 
       {!q ? (
-        <p className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-          Type a product name above to search the catalog.
-        </p>
+        <SearchSuggestions query="" />
       ) : products.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (

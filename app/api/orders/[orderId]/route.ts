@@ -56,6 +56,7 @@ export async function GET(
       name: i.name ?? "",
       price: i.price ?? 0,
       quantity: i.quantity ?? 1,
+      ...(i.variantName ? { variantName: i.variantName } : {}),
     })),
     subtotal: order.subtotal ?? 0,
     shipping: order.shipping ?? 0,

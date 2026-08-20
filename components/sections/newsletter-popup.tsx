@@ -106,18 +106,18 @@ export function NewsletterPopup() {
 
           {submitted ? (
             <div className="mt-4">
-              <h3 className="text-xl font-bold">You&apos;re In!</h3>
+              <h3 className="text-xl font-bold">Thanks!</h3>
               <p className="mt-2 text-muted-foreground">
-                Check your inbox for a welcome discount code.
+                We&apos;ve received your request and will be in touch.
               </p>
             </div>
           ) : (
             <>
               <h3 className="mt-4 text-xl font-bold">
-                Get 10% Off Your First Order
+                Join the VoltGear Newsletter
               </h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Join 5,000+ VoltGear fans. Get exclusive deals, new arrivals, and tips delivered to your inbox.
+                Get exclusive deals, new arrivals, and tips delivered to your inbox.
               </p>
 
               <form onSubmit={handleSubmit} className="mt-6 flex gap-2">

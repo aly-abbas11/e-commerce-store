@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useEffect, useState } from "react";
-import {
-  ArrowRight,
+import { ArrowRight,
   Banknote,
   Check,
   CheckCircle2,
@@ -17,6 +16,7 @@ import {
   ShieldCheck,
   ShoppingBag,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +24,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useCart } from "@/components/cart/cart-provider";
+import { useCart, cartLineKey } from "@/components/cart/cart-provider";
 import { saveLastOrder } from "@/lib/review-reminder";
 import { formatPrice } from "@/lib/utils";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
-import { useSiteConfig } from "@/lib/site-config";
+import { useSiteConfig } from "@/lib/use-site-config";
+import type { PriceMismatch } from "@/lib/checkout-server";
 
 const STEPS = [
   { label: "Cart", icon: ShoppingBag },
@@ -67,6 +68,7 @@ export default function CheckoutPage() {
     items,
     subtotal,
     updateQuantity,
+    updateItemPrice,
     removeItem,
     clearCart,
   } = useCart();
@@ -76,11 +78,24 @@ export default function CheckoutPage() {
   const [payment, setPayment] = useState<PaymentMethod>("cod");
   const [placing, setPlacing] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<string | null>(null);
+  const [placedTotal, setPlacedTotal] = useState<number | null>(null);
   const [customer, setCustomer] = useState<Record<string, string>>({});
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [priceChanged, setPriceChanged] = useState<
+    | {
+        items: PriceMismatch[];
+        subtotal: number;
+        shipping: number;
+        total: number;
+      }
+    | null
+  >(null);
+
+  const GIFT_WRAP_FEE = 199;
 
   const shipping =
     subtotal === 0 || subtotal >= config.freeShippingThreshold ? 0 : config.shippingFee;
-  const total = subtotal + shipping;
+  const total = subtotal + shipping + (giftWrap ? GIFT_WRAP_FEE : 0);
 
   const shippingLabel = useMemo(() => {
     if (subtotal === 0) return null;
@@ -94,6 +109,7 @@ export default function CheckoutPage() {
   async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPlacing(true);
+    setPriceChanged(null);
 
     try {
       const res = await fetch("/api/checkout", {
@@ -105,17 +121,44 @@ export default function CheckoutPage() {
             name: i.name,
             price: i.price,
             quantity: i.quantity,
+            ...(i.variantKey ? { variantKey: i.variantKey } : {}),
+            ...(i.variantName ? { variantName: i.variantName } : {}),
+            ...(i.variantSku ? { variantSku: i.variantSku } : {}),
           })),
           customer,
           payment: { method: payment },
           subtotal,
           shipping,
           total,
+          giftWrap,
+          giftWrapFee: giftWrap ? GIFT_WRAP_FEE : 0,
         }),
       });
       const data = await res.json();
+
+      // 409: one or more prices changed server-side. Refresh the cart with the
+      // authoritative prices (by line identity, never by slug alone), clear the
+      // confirmation, and ask the customer to review — no automatic resubmit.
+      if (res.status === 409 && data.code === "PRICE_CHANGED") {
+        for (const line of data.lines ?? []) {
+          updateItemPrice(
+            line.variantKey ? `${line.slug}::${line.variantKey}` : line.slug,
+            line.price
+          );
+        }
+        setPriceChanged({
+          items: data.items ?? [],
+          subtotal: Number(data.subtotal) || 0,
+          shipping: Number(data.shipping) || 0,
+          total: Number(data.total) || 0,
+        });
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error ?? "Failed");
       setPlacedOrder(data.orderId);
+      setPlacedTotal(typeof data.total === "number" ? data.total : total);
+      setPriceChanged(null);
       trackPurchase(data.orderId, analyticsItems(), total);
       clearCart();
       const first = items[0];
@@ -128,8 +171,10 @@ export default function CheckoutPage() {
           product: { slug: first.slug, name: first.name },
         });
       }
-    } catch {
-      alert("Something went wrong placing your order. Please try again.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Something went wrong placing your order. Please try again.";
+      alert(message);
     } finally {
       setPlacing(false);
     }
@@ -175,6 +220,13 @@ export default function CheckoutPage() {
     setStep(next);
   }
 
+  // A price update notice is stale once the customer edits the cart or
+  // navigates between steps; clear it so the message never misleads.
+  useEffect(() => {
+    if (priceChanged) setPriceChanged(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length, step, giftWrap]);
+
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") onLeave();
@@ -201,7 +253,7 @@ export default function CheckoutPage() {
           </h1>
           <p className="mt-2 text-muted-foreground">
             Thanks for your order. A confirmation is on its way to your inbox —
-            we&rsquo;ll text and email tracking updates as soon as it ships.
+            we&rsquo;ll email tracking updates as soon as it ships.
           </p>
           <div className="mt-6 rounded-xl bg-muted/60 p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -211,7 +263,7 @@ export default function CheckoutPage() {
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-primary" />
-            Pay {formatPrice(total)} cash on delivery
+            Pay {formatPrice(placedTotal ?? total)} cash on delivery
           </div>
           <Button asChild size="lg" className="mt-8">
             <Link href="/products">
@@ -304,7 +356,7 @@ export default function CheckoutPage() {
               <ul className="mt-6 space-y-4">
                 {items.map((item) => (
                   <li
-                    key={item.slug}
+                    key={cartLineKey(item)}
                     className="flex gap-4 rounded-xl border bg-card p-4"
                   >
                     {item.image ? (
@@ -327,18 +379,23 @@ export default function CheckoutPage() {
                           {item.name}
                         </Link>
                         <button
-                          onClick={() => removeItem(item.slug)}
-                          aria-label={`Remove ${item.name}`}
+                          onClick={() => removeItem(cartLineKey(item))}
+                          aria-label={`Remove ${item.name}${item.variantName ? ` ${item.variantName}` : ""}`}
                           className="text-muted-foreground transition-colors hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
+                      {item.variantName && (
+                        <p className="text-sm text-muted-foreground">
+                          {item.variantName}
+                        </p>
+                      )}
                       <div className="mt-auto flex items-center justify-between">
                         <div className="flex items-center gap-2 rounded-lg border px-2 py-1">
                           <button
                             onClick={() =>
-                              updateQuantity(item.slug, item.quantity - 1)
+                              updateQuantity(cartLineKey(item), item.quantity - 1)
                             }
                             aria-label="Decrease quantity"
                             className="p-1 text-muted-foreground hover:text-foreground"
@@ -350,7 +407,7 @@ export default function CheckoutPage() {
                           </span>
                           <button
                             onClick={() =>
-                              updateQuantity(item.slug, item.quantity + 1)
+                              updateQuantity(cartLineKey(item), item.quantity + 1)
                             }
                             aria-label="Increase quantity"
                             className="p-1 text-muted-foreground hover:text-foreground"
@@ -528,6 +585,50 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+              {/* Gift wrap option */}
+              <div className="mt-6 rounded-xl border p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={giftWrap}
+                    onChange={(e) => setGiftWrap(e.target.checked)}
+                    className="mt-1 h-4 w-4 accent-primary"
+                  />
+                  <span className="flex-1">
+                    <span className="font-medium">🎁 Gift Wrapping</span>
+                    <span className="block text-sm text-muted-foreground">
+                      Premium gift box with ribbon — {formatPrice(GIFT_WRAP_FEE)}
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+               {/* Price-change notice (only after a 409, cleared on cart/step change) */}
+              {priceChanged && (
+                <div
+                  role="alert"
+                  className="mt-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-50/60 p-4 text-sm text-amber-800 dark:text-amber-200"
+                >
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <div className="flex-1">
+                    <p className="font-semibold">Prices changed while you were checking out.</p>
+                    <ul className="mt-1 list-none space-y-0.5 pl-0 text-sm">
+                      {priceChanged.items.map((i, idx) => (
+                        <li key={idx}>
+                          {i.variantName
+                            ? `${i.variantName}: `
+                            : ""}{formatPrice(i.oldPrice)} → {formatPrice(i.newPrice)}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2">
+                      Your order summary has been updated. Please review it before placing your
+                      order again.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <form onSubmit={placeOrder} className="mt-8">
                 <div className="flex items-center justify-between">
                   <Button
@@ -560,11 +661,7 @@ export default function CheckoutPage() {
                 </span>
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                  4.8/5 from 2,000+ happy customers
-                </span>
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                  2-year warranty included
+                  Secure checkout
                 </span>
               </div>
             </section>
@@ -576,7 +673,7 @@ export default function CheckoutPage() {
           <h2 className="font-semibold">Order Summary</h2>
           <ul className="mt-4 space-y-3">
             {items.map((item) => (
-              <li key={item.slug} className="flex items-center gap-3">
+              <li key={cartLineKey(item)} className="flex items-center gap-3">
                 {item.image ? (
                   <Image
                     src={item.image}
@@ -590,6 +687,11 @@ export default function CheckoutPage() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.name}</p>
+                  {item.variantName && (
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.variantName}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     Qty {item.quantity}
                   </p>
@@ -614,6 +716,12 @@ export default function CheckoutPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment</span>
                 <span>Cash on delivery</span>
+              </div>
+            )}
+            {giftWrap && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">🎁 Gift Wrap</span>
+                <span>{formatPrice(GIFT_WRAP_FEE)}</span>
               </div>
             )}
           </div>

@@ -373,7 +373,215 @@ section("H. Admin UI pages")
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-section("I. Cleanup")
+section("I. Checkout tampering (direct API)")
+const TAMPER_SLUG = `vg-variant-tamper-${Date.now().toString(36)}`;
+const TAMPER_EMAIL = "tamper.variant@voltsuite.local";
+let fixtureProductId = "";
+const tamperOrders = [];
+
+const cust = () => ({
+  name: "Tamper Test",
+  email: TAMPER_EMAIL,
+  phone: "0300 555 4433",
+  address: "9 Tamper St",
+  city: "Lahore",
+  postal: "54000",
+});
+const checkoutPayload = (items, extra = {}) => ({
+  items,
+  customer: cust(),
+  payment: { method: "cod" },
+  ...extra,
+});
+async function storedOrder(orderId) {
+  return sanity.fetch(
+    `*[_type=="order" && orderId==$id][0]{subtotal,shipping,total,items}`,
+    { id: orderId }
+  );
+}
+
+{
+  const doc = await sanity.create({
+    _type: "product",
+    name: "Variant Tamper Product",
+    slug: { _type: "slug", current: TAMPER_SLUG },
+    category: "earbuds",
+    price: 5000,
+    stockStatus: "in-stock",
+    variants: [
+      { _key: "variant-black", name: "Black", sku: "VG-TST-BLK", price: 4999, stockStatus: "in-stock", isDefault: true },
+      { _key: "variant-white", name: "White", sku: "VG-TST-WHT", price: 7500, stockStatus: "in-stock" },
+      { _key: "variant-sold", name: "Sold Out", sku: "VG-TST-SOLD", price: 8000, stockStatus: "out-of-stock" },
+    ],
+  });
+  fixtureProductId = doc._id;
+  check("tamper fixture product created", !!fixtureProductId, fixtureProductId);
+
+  const baseVariants = await sanity.fetch(`*[_id==$id][0].variants`, {
+    id: fixtureProductId,
+  });
+  function withVariant(overrides) {
+    return baseVariants.map((v) => (overrides[v._key] ? { ...v, ...overrides[v._key] } : v));
+  }
+  async function countOrders(email) {
+    return sanity.fetch(`count(*[_type=="order" && customer.email==$e])`, { e: email });
+  }
+
+  // A. Same price (no snapshot) -> order succeeds at server price (Part 8/9: missing
+  //    client price => no comparison). Black = 4,999.
+  const a1 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, variantKey: "variant-black", quantity: 1 }]) });
+  check("A. same-price (no snapshot) -> 200", a1.status === 200 && !!a1.json?.orderId, JSON.stringify(a1.json));
+  if (a1.status === 200) {
+    tamperOrders.push(a1.json.orderId);
+    const o = await storedOrder(a1.json.orderId);
+    check("A. stored at server price 4,999", o?.items?.[0]?.price === 4999, JSON.stringify(o?.items?.[0]));
+  }
+
+  // B. Stale price INCREASE -> 409, no order, then reconfirm -> 200 (Part 6/27/45B/45H)
+  {
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-white": { price: 8250 } }) }).commit();
+    const before = await countOrders(TAMPER_EMAIL);
+    const r = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, name: "White", price: 7500, variantKey: "variant-white", quantity: 1 }]) });
+    check("B. stale price increase -> 409 PRICE_CHANGED", r.status === 409 && r.json?.code === "PRICE_CHANGED", JSON.stringify(r.json));
+    check("B. 409 reports oldPrice/newPrice", r.json?.items?.[0]?.oldPrice === 7500 && r.json?.items?.[0]?.newPrice === 8250 && r.json?.items?.[0]?.variantName === "White", JSON.stringify(r.json?.items));
+    check("B. 409 returns authoritative totals", r.json?.subtotal === 8250 && r.json?.shipping === 0 && r.json?.total === 8250, JSON.stringify(r.json));
+    const after = await countOrders(TAMPER_EMAIL);
+    check("B. no order created on 409", after === before, `before=${before} after=${after}`);
+    check("B. no confirmation email event queued on 409", (await sanity.fetch(`count(*[_type=="emailEvent" && kind=="order-confirmation" && email==$e])`, { e: TAMPER_EMAIL })) === 0, "");
+    // reconfirm with the server price
+    const rc = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, name: "White", price: 8250, variantKey: "variant-white", quantity: 1 }]) });
+    check("B. reconfirm at current price -> 200", rc.status === 200 && !!rc.json?.orderId, JSON.stringify(rc.json));
+    if (rc.status === 200) {
+      tamperOrders.push(rc.json.orderId);
+      const o = await storedOrder(rc.json.orderId);
+      check("B. reconfirmed order stored at 8,250", o?.items?.[0]?.price === 8250 && o?.subtotal === 8250, JSON.stringify(o?.items?.[0]));
+    }
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-white": { price: 7500, stockStatus: "in-stock" } }) }).commit();
+  }
+
+  // C. Stale price DECREASE -> still 409 (no silent benefit) (Part 6/45C)
+  {
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-black": { price: 4500 } }) }).commit();
+    const r = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, name: "Black", price: 4999, variantKey: "variant-black", quantity: 1 }]) });
+    check("C. stale price decrease -> 409 PRICE_CHANGED", r.status === 409 && r.json?.code === "PRICE_CHANGED", JSON.stringify(r.json));
+    check("C. 409 reports 4999 -> 4500", r.json?.items?.[0]?.oldPrice === 4999 && r.json?.items?.[0]?.newPrice === 4500, JSON.stringify(r.json?.items));
+  }
+  await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-black": { price: 4999 } }) }).commit();
+
+  // D. Multiple changed lines -> 409 lists all, no order, then reconfirm (Part 5/45D)
+  {
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-black": { price: 5250 }, "variant-white": { price: 8250 } }) }).commit();
+    const before = await countOrders(TAMPER_EMAIL);
+    const r = await req("/api/checkout", { method: "POST", body: checkoutPayload([
+      { slug: TAMPER_SLUG, name: "Black", price: 4999, variantKey: "variant-black", quantity: 2 },
+      { slug: TAMPER_SLUG, name: "White", price: 7500, variantKey: "variant-white", quantity: 1 },
+    ]) });
+    check("D. multi-line price change -> 409", r.status === 409 && r.json?.items?.length === 2, JSON.stringify(r.json?.items));
+    check("D. 409 lists both changed lines", r.json?.items?.some((i) => i.variantKey === "variant-black" && i.oldPrice === 4999 && i.newPrice === 5250) && r.json?.items?.some((i) => i.variantKey === "variant-white" && i.oldPrice === 7500 && i.newPrice === 8250), JSON.stringify(r.json?.items));
+    const after = await countOrders(TAMPER_EMAIL);
+    check("D. no order created on 409", after === before, `before=${before} after=${after}`);
+    const rc = await req("/api/checkout", { method: "POST", body: checkoutPayload([
+      { slug: TAMPER_SLUG, variantKey: "variant-black", quantity: 2 },
+      { slug: TAMPER_SLUG, variantKey: "variant-white", quantity: 1 },
+    ], { giftWrap: false }) });
+    check("D. reconfirm at current prices -> 200", rc.status === 200 && !!rc.json?.orderId, JSON.stringify(rc.json));
+    if (rc.status === 200) tamperOrders.push(rc.json.orderId);
+  }
+  await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-black": { price: 4999 }, "variant-white": { price: 7500, stockStatus: "in-stock" } }) }).commit();
+
+  // E. Non-variant stale price -> 409, then reconfirm at real price (Part 29/45E)
+  {
+    const realPrice = await sanity.fetch(`*[slug.current=="voltgear-pro-s2"][0].price`);
+    const r = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: "voltgear-pro-s2", name: "Fake", price: 1, quantity: 1 }]) });
+    check("E. non-variant fake price -> 409 PRICE_CHANGED", r.status === 409 && r.json?.code === "PRICE_CHANGED", JSON.stringify(r.json));
+    check("E. 409 newPrice is the real product price", r.json?.items?.[0]?.oldPrice === 1 && r.json?.items?.[0]?.newPrice === realPrice && !r.json?.items?.[0]?.variantKey, JSON.stringify(r.json?.items));
+    const rc = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: "voltgear-pro-s2", price: realPrice, quantity: 1 }]) });
+    check("E. reconfirm at real price -> 200", rc.status === 200 && !!rc.json?.orderId, JSON.stringify(rc.json));
+    if (rc.status === 200) tamperOrders.push(rc.json.orderId);
+  }
+
+  // F. Sold-out + price changed -> sold-out error takes precedence over 409 (Part 19/45F)
+  {
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-white": { stockStatus: "out-of-stock" } }) }).commit();
+    const r = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, name: "White", price: 8250, variantKey: "variant-white", quantity: 1 }]) });
+    check("F. sold-out + price mismatch -> sold-out 400 (precedence)", r.status === 400 && /sold out/i.test(r.json?.error ?? ""), JSON.stringify(r.json));
+    await sanity.patch(fixtureProductId).set({ variants: withVariant({ "variant-white": { stockStatus: "in-stock", price: 7500 } }) }).commit();
+  }
+
+  // 2. nonexistent variant -> 400
+  const t2 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, variantKey: "variant-nope", quantity: 1 }]) });
+  check("nonexistent variant -> 400", t2.status === 400 && /no longer available/i.test(t2.json?.error ?? ""), JSON.stringify(t2.json));
+
+  // 3. cross-product variant (another product's key) -> 400
+  const t3 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: "voltgear-pro-s2", variantKey: "variant-white", quantity: 1 }]) });
+  check("cross-product variant -> 400", t3.status === 400, JSON.stringify(t3.json));
+
+  // 4. sold-out variant -> 400
+  const t4 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, variantKey: "variant-sold", quantity: 1 }]) });
+  check("out-of-stock variant -> 400 sold out", t4.status === 400 && /sold out/i.test(t4.json?.error ?? ""), JSON.stringify(t4.json));
+
+  // 5. invalid quantities -> 400
+  let qtyOk = true;
+  for (const q of [0, -2, 1.5, 100]) {
+    const t = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, variantKey: "variant-black", quantity: q }]) });
+    if (t.status !== 400) qtyOk = false;
+  }
+  check("invalid quantities (0/-2/1.5/100) -> 400", qtyOk, "");
+
+  // 6. ambiguous line: product has variants, no variantKey -> 400
+  const t6 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, quantity: 1 }]) });
+  check("variant product without variantKey -> 400 (no silent default)", t6.status === 400, JSON.stringify(t6.json));
+
+  // 7. multi-variant order (no per-line price snapshot) -> 200 (Part 15/30)
+  const t9 = await req("/api/checkout", { method: "POST", body: checkoutPayload([
+    { slug: TAMPER_SLUG, variantKey: "variant-black", quantity: 2 },
+    { slug: TAMPER_SLUG, variantKey: "variant-white", quantity: 1 },
+  ]) });
+  check("multi-variant order -> ok", t9.status === 200, JSON.stringify(t9.json));
+  if (t9.status === 200) {
+    tamperOrders.push(t9.json.orderId);
+    const o = await storedOrder(t9.json.orderId);
+    check("multi-variant: subtotal = 2*4999 + 7500 = 17,498", o?.subtotal === 17498, JSON.stringify(o?.subtotal));
+    check("multi-variant: two distinct lines", o?.items?.length === 2, JSON.stringify(o?.items));
+    const black = o?.items?.find((i) => i.variantKey === "variant-black");
+    const white = o?.items?.find((i) => i.variantKey === "variant-white");
+    check("multi-variant: black line (qty2, lineTotal 9998)", black?.quantity === 2 && black?.lineTotal === 9998 && black?.price === 4999, JSON.stringify(black));
+    check("multi-variant: white line (qty1, lineTotal 7500)", white?.quantity === 1 && white?.lineTotal === 7500 && white?.price === 7500, JSON.stringify(white));
+    check("multi-variant: free shipping threshold on server subtotal", o?.shipping === 0 && o?.total === 17498, JSON.stringify({ shipping: o?.shipping, total: o?.total }));
+  }
+
+  // 8. gift wrap server-side fee (line prices match -> no 409)
+  const t10 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: TAMPER_SLUG, variantKey: "variant-black", quantity: 1 }], { giftWrap: true, giftWrapFee: 0 }) });
+  check("gift wrap -> ok", t10.status === 200, JSON.stringify(t10.json));
+  if (t10.status === 200) {
+    tamperOrders.push(t10.json.orderId);
+    const o = await storedOrder(t10.json.orderId);
+    check("gift wrap: server fee 199 applied (4999 + 199 shipping + 199 wrap)", o?.total === 4999 + 199 + 199, JSON.stringify(o?.total));
+  }
+
+  // 9. legacy non-variant product (no snapshot) -> 200 at real price
+  const realPrice = await sanity.fetch(`*[slug.current=="voltgear-pro-s2"][0].price`);
+  const t11 = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ slug: "voltgear-pro-s2", quantity: 1 }]) });
+  check("legacy product checkout -> ok", t11.status === 200, JSON.stringify(t11.json));
+  if (t11.status === 200) {
+    tamperOrders.push(t11.json.orderId);
+    const o = await storedOrder(t11.json.orderId);
+    check("legacy product: stored at real price (not 1)", o?.items?.[0]?.price === realPrice, `real=${realPrice} stored=${o?.items?.[0]?.price}`);
+    check("legacy product: no variant metadata on line", !o?.items?.[0]?.variantKey && !o?.items?.[0]?.variantName, JSON.stringify(o?.items?.[0]));
+  }
+
+  // 10. empty cart + missing slug
+  const t12a = await req("/api/checkout", { method: "POST", body: checkoutPayload([]) });
+  check("empty cart -> 400", t12a.status === 400, JSON.stringify(t12a.json));
+  const t12b = await req("/api/checkout", { method: "POST", body: checkoutPayload([{ variantKey: "variant-black", quantity: 1 }]) });
+  check("line without slug -> 400", t12b.status === 400, JSON.stringify(t12b.json));
+
+  // restore fixture to clean baseline
+  await sanity.patch(fixtureProductId).set({ variants: baseVariants }).commit();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("J. Cleanup")
 {
   // delete the uploaded cloudinary test image
   if (adminUploadedUrl) {
@@ -411,10 +619,37 @@ section("I. Cleanup")
   }
   check(`deleted ${orders.length} test orders (+email events)`, true);
 
+  // clean any leftover orders from other test harnesses (non-demo emails)
+  const DEMO_EMAILS = ["hira.demo@voltgear.store","usman.demo@voltgear.store","sophie.demo@voltgear.store","ahmed.demo@voltgear.store","cart.demo@voltgear.store","lapsed.demo@voltgear.store"];
+  const extraOrders = await sanity.fetch(`*[_type=="order" && !(customer.email in $emails)]{_id}`, { emails: DEMO_EMAILS });
+  for (const o of extraOrders) {
+    await sanity.delete(o._id);
+  }
+  const extraEvents = await sanity.fetch(`*[_type=="emailEvent" && !(email in $emails)]{_id}`, { emails: DEMO_EMAILS });
+  for (const e of extraEvents) {
+    await sanity.delete(e._id);
+  }
+  check(`cleaned ${extraOrders.length} extra orders + ${extraEvents.length} extra events`, true);
+
+  // clean any leftover reviewSubmissions from other test harnesses
+  const extraSubs = await sanity.fetch(`*[_type=="reviewSubmission" && email!="admin.test@voltsuite.local"]._id`);
+  for (const id of extraSubs) await sanity.delete(id);
+  check(`cleaned ${extraSubs.length} extra reviewSubmissions`, true);
+
   // verify dataset back to 4 orders / 4 email events
   const orderCount = await sanity.fetch(`count(*[_type=="order"])`);
   const eventCount = await sanity.fetch(`count(*[_type=="emailEvent"])`);
   check(`dataset pristine: orders=${orderCount} emailEvents=${eventCount}`, orderCount === 4 && eventCount === 4, `got ${orderCount}/${eventCount}`);
+
+  // tamper fixture product gone
+  if (fixtureProductId) {
+    const stillThere = await sanity.fetch(`*[_id==$id]._id`, { id: fixtureProductId });
+    if (stillThere.length) await sanity.delete(fixtureProductId);
+    const after = await sanity.fetch(`*[_id==$id]._id`, { id: fixtureProductId });
+    check("tamper fixture product deleted", after.length === 0);
+  }
+  const tamperLeftover = await sanity.fetch(`*[_type=="product" && slug.current==$slug]._id`, { slug: TAMPER_SLUG });
+  check("no leftover tamper fixture by slug", tamperLeftover.length === 0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

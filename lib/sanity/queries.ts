@@ -11,11 +11,41 @@ export const productFields = groq`
   cloudinaryImages,
   shortDescription,
   features,
+  compatibility,
+  inTheBox,
   specifications,
+  productVideo{
+    url,
+    cloudinaryPublicId,
+    poster{
+      ...,
+      asset->
+    }
+  },
+  variants[]{
+    _key,
+    name,
+    sku,
+    price,
+    compareAtPrice,
+    stockStatus,
+    image{
+      ...,
+      asset->
+    },
+    isDefault
+  },
+  productFaq[]{
+    _key,
+    question,
+    answer
+  },
+  sku,
+  brand,
   stockStatus,
   rating,
   reviewCount,
-  reviews,
+  "reviews": reviews[isDemo != true],
   featured,
   badge,
   description[]{
@@ -47,6 +77,11 @@ export const siteSettingsQuery = groq`
     shippingFee,
     returnPolicy,
     warrantyInfo,
+    codEnabled,
+    whatsappNumber,
+    warrantyMonths,
+    returnWindowDays,
+    announcement,
     seo
   }
 `;
@@ -164,7 +199,7 @@ export const categoriesQuery = groq`
 `;
 
 export const testimonialsQuery = groq`
-  *[_type == "testimonial"] | order(sortOrder asc, _createdAt desc){
+  *[_type == "testimonial" && isDemo != true] | order(sortOrder asc, _createdAt desc){
     customerName,
     reviewText,
     rating,

@@ -83,7 +83,13 @@ function shell({ title, body }: { title: string; body: string }): string {
 export interface OrderEmailPayload {
   orderId: string;
   name: string;
-  items: { name: string; price: number; quantity: number; slug?: string }[];
+  items: {
+    name: string;
+    price: number;
+    quantity: number;
+    slug?: string;
+    variantName?: string;
+  }[];
   total: number;
   email?: string;
 }
@@ -93,7 +99,9 @@ export const emailTemplates = {
     const rows = p.items
       .map(
         (i) =>
-          `<tr><td style="padding:6px 0;border-bottom:1px solid #1f2937">${i.name} × ${i.quantity}</td><td style="text-align:right;color:#e5e9f0;white-space:nowrap">${pkr(
+          `<tr><td style="padding:6px 0;border-bottom:1px solid #1f2937">${i.name}${
+            i.variantName ? ` — ${i.variantName}` : ""
+          } × ${i.quantity}</td><td style="text-align:right;color:#e5e9f0;white-space:nowrap">${pkr(
             i.price * i.quantity
           )}</td></tr>`
       )
@@ -108,7 +116,7 @@ export const emailTemplates = {
         body: `<p>Hi ${p.name}, thanks for your order!</p>
 <table style="width:100%;border-collapse:collapse">${rows}
 <tr><td style="padding-top:10px;font-weight:600">Total (paid on delivery)</td><td style="text-align:right;font-weight:600;white-space:nowrap">${pkr(p.total)}</td></tr></table>
-<p>Order number: <strong>${p.orderId}</strong>. We'll text and email tracking updates as soon as it ships.</p>
+<p>Order number: <strong>${p.orderId}</strong>. We'll email tracking updates as soon as it ships.</p>
 ${p.email ? trackButton(p.orderId, p.email) : ""}`,
       }),
     };

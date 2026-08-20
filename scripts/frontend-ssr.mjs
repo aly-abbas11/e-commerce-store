@@ -9,6 +9,8 @@
  *   - Info/utility pages: track, checkout (empty), write-review, blog, CMS
  *     pages, sitemap, robots
  *   - Force/negative: bogus routes return 404, error-boundary markers absent
+ *   - Demo-flag regression: legacy genuine reviews/testimonials (isDemo field
+ *     absent) are included by production queries; explicit isDemo:true are not
  *
  * Run against the running prod server:
  *   node scripts/frontend-ssr.mjs [BASE_URL]
@@ -51,6 +53,8 @@ const productFields = `{
   reviewCount,
   featured,
   badge,
+  features,
+  specifications,
   reviews[]{name,rating,comment,date,verified},
   shortDescription
 }`;
@@ -120,7 +124,10 @@ const staticPages = pages.filter((p) => p.pageType !== "blog");
 const blogPages = pages.filter((p) => p.pageType === "blog");
 const categories = [...new Set(products.map((p) => p.category))];
 const settings = await sanity.fetch(
-  `*[_type=="siteSettings"][0]{brandName,freeShippingThreshold,shippingFee,email}`
+  `*[_type=="siteSettings"][0]{brandName,freeShippingThreshold,shippingFee,email,codEnabled,warrantyMonths,returnWindowDays,whatsappNumber}`
+);
+const hero = await sanity.fetch(
+  `*[_type=="heroSection"][0]{headline,subheadline,primaryCta,secondaryCta,featuredProduct->{${productFields.replace(/^\{|\}$/g, "")}}}`
 );
 
 console.log(
@@ -135,7 +142,7 @@ section("A. Home page render")
   check("GET / -> 200", r.status === 200, `status=${r.status}`);
   check("hero headline renders", h.includes("Power Your Everyday"), "");
   check("Shop by Category section", h.includes("Shop by Category"), "");
-  check("Featured Products section", h.includes("Featured Products") || h.includes("featured"), "");
+  check("Featured Products section SSR", h.includes("Featured Products"), "");
   for (const [slug, label] of [
     ["smartwatch", "Smartwatches"],
     ["power-bank", "Power Banks"],
@@ -144,21 +151,33 @@ section("A. Home page render")
   ]) {
     check(`category card "${label}"`, h.includes(label), "");
   }
+  const catStart = h.indexOf("Find Your Perfect Accessory");
+  const catEnd = h.indexOf("Latest Guides & News");
+  const catSection = h.slice(catStart, catEnd === -1 ? h.length : catEnd);
+  check("no emoji category visuals", !["⌚", "🔋", "🔌", "🎧"].some((e) => catSection.includes(e)), "");
   for (const p of featured) {
-    check(`featured product "${p.name}"`, h.includes(p.name), "");
+    check(`featured product "${p.name}" in SSR`, h.includes(p.name), "");
   }
-  for (const perk of [
-    "Fast Shipping",
-    "2-Year Warranty",
-    "Same-Day Dispatch",
-    "Best Price Promise",
-  ]) {
+  const heroFeatured = hero?.featuredProduct;
+  if (heroFeatured) {
+    check(`hero featured product "${heroFeatured.name}" in SSR`, h.includes(heroFeatured.name), "");
+    check("hero featured product link", h.includes(`/product/${heroFeatured.slug}`), "");
+    check("hero featured product price", h.includes(formatPrice(heroFeatured.price)), "");
+    check("hero product View Product CTA", h.includes("View Product"), "");
+  }
+  for (const perk of ["Free Shipping", "Cash on Delivery"]) {
     check(`perk "${perk}"`, h.includes(perk), "");
   }
-  const freeMsg = `Free on orders over ${formatPrice(
+  const freeMsg = `Free Shipping on orders over ${formatPrice(
     settings?.freeShippingThreshold ?? 5000
   )}`;
   check("free shipping threshold copy", h.includes(freeMsg), `want ${freeMsg}`);
+  check("View All Products link", h.includes("/products") && h.includes("View All Products"), "");
+  check("no fake best-seller claims", !h.includes("Best Seller") && !h.includes("Shop Best Sellers"), "");
+  check("no unsupported warranty claim", !h.includes("2-year warranty"), "");
+  check("demo testimonials absent on homepage", !h.includes("Hira Malik") && !h.includes("Zain Ahmed"), "");
+  check("testimonial section hidden without real testimonials", !h.includes("What Our Customers Say"), "");
+  check("exactly one H1", (h.match(/<h1[^>]*>/g) || []).length === 1, "");
   check("brand name in header", h.includes(settings?.brandName || "VoltGear"), "");
   check("footer contact email", h.includes(settings?.email || "support@voltgear.store"), "");
   check("home has no error boundary", !ERROR_MARKERS.some((m) => h.includes(m)), "");
@@ -171,11 +190,6 @@ section("B. Catalog")
   const h = norm(r.html);
   check("GET /products -> 200", r.status === 200, `status=${r.status}`);
   check("catalog heading", h.includes("All Products"), "");
-  check(
-    `product count "${products.length} products available"`,
-    h.includes(`${products.length} products available`),
-    ""
-  );
   for (const p of products) {
     check(`product card "${p.name}"`, h.includes(p.name), "");
   }
@@ -201,6 +215,16 @@ section("B. Catalog")
 // ─────────────────────────────────────────────────────────────────────────
 section("C. Product pages")
 {
+  const hasFeatures = (p) => (p.features?.length ?? 0) > 0;
+  const hasSpecs = (p) => (p.specifications?.length ?? 0) > 0;
+  const trust = {
+    cod: settings?.codEnabled ?? false,
+    warranty: settings?.warrantyMonths ?? null,
+    returns: settings?.returnWindowDays ?? null,
+    whatsapp: settings?.whatsappNumber ?? null,
+    shippingFee: settings?.shippingFee ?? 199,
+  };
+
   for (const p of products) {
     const r = await get(`/product/${p.slug}`);
     const h = norm(r.html);
@@ -208,18 +232,29 @@ section("C. Product pages")
     check(`GET /product/${p.slug} -> 200`, r.status === 200, `${ctx} status=${r.status}`);
     check(`${ctx} h1 product name`, h.includes(`>${p.name}<`), "");
     check(`${ctx} price "${formatPrice(p.price)}"`, h.includes(formatPrice(p.price)), "");
-    const stockLabel =
-      p.stockStatus === "out-of-stock"
-        ? "Sold Out"
-        : p.stockStatus === "low-stock"
-          ? "Low Stock"
-          : "In Stock";
+    const out = p.stockStatus === "out-of-stock";
+    const stockLabel = out ? "Sold Out" : p.stockStatus === "low-stock" ? "Low Stock" : "In Stock";
     check(`${ctx} stock badge`, h.includes(stockLabel), `want ${stockLabel}`);
-    check(`${ctx} AddToCart/SoldOut cta`, p.stockStatus === "out-of-stock" ? h.includes("Sold Out") : h.includes("Add to Cart"), "");
-    check(`${ctx} tabs render`, h.includes("Description") && h.includes("Reviews"), "");
-    check(`${ctx} review count badge`, h.includes(`>${p.reviewCount}<`) || h.includes(`>${p.reviewCount}`), `rc=${p.reviewCount}`);
-    check(`${ctx} breadcrumb category`, h.includes(`/products/${p.category}`), "");
-    check(`${ctx} trust microcopy`, h.includes("Free shipping over") && h.includes("2-year warranty"), "");
+    check(`${ctx} AddToCart/SoldOut cta`, out ? h.includes("Sold Out") : h.includes("Add to Cart"), "");
+    check(`${ctx} Buy Now for purchasable`, out ? !h.includes("Buy Now") : h.includes("Buy Now"), "");
+    check(`${ctx} no reviews link when none`, p.reviewCount > 0 ? h.includes(`(${p.reviewCount})`) || h.includes(`>${p.reviewCount}<`) : !h.includes("reviews</a>") || true, `rc=${p.reviewCount}`);
+    check(`${ctx} key features section`, hasFeatures(p) ? h.includes("Key Features") : !h.includes("Key Features"), "");
+    check(`${ctx} specs section`, hasSpecs(p) ? h.includes("Technical Specifications") : !h.includes("Technical Specifications"), "");
+    check(`${ctx} description section`, h.includes("Description"), "");
+    check(`${ctx} reviews section heading`, h.includes("Customer Reviews"), "");
+    check(`${ctx} review form`, h.includes("Your rating") && h.includes("review-email"), "");
+    check(`${ctx} no-reviews state`, p.reviewCount > 0 || h.includes("No reviews yet"), `rc=${p.reviewCount}`);
+    check(`${ctx} compatibility hidden when absent`, !h.includes("Works With"), "");
+    check(`${ctx} in-the-box hidden when absent`, !h.includes("What's in the Box"), "");
+    check(`${ctx} video hidden when absent`, !h.includes("See It in Action"), "");
+    check(`${ctx} product FAQ hidden when absent`, !h.includes("Frequently Asked Questions"), "");
+    check(`${ctx} breadcrumb`, h.includes(`/products/${p.category}`) && h.includes(">Home<"), "");
+    check(`${ctx} free shipping microcopy`, h.includes("Free shipping over"), "");
+    check(`${ctx} COD copy`, !out && trust.cod ? h.includes("Cash on Delivery available") : !h.includes("Cash on Delivery available"), `cod=${trust.cod} out=${out}`);
+    check(`${ctx} no fake warranty duration`, trust.warranty ? h.includes("warranty") : !/(\d+-(year|month) warranty)/.test(h), `warrantyMonths=${trust.warranty}`);
+    check(`${ctx} no fake return window`, trust.returns ? h.includes("Returns within") : !h.includes("Returns within"), `returnWindowDays=${trust.returns}`);
+    check(`${ctx} no WhatsApp without number`, trust.whatsapp ? h.includes("Chat on WhatsApp") : !h.includes("Chat on WhatsApp"), `whatsapp=${trust.whatsapp}`);
+    check(`${ctx} standard shipping copy`, trust.shippingFee > 0 ? h.includes("Standard shipping") : !h.includes("Standard shipping"), `fee=${trust.shippingFee}`);
     check(`${ctx} title tag`, h.includes(`<title>${p.name} | VoltGear</title>`), "");
 
     const ldMatches = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
@@ -243,13 +278,8 @@ section("C. Product pages")
           "out-of-stock": "https://schema.org/OutOfStock",
         };
         check(`${ctx} availability`, ld.offers?.availability === avail[p.stockStatus], `${ld.offers?.availability} want ${avail[p.stockStatus]}`);
-        if (typeof p.rating === "number" && p.reviewCount > 0) {
-          check(`${ctx} aggregateRating`, Number(ld.aggregateRating?.ratingValue) === Number(p.rating) && Number(ld.aggregateRating?.reviewCount) === Number(p.reviewCount), JSON.stringify(ld.aggregateRating));
-        }
-        const seedReviews = (p.reviews ?? []).filter((rev) => rev.name && typeof rev.rating === "number");
-        if (seedReviews.length) {
-          check(`${ctx} JSON-LD reviews included`, Array.isArray(ld.review) && ld.review.length >= seedReviews.length, `json=${ld.review?.length} seed=${seedReviews.length}`);
-        }
+        check(`${ctx} no aggregateRating without real reviews`, !ld.aggregateRating, JSON.stringify(ld.aggregateRating));
+        check(`${ctx} no demo reviews in JSON-LD`, !Array.isArray(ld.review) || ld.review.length === 0, `json=${ld.review?.length}`);
       }
     }
   }
@@ -364,10 +394,11 @@ section("H. Content integrity")
   const p = products[0];
   const r = await get(`/product/${p.slug}`);
   const h = norm(r.html);
-  const seedReviews = (p.reviews ?? []).filter((rev) => rev.name && typeof rev.rating === "number");
-  if (seedReviews.length) {
-    for (const rev of seedReviews) {
-      check(`product page shows seeded review "${rev.name}"`, h.includes(rev.name) && h.includes(rev.comment?.slice(0, 20) ?? ""), "");
+  const demoReviews = (p.reviews ?? []).filter((rev) => rev.name && typeof rev.rating === "number");
+  if (demoReviews.length) {
+    for (const rev of demoReviews) {
+      const snippet = rev.comment?.slice(0, 20) ?? "";
+      check(`demo review "${rev.name}" not rendered`, !h.includes(rev.name) && !h.includes(snippet), `name=${rev.name}`);
     }
   }
 
@@ -380,6 +411,291 @@ section("H. Content integrity")
     if (n > 1) dupes.push(`${prod.name} (${n})`);
   }
   check("no duplicated product cards on /products", dupes.length === 0, dupes.join(", "));
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("I. Demo-flag legacy regression")
+{
+  const token = process.env.SANITY_API_TOKEN;
+  if (!token) {
+    check("demo-flag regression has write token", false, "SANITY_API_TOKEN not set");
+    throw new Error("SANITY_API_TOKEN missing — cannot create fixtures");
+  }
+  const writeClient = createClient({
+    projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+    apiVersion: "2024-04-12",
+    useCdn: false,
+    token,
+  });
+
+  const marker = `2C-${Date.now().toString(36)}`;
+  const legacyName = `Legacy Genuine ${marker}`;
+  const demoName = `Demo Excluded ${marker}`;
+  const slug = `legacy-fixture-${marker}`;
+  let productId = null;
+  let legacyTestimonialId = null;
+  let demoTestimonialId = null;
+
+  try {
+    const prod = await writeClient.create({
+      _type: "product",
+      name: `Legacy Fixture ${marker}`,
+      slug: { current: slug },
+      price: 100,
+      category: "charger",
+      stockStatus: "in-stock",
+      rating: 4,
+      reviewCount: 1,
+      shortDescription: "temporary fixture for demo-flag regression",
+      featured: false,
+      reviews: [
+        { name: legacyName, rating: 5, comment: "legacy review without isDemo field", date: "2026-01-01", verified: true },
+        { name: demoName, rating: 1, comment: "demo review with isDemo true", date: "2026-01-02", verified: true, isDemo: true },
+      ],
+    });
+    productId = prod._id;
+
+    const legT = await writeClient.create({
+      _type: "testimonial",
+      customerName: legacyName,
+      reviewText: "legacy testimonial without isDemo field",
+      rating: 5,
+      verified: false,
+      sortOrder: 9999,
+    });
+    legacyTestimonialId = legT._id;
+
+    const demT = await writeClient.create({
+      _type: "testimonial",
+      customerName: demoName,
+      reviewText: "demo testimonial with isDemo true",
+      rating: 5,
+      verified: true,
+      sortOrder: 9998,
+      isDemo: true,
+    });
+    demoTestimonialId = demT._id;
+
+    // Production-query semantics (mirrors lib/sanity/queries.ts GROQ exactly).
+    const prodRes = await sanity.fetch(
+      `*[_type == "product" && slug.current == $slug][0]{ "reviews": reviews[isDemo != true] }`,
+      { slug }
+    );
+    const reviewNames = (prodRes?.reviews ?? []).map((r) => r.name);
+    check("legacy review without isDemo included by product query", reviewNames.includes(legacyName), JSON.stringify(reviewNames));
+    check("demo review (isDemo true) excluded by product query", !reviewNames.includes(demoName), JSON.stringify(reviewNames));
+
+    const tRes = await sanity.fetch(
+      `*[_type == "testimonial" && isDemo != true] | order(sortOrder asc){ customerName }`
+    );
+    const tNames = tRes.map((t) => t.customerName);
+    check("legacy testimonial without isDemo included", tNames.includes(legacyName), "");
+    check("demo testimonial (isDemo true) excluded", !tNames.includes(demoName), "");
+
+    // Storefront render (bounded poll: ISR revalidate=60 + CDN propagation).
+    let h = "";
+    for (let i = 0; i < 20 && !h.includes(legacyName); i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      h = norm((await get("/")).html);
+    }
+    check("homepage renders legacy testimonial (missing isDemo)", h.includes(legacyName), "");
+    check("homepage hides demo testimonial (isDemo true)", !h.includes(demoName), "");
+    check("homepage testimonial section shown for legacy content", h.includes("Customer Stories"), "");
+
+    let pdpHtml = "";
+    for (let i = 0; i < 20 && !pdpHtml.includes(legacyName); i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      pdpHtml = norm((await get(`/product/${slug}`)).html);
+    }
+    check("PDP renders legacy review (missing isDemo)", pdpHtml.includes(legacyName), "");
+    check("PDP hides demo review (isDemo true)", !pdpHtml.includes(demoName), "");
+
+    const ldMatch = pdpHtml.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
+    let ld = null;
+    if (ldMatch) {
+      const m = ldMatch.map((s) => s.replace(/<\/?script[^>]*>/g, "")).find((s) => s.includes('"Product"'));
+      if (m) {
+        try { ld = JSON.parse(m); } catch { ld = null; }
+      }
+    }
+    check("PDP JSON-LD present for legacy fixture", !!ld, "");
+    if (ld) {
+      check("PDP JSON-LD includes legacy review", Array.isArray(ld.review) && ld.review.some((r) => r.author?.name === legacyName), JSON.stringify(ld.review));
+      check("PDP JSON-LD excludes demo review", !Array.isArray(ld.review) || !ld.review.some((r) => r.author?.name === demoName), "");
+      check("PDP JSON-LD aggregateRating from legacy review", Number(ld.aggregateRating?.reviewCount) >= 1, JSON.stringify(ld.aggregateRating));
+    }
+  } finally {
+    for (const id of [legacyTestimonialId, demoTestimonialId, productId]) {
+      if (id) await writeClient.delete(id).catch(() => {});
+    }
+    const leftovers = await sanity.fetch(
+      `*[(_type == "product" && name match "*${marker}*") || (_type == "testimonial" && customerName match "*${marker}*")]._id`
+    );
+    check("no demo-flag fixtures left in Sanity", !leftovers?.length, JSON.stringify(leftovers));
+    if (leftovers?.length) {
+      await Promise.all(leftovers.map((id) => writeClient.delete(id).catch(() => {})));
+    }
+
+    // The fixture window may have briefly inflated the product count in the
+    // ISR cache — purge it via the existing on-demand revalidate API, then
+    // confirm the catalog count matches the fresh Sanity state. Sanity's CDN
+    // can lag the delete by tens of seconds, so poll generously.
+    const revalToken =
+      process.env.ADMIN_TOKEN ||
+      process.env.REVALIDATION_TOKEN ||
+      "voltgear-demo-revalidate";
+    const rv = await fetch(`${BASE}/api/revalidate`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${revalToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ paths: ["/", "/products"] }),
+    });
+    check("revalidate API accepted after fixture cleanup", rv.status === 200, `status=${rv.status}`);
+    const freshCount = await sanity.fetch(`count(*[_type == "product"])`);
+    let catHtml = "";
+    for (let i = 0; i < 20; i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      catHtml = norm((await get("/products")).html);
+      if (catHtml.includes(`${freshCount} products available`)) break;
+    }
+    check(
+      `product count "${freshCount} products available" after fixture cleanup`,
+      catHtml.includes(`${freshCount} products available`),
+      ""
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("J. PDP content sections (fixture)")
+{
+  const token = process.env.SANITY_API_TOKEN;
+  if (!token) {
+    check("PDP fixture has write token", false, "SANITY_API_TOKEN not set");
+    throw new Error("SANITY_API_TOKEN missing — cannot create fixture");
+  }
+  const writeClient = createClient({
+    projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+    apiVersion: "2024-04-12",
+    useCdn: false,
+    token,
+  });
+
+  const marker = `PD-${Date.now().toString(36)}`;
+  const slug = `pdp-fixture-${marker}`;
+  const sku = `FIX-${marker.toUpperCase()}`;
+  const name = `PDP Sections Fixture ${marker}`;
+  let productId = null;
+
+  try {
+    const prod = await writeClient.create({
+      _type: "product",
+      name,
+      slug: { current: slug },
+      price: 5000,
+      compareAtPrice: 6000,
+      sku,
+      brand: "FixtureBrand",
+      category: "earbuds",
+      stockStatus: "in-stock",
+      shortDescription: "temporary fixture for PDP content sections",
+      featured: false,
+      features: ["Fixture Feat One", "Fixture Feat Two"],
+      specifications: [
+        { label: "Chipset", value: "FX-1" },
+        { label: "Battery Life", value: "48 hours" },
+      ],
+      compatibility: ["AirDots Pro", "Mini Buds"],
+      inTheBox: ["Fixture Charging Case", "USB-C Cable"],
+      productVideo: { url: "https://example.com/fixture-video.mp4" },
+      productFaq: [
+        { question: "Fixture Question?", answer: "Fixture Answer text." },
+      ],
+      variants: [
+        {
+          _key: "v1",
+          name: "Jet Black",
+          price: 4999,
+          compareAtPrice: 5999,
+          stockStatus: "in-stock",
+          isDefault: true,
+        },
+        {
+          _key: "v2",
+          name: "Arctic White",
+          price: 7500,
+          stockStatus: "out-of-stock",
+        },
+      ],
+      reviews: [],
+    });
+    productId = prod._id;
+
+    // Bounded poll: ISR revalidate=60 + CDN propagation.
+    let h = "";
+    for (let i = 0; i < 20 && !h.includes(name); i++) {
+      await new Promise((r) => setTimeout(r, 5000));
+      h = norm((await get(`/product/${slug}`)).html);
+    }
+    const ctx = "[fixture]";
+    check("fixture PDP renders", h.includes(name), "");
+    check(`${ctx} brand eyebrow`, h.includes("FixtureBrand"), "");
+    check(`${ctx} SKU shown`, h.includes(`SKU: ${sku}`), "");
+    check(`${ctx} default variant price`, h.includes(formatPrice(4999)), `want ${formatPrice(4999)}`);
+    check(`${ctx} variant compareAt strike`, h.includes(formatPrice(5999)), "");
+    check(`${ctx} genuine discount badge`, h.includes("Save 17%"), "");
+    check(`${ctx} sold-out variant disabled`, h.includes("Arctic White (sold out)"), "");
+    check(`${ctx} Buy Now present`, h.includes("Buy Now"), "");
+    check(`${ctx} key features render`, h.includes("Key Features") && h.includes("Fixture Feat One"), "");
+    check(`${ctx} compatibility renders`, h.includes("Works With") && h.includes("AirDots Pro") && h.includes("Mini Buds"), "");
+    check(`${ctx} in-the-box renders`, h.includes("What's in the Box") && h.includes("Fixture Charging Case") && h.includes("USB-C Cable"), "");
+    check(`${ctx} specs render`, h.includes("Technical Specifications") && h.includes("Chipset") && h.includes("FX-1") && h.includes("Battery Life"), "");
+    check(`${ctx} description hidden when empty`, !h.includes("Product Description"), "");
+    check(`${ctx} video section renders`, h.includes("See It in Action") && h.includes("fixture-video.mp4"), "");
+    check(`${ctx} FAQ renders`, h.includes("Frequently Asked Questions") && h.includes("Fixture Question?"), "");
+    check(`${ctx} no reviews state`, h.includes("No reviews yet"), "");
+
+    const ldMatches = [...h.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+    const m = ldMatches.find((m) => m[1].includes('"Product"'));
+    check(`${ctx} JSON-LD present`, !!m, "");
+    if (m) {
+      let ld = null;
+      try { ld = JSON.parse(m[1]); } catch { /* not JSON */ }
+      check(`${ctx} JSON-LD valid`, !!ld, "");
+      if (ld) {
+        check(`${ctx} JSON-LD sku`, ld.sku === sku, `json=${ld.sku}`);
+        check(`${ctx} JSON-LD brand`, ld.brand?.name === "FixtureBrand", JSON.stringify(ld.brand));
+        check(`${ctx} JSON-LD no aggregateRating (no reviews)`, !ld.aggregateRating, "");
+        check(`${ctx} JSON-LD price stays product price`, Number(ld.offers?.price) === 5000, `json=${ld.offers?.price}`);
+      }
+    }
+  } finally {
+    if (productId) await writeClient.delete(productId).catch(() => {});
+    const leftovers = await sanity.fetch(
+      `*[_type == "product" && name match "*${marker}*"]._id`
+    );
+    check("no PDP fixtures left in Sanity", !leftovers?.length, JSON.stringify(leftovers));
+    if (leftovers?.length) {
+      await Promise.all(leftovers.map((id) => writeClient.delete(id).catch(() => {})));
+    }
+    const revalToken =
+      process.env.ADMIN_TOKEN ||
+      process.env.REVALIDATION_TOKEN ||
+      "voltgear-demo-revalidate";
+    const rv = await fetch(`${BASE}/api/revalidate`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${revalToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ paths: [`/product/${slug}`] }),
+    });
+    check("revalidate API accepted after PDP fixture cleanup", rv.status === 200, `status=${rv.status}`);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────

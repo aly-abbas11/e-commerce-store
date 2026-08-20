@@ -10,23 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StarRating } from "@/components/product/star-rating";
 import { QuickViewButton } from "@/components/product/quick-view";
+import { WishlistButton } from "@/components/wishlist/wishlist-button";
+import { CompareButton } from "@/components/product/product-comparison";
 import { imageUrl } from "@/lib/sanity/image";
+import { getStockState, getDefaultVariant } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/cart/cart-provider";
 import { dispatchAddToCartEffect } from "@/components/effects/cart-effects";
 
-const STOCK_LABEL: Record<string, { label: string; variant: "success" | "warning" | "destructive" }> = {
-  "in-stock": { label: "In Stock", variant: "success" },
-  "low-stock": { label: "Low Stock", variant: "warning" },
-  "out-of-stock": { label: "Out of Stock", variant: "destructive" },
-};
-
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
   const { addItem } = useCart();
   const image = product.images?.[0];
-  const outOfStock = product.stockStatus === "out-of-stock";
-  const stock = STOCK_LABEL[product.stockStatus] ?? STOCK_LABEL["in-stock"];
+  const stock = getStockState(product.stockStatus);
+  const outOfStock = stock.soldOut;
+  const defaultVariant = getDefaultVariant(product);
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  const variantPurchasable =
+    defaultVariant && getStockState(defaultVariant.stockStatus).purchasable;
+  const canDirectAdd = !hasVariants || variantPurchasable;
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
@@ -65,6 +67,8 @@ export function ProductCard({ product, className }: { product: Product; classNam
             <Badge className="absolute right-3 top-3">{product.badge}</Badge>
           )}
           <QuickViewButton product={product} />
+          <WishlistButton product={product} />
+          <CompareButton slug={product.slug} />
         </div>
       </Link>
 
@@ -80,18 +84,19 @@ export function ProductCard({ product, className }: { product: Product; classNam
         </Link>
 
         <div className="flex items-center gap-2">
-          <Link
-            href={`/product/${product.slug}#reviews`}
-            title="View reviews"
-            className="flex items-center gap-2 rounded transition-colors hover:text-primary"
-          >
-            <StarRating rating={product.rating} size={14} />
-            {typeof product.reviewCount === "number" && product.reviewCount > 0 && (
-              <span className="text-xs text-muted-foreground underline-offset-2 group-hover:underline">
-                ({product.reviewCount})
-              </span>
+          {typeof product.reviewCount === "number" &&
+            product.reviewCount > 0 && (
+              <Link
+                href={`/product/${product.slug}#reviews`}
+                title="View reviews"
+                className="flex items-center gap-2 rounded transition-colors hover:text-primary"
+              >
+                <StarRating rating={product.rating} size={14} />
+                <span className="text-xs text-muted-foreground underline-offset-2 group-hover:underline">
+                  ({product.reviewCount})
+                </span>
+              </Link>
             )}
-          </Link>
         </div>
 
         <div className="flex items-center justify-between gap-2 pt-1">
@@ -103,25 +108,41 @@ export function ProductCard({ product, className }: { product: Product; classNam
               </span>
             )}
           </div>
-          <Badge variant={stock.variant}>{stock.label}</Badge>
+          <Badge variant={stock.badgeVariant}>{stock.label}</Badge>
         </div>
 
-        <Button
-          className="w-full"
-          disabled={outOfStock}
-          onClick={() => {
-            addItem({
-              slug: product.slug,
-              name: product.name,
-              price: product.price,
-              image: image ? imageUrl(image, { w: 128 }) : undefined,
-            });
-            dispatchAddToCartEffect(imgRef.current);
-          }}
-        >
-          <ShoppingBag className="mr-2 h-4 w-4" />
-          {outOfStock ? "Sold Out" : "Add to Cart"}
-        </Button>
+        {outOfStock || !canDirectAdd ? (
+          <Button asChild className="w-full" variant={outOfStock ? "default" : "outline"}>
+            <Link href={`/product/${product.slug}`}>
+              {outOfStock ? "Sold Out" : "View Options"}
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            onClick={() => {
+              addItem({
+                slug: product.slug,
+                name: product.name,
+                price: defaultVariant?.price ?? product.price,
+                image: image ? imageUrl(image, { w: 128 }) : undefined,
+                ...(defaultVariant
+                  ? {
+                      variantKey: defaultVariant._key,
+                      variantName: defaultVariant.name,
+                      ...(defaultVariant.sku
+                        ? { variantSku: defaultVariant.sku }
+                        : {}),
+                    }
+                  : {}),
+              });
+              dispatchAddToCartEffect(imgRef.current);
+            }}
+          >
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            Add to Cart
+          </Button>
+        )}
       </div>
     </Card>
   );
