@@ -190,8 +190,20 @@ section("B. Catalog")
   const h = norm(r.html);
   check("GET /products -> 200", r.status === 200, `status=${r.status}`);
   check("catalog heading", h.includes("All Products"), "");
-  for (const p of products) {
-    check(`product card "${p.name}"`, h.includes(p.name), "");
+  check("catalog count text", h.includes(`${products.length} products`), `want ${products.length} products`);
+
+  if (products.length > 12) {
+    // Pagination: page 1 must not dump the entire catalog.
+    const onPage1 = products.filter((p) => h.includes(p.name));
+    check("page 1 lists some products (<= page size 12)", onPage1.length > 0 && onPage1.length <= 12, `got ${onPage1.length}`);
+    check("page 1 exposes a page=2 link", h.includes("page=2"), "");
+    const r2 = await get("/products?page=2");
+    const h2 = norm(r2.html);
+    check("GET /products?page=2 -> 200", r2.status === 200, `status=${r2.status}`);
+    const onPage2 = products.filter((p) => h2.includes(p.name));
+    check("page 2 lists products", onPage2.length > 0, "");
+    check("every product appears on page 1 or page 2", new Set([...onPage1, ...onPage2].map((p) => p.name)).size === products.length, "");
+    check("no product appears on both pages", onPage1.filter((p) => h2.includes(p.name)).length === 0, "");
   }
 
   for (const cat of categories) {
@@ -210,6 +222,47 @@ section("B. Catalog")
   const bad = await get("/products/not-a-category");
   check("GET /products/not-a-category -> 404", bad.status === 404, `status=${bad.status}`);
   check("404 page renders not-found", bad.html.includes("404"), "");
+
+  // ── STEP 5: catalog controls & URL-driven filters ──
+  check("sort select present in HTML", h.includes("Sort by") || h.includes("sort="), "");
+  check("availability pills present", h.includes("In Stock") || h.includes("availability="), "");
+  check("price filter present", h.includes("Min price") || h.includes("minPrice"), "");
+
+  const sortLow = norm((await get("/products?sort=price-low-high")).html);
+  check("sort=price-low-high -> 200", sortLow.includes("All Products"), "");
+
+  const sortAz = norm((await get("/products?sort=name-a-z")).html);
+  check("sort=name-a-z -> 200", sortAz.includes("All Products"), "");
+
+  const availIn = norm((await get("/products?availability=in-stock")).html);
+  check("availability=in-stock -> 200", availIn.includes("All Products"), "");
+
+  const priceFilter = norm((await get("/products?minPrice=5000&maxPrice=10000")).html);
+  check("price filter min+max -> 200", priceFilter.includes("All Products"), "");
+
+  const catSort = norm((await get("/products/earbuds?sort=price-low-high")).html);
+  check("category sort works", catSort.includes("AirDots Pro"), "");
+
+  const catAvail = norm((await get("/products/earbuds?availability=in-stock")).html);
+  check("category availability filter works", catAvail.includes("Earbuds"), "");
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("B2. Search pagination & safety")
+{
+  const searchSort = norm((await get("/search?q=charger&sort=price-low-high")).html);
+  check("search with sort -> 200", searchSort.includes("charger"), "");
+  check("search sort preserves q", searchSort.includes("Results for"), "");
+
+  const unsafeRaw = (await get("/search?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E")).html;
+  check("unsafe query sanitized (no raw <script> in heading)", !unsafeRaw.includes("Results for <script>"), "");
+  check("unsafe query escaped to entities", unsafeRaw.includes("&lt;script&gt;alert(1)&lt;/script&gt;"), "");
+
+  const searchAvail = norm((await get("/search?q=earbuds&availability=in-stock")).html);
+  check("search availability filter -> 200", searchAvail.includes("earbuds"), "");
+
+  const searchPrice = norm((await get("/search?q=charger&minPrice=1000&maxPrice=5000")).html);
+  check("search price filter -> 200", searchPrice.includes("charger"), "");
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -303,11 +356,11 @@ section("D. Search")
   for (const p of expectedHits) {
     check(`search hit "${p.name}"`, hh.includes(p.name), "");
   }
-  check(`search count (${expectedHits.length})`, hh.includes(`(${expectedHits.length})`), `want (${expectedHits.length})`);
+  check(`search count (${expectedHits.length})`, hh.includes(`${expectedHits.length} product`), `want ${expectedHits.length} products`);
 
   const miss = await get("/search?q=zzqqxxw");
   check("search no-results -> 200", miss.status === 200, `status=${miss.status}`);
-  check("search no-results message", norm(miss.html).includes("No products match"), "");
+  check("search no-results message", norm(miss.html).includes("No products found"), "");
 
   const empty = await get("/search");
   check("GET /search (no q) -> 200", empty.status === 200, `status=${empty.status}`);
@@ -559,11 +612,11 @@ section("I. Demo-flag legacy regression")
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 5000));
       catHtml = norm((await get("/products")).html);
-      if (catHtml.includes(`${freshCount} products available`)) break;
+      if (catHtml.includes(`${freshCount} products`)) break;
     }
     check(
-      `product count "${freshCount} products available" after fixture cleanup`,
-      catHtml.includes(`${freshCount} products available`),
+      `product count "${freshCount} products" after fixture cleanup`,
+      catHtml.includes(`${freshCount} products`),
       ""
     );
   }

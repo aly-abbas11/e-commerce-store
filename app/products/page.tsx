@@ -1,54 +1,58 @@
-import type { Metadata } from "next";
-import dynamic from "next/dynamic";
-
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { productsQuery } from "@/lib/sanity/queries";
-import type { Product } from "@/lib/types";
-
-const CollectionFilters = dynamic(
-  () =>
-    import("@/components/products/collection-filters").then(
-      (m) => m.CollectionFilters
-    ),
-  { ssr: false, loading: () => <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">{Array.from({length:8}).map((_,i)=><div key={i} className="h-[360px] animate-pulse rounded-lg bg-muted" />)}</div> }
-);
-
-export const metadata: Metadata = {
-  title: "All Products",
-  description: "Browse our full range of electronics accessories.",
-};
+import { CatalogView } from "@/components/catalog/catalog-view";
+import {
+  fetchCatalog,
+  fetchCategoryCounts,
+  parseCatalogFilters,
+} from "@/lib/catalog";
+import type { BreadcrumbItem } from "@/components/catalog/catalog-breadcrumbs";
 
 export const revalidate = 60;
 
-export default async function ProductsPage() {
-  let products: Product[] = [];
-  try {
-    products = await fetchFromSanity<Product[]>(productsQuery);
-  } catch {
-    // offline during build — render empty state
-  }
+export const metadata = {
+  title: "All Products",
+  description:
+    "Browse our full range of electronics accessories — power banks, chargers, earbuds, smartwatches and more.",
+};
+
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const filters = parseCatalogFilters(searchParams);
+  const [result, categoryCounts] = await Promise.all([
+    fetchCatalog(filters),
+    fetchCategoryCounts(),
+  ]);
+
+  const rawParams: Record<string, string> = {};
+  if (filters.sort) rawParams.sort = filters.sort;
+  if (filters.availability && filters.availability !== "all")
+    rawParams.availability = filters.availability;
+  if (filters.minPrice != null) rawParams.minPrice = String(filters.minPrice);
+  if (filters.maxPrice != null) rawParams.maxPrice = String(filters.maxPrice);
+  if (filters.query) rawParams.q = filters.query;
+
+  const breadcrumbs: BreadcrumbItem[] = [
+    { label: "Home", href: "/" },
+    { label: "Products", current: true },
+  ];
 
   return (
     <div className="container mx-auto px-4 py-12 lg:px-8">
-      <div className="mb-8">
-        <p className="text-sm font-semibold uppercase tracking-widest text-primary">
-          Catalog
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          All Products
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          {products.length} product{products.length === 1 ? "" : "s"} available
-        </p>
-      </div>
-
-      {products.length > 0 ? (
-        <CollectionFilters products={products} />
-      ) : (
-        <p className="rounded-lg border border-dashed p-12 text-center text-muted-foreground">
-          No products yet. Publish products in Sanity Studio to see them here.
-        </p>
-      )}
+      <CatalogView
+        result={result}
+        filters={filters}
+        basePath="/products"
+        rawParams={rawParams}
+        title="All Products"
+        breadcrumbs={breadcrumbs}
+        showCategoryPills
+        selectedCategory={null}
+        categoryCounts={categoryCounts}
+        emptyMessage="No products match these filters."
+        emptyActionHref="/products"
+      />
     </div>
   );
 }

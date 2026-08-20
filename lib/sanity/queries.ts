@@ -133,10 +133,38 @@ export const productSlugsQuery = groq`
 `;
 
 export const searchProductsQuery = groq`
-  *[_type == "product" && (name match $q || category match $q || badge match $q)]
+  *[_type == "product" && (name match $q || category match $q || sku match $q || badge match $q)]
     | order(_createdAt desc){
     ${productFields}
   }
+`;
+
+/** Lightweight projection for catalog/search cards — only fields ProductCard needs. */
+export const catalogProductFields = `_id,
+  name,
+  "slug": slug.current,
+  category,
+  price,
+  compareAtPrice,
+  images,
+  stockStatus,
+  rating,
+  reviewCount,
+  featured,
+  badge,
+  "variants": variants[]{
+    _key,
+    name,
+    sku,
+    price,
+    compareAtPrice,
+    stockStatus,
+    isDefault
+  }`;
+
+/** Distinct real categories present in the product data (for truthful nav/counts). */
+export const productCategoriesQuery = groq`
+  *[_type == "product" && defined(category)].category
 `;
 
 export const searchSuggestionsQuery = groq`
