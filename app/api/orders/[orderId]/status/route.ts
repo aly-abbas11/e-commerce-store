@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { isAdminRequest } from "@/lib/admin";
-import { sendOrderStatusUpdateEmail } from "@/lib/email";
 import {
-  getOrderById,
-  ORDER_STATUSES,
-  updateOrderStatus,
-} from "@/lib/order-store";
-import type { OrderStatus } from "@/lib/types";
+  isAllowedOrderStatus,
+  ORDER_STATUS_VALUES,
+} from "@/lib/db/order-rules";
+import { sendOrderStatusUpdateEmail } from "@/lib/email";
+import { getOrderById, updateOrderStatus } from "@/lib/order-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,13 +36,13 @@ export async function POST(
   }
 
   const body = await request.json().catch(() => null);
-  const status = body?.status as OrderStatus | undefined;
+  const status = body?.status;
   const note = typeof body?.note === "string" ? body.note.trim() : undefined;
 
-  if (!status || !ORDER_STATUSES.includes(status)) {
+  if (!isAllowedOrderStatus(status)) {
     return NextResponse.json(
       {
-        error: `Status must be one of: ${ORDER_STATUSES.join(", ")}.`,
+        error: `Status must be one of: ${ORDER_STATUS_VALUES.join(", ")}.`,
       },
       { status: 400 }
     );

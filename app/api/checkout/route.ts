@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { sendOrderConfirmationEmail } from "@/lib/email";
-import { createOrder, enqueueEmailEvent } from "@/lib/order-store";
+import { createOrder, enqueueEmailEvent, nextPublicOrderId } from "@/lib/order-store";
 import { resolveCheckout, CHECKOUT_PRICE_CHANGED_ERROR } from "@/lib/checkout-server";
+import { isDemoRequest } from "@/lib/demo";
+import { attachOrderAttribution } from "@/lib/db/analytics-checkout";
+import { orderIsDemo } from "@/lib/db/demo-rules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,7 +68,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const resolution = await resolveCheckout(items, giftWrap === true);
+    const demoSession = isDemoRequest(request);
+    const resolution = await resolveCheckout(items, giftWrap === true, demoSession);
 
     // Stock / availability errors and invalid quantities are blocking 400s.
     // A price change is a 409: no order is created and no email is sent.
@@ -89,12 +93,7 @@ export async function POST(request: Request) {
 
     const { lines, subtotal, shipping, total } = resolution.checkout;
 
-    const orderId = `VG-${Date.now().toString(36).toUpperCase()}${Math.floor(
-      Math.random() * 10000
-    )}`;
-
-    const order = {
-      orderId,
+    const baseOrder = {
       customer: {
         name: customer.name,
         email: customer.email.toLowerCase().trim(),
@@ -104,18 +103,36 @@ export async function POST(request: Request) {
         postal: customer.postal,
       },
       items: lines,
-      payment: "cod",
+      payment: "cod" as const,
       subtotal,
       shipping,
       total,
+      isDemo: orderIsDemo(demoSession, false),
     };
 
-    const persisted = await createOrder(order);
+    let orderId = await nextPublicOrderId();
+    let persisted = await createOrder({ ...baseOrder, orderId });
+    for (let i = 0; i < 4 && !persisted; i++) {
+      orderId = await nextPublicOrderId();
+      persisted = await createOrder({ ...baseOrder, orderId });
+    }
 
-    // Retention: order confirmation immediately, review request after 5 days.
+    if (!persisted) {
+      return NextResponse.json(
+        { error: "We couldn't store your order. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    try {
+      await attachOrderAttribution(orderId, request);
+    } catch {
+      console.error("[analytics-checkout]", "attach failed");
+    }
+
     const emailPayload = {
       orderId,
-      name: order.customer.name ?? "there",
+      name: baseOrder.customer.name ?? "there",
       items: lines.map((i) => ({
         name: i.name,
         price: i.price,
@@ -123,23 +140,21 @@ export async function POST(request: Request) {
         ...(i.slug ? { slug: i.slug } : {}),
         ...(i.variantName ? { variantName: i.variantName } : {}),
       })),
-      total: order.total,
+      total: baseOrder.total,
+      phone: baseOrder.customer.phone,
+      address: baseOrder.customer.address,
+      city: baseOrder.customer.city,
+      postal: baseOrder.customer.postal,
     };
-    await sendOrderConfirmationEmail(order.customer.email, emailPayload);
+    await sendOrderConfirmationEmail(baseOrder.customer.email, emailPayload);
     await enqueueEmailEvent(
       "post-purchase",
-      order.customer.email,
+      baseOrder.customer.email,
       emailPayload,
       5 * 24 * 60 * 60 * 1000
     );
 
-    if (persisted) {
-      return NextResponse.json({ ok: true, orderId, subtotal, shipping, total, lines });
-    }
-    return NextResponse.json(
-      { error: "We couldn't store your order. Please try again." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true, orderId, subtotal, shipping, total, lines });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(

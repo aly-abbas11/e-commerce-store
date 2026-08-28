@@ -1,51 +1,73 @@
-export const CATEGORY_LINKS: { label: string; href: string }[] = [
-  { label: "Smartwatches", href: "/products/smartwatch" },
-  { label: "Power Banks", href: "/products/power-bank" },
-  { label: "Chargers & Adapters", href: "/products/charger" },
-  { label: "Earbuds & Handsfree", href: "/products/earbuds" },
-];
-
-export const CATEGORY_TITLES: Record<
-  (typeof CATEGORY_LINKS)[number]["href"],
-  { title: string; description: string }
-> = {
-  "/products/smartwatch": {
-    title: "Smartwatches",
-    description: "Track your health, stay connected and look good doing it.",
-  },
-  "/products/power-bank": {
-    title: "Power Banks",
-    description: "Portable power that keeps up with your busy day.",
-  },
-  "/products/charger": {
-    title: "Chargers & Adapters",
-    description: "Fast, safe charging for every device you own.",
-  },
-  "/products/earbuds": {
-    title: "Earbuds & Handsfree",
-    description: "Immersive sound with all-day comfort.",
-  },
+export type ShopType = {
+  id?: string;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl?: string;
+  sortOrder: number;
+  productCount?: number;
 };
 
-/** Canonical category slugs actually in use by the product data. */
-export const CATEGORIES = [
-  { slug: "smartwatch", label: "Smartwatches", href: "/products/smartwatch" },
-  { slug: "power-bank", label: "Power Banks", href: "/products/power-bank" },
-  { slug: "charger", label: "Chargers & Adapters", href: "/products/charger" },
-  { slug: "earbuds", label: "Earbuds & Handsfree", href: "/products/earbuds" },
-] as const;
+/** Used when the categories table is not in the database yet. */
+export const FALLBACK_SHOP_TYPES: ShopType[] = [
+  {
+    name: "Smartwatches",
+    slug: "smartwatch",
+    description: "Track your health, stay connected and look good doing it.",
+    sortOrder: 1,
+  },
+  {
+    name: "Power Banks",
+    slug: "power-bank",
+    description: "Portable power that keeps up with your busy day.",
+    sortOrder: 2,
+  },
+  {
+    name: "Chargers & Adapters",
+    slug: "charger",
+    description: "Fast, safe charging for every device you own.",
+    sortOrder: 3,
+  },
+  {
+    name: "Earbuds & Handsfree",
+    slug: "earbuds",
+    description: "Immersive sound with all-day comfort.",
+    sortOrder: 4,
+  },
+];
 
-/** Slug -> [title, description] for category pages, sourced from real data. */
-export function getCategoryTitle(slug: string | undefined): {
-  title: string;
-  description: string;
-} | null {
-  if (!slug) return null;
-  return CATEGORY_TITLES[`/products/${slug}`] ?? null;
+export function shopTypeLinks(types: ShopType[]): { label: string; href: string }[] {
+  return types.map((t) => ({ label: t.name, href: `/products/${t.slug}` }));
 }
 
-/** Human-readable label for a category slug (or null if unknown). */
-export function categoryLabel(slug: string | undefined): string | null {
+export function findShopType(types: ShopType[], slug: string | undefined): ShopType | null {
   if (!slug) return null;
-  return CATEGORIES.find((c) => c.slug === slug)?.label ?? null;
+  return types.find((t) => t.slug === slug) ?? null;
+}
+
+export function shopTypeTitle(
+  types: ShopType[],
+  slug: string | undefined
+): { title: string; description: string } | null {
+  const t = findShopType(types, slug);
+  if (!t) return null;
+  return { title: t.name, description: t.description };
+}
+
+/** @deprecated Prefer fetchShopTypes() — kept so leftover imports still compile. */
+export const CATEGORY_LINKS = shopTypeLinks(FALLBACK_SHOP_TYPES);
+
+/** @deprecated Prefer fetchShopTypes() */
+export const CATEGORIES = FALLBACK_SHOP_TYPES.map((t) => ({
+  slug: t.slug,
+  label: t.name,
+  href: `/products/${t.slug}`,
+}));
+
+export function getCategoryTitle(slug: string | undefined) {
+  return shopTypeTitle(FALLBACK_SHOP_TYPES, slug);
+}
+
+export function categoryLabel(slug: string | undefined): string | null {
+  return findShopType(FALLBACK_SHOP_TYPES, slug)?.name ?? null;
 }

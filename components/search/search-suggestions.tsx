@@ -5,9 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { TrendingUp, Clock, Star } from "lucide-react";
 
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
-import { productsQuery } from "@/lib/sanity/queries";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
@@ -45,7 +44,7 @@ export function SearchSuggestions({
 
   useEffect(() => {
     setRecentSearches(getRecentSearches());
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then((all) => {
         setBestsellers(
           all.filter((p) => p.stockStatus !== "out-of-stock").slice(0, 4)

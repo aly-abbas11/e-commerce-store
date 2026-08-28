@@ -5,8 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye } from "lucide-react";
 
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { productBySlugQuery } from "@/lib/sanity/queries";
+import { fetchStoreProductBySlug } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/types";
@@ -25,9 +24,7 @@ export function RecentlyViewed() {
         if (items.length > 0) {
           Promise.all(
             items.map((item) =>
-              fetchFromSanity<Product | null>(productBySlugQuery, {
-                slug: item.slug,
-              }).catch(() => null)
+              fetchStoreProductBySlug(item.slug).catch(() => null)
             )
           ).then((results) => {
             setProducts(results.filter(Boolean) as Product[]);

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { getOrderById } from "@/lib/order-store";
+import {
+  SHOPPER_NOT_FOUND_MESSAGE,
+  shopperLookupNotFound,
+  toShopperTrackPayload,
+} from "@/lib/db/order-rules";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +14,7 @@ export const dynamic = "force-dynamic";
  * Customer order lookup. Requires the email used at checkout so only the
  * customer can see the order:
  *
- *   curl "http://localhost:3001/api/orders/VG-XXXXXXXX?email=customer@example.com"
+ *   curl "http://localhost:3000/api/orders/VG-XXXXXXXX?email=customer@example.com"
  *
  * Returns a summary (status, timeline, items, totals) — no phone/address.
  */
@@ -31,36 +36,9 @@ export async function GET(
   }
 
   const order = await getOrderById(orderId);
-  if (!order) {
-    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  if (shopperLookupNotFound(order, email)) {
+    return NextResponse.json({ error: SHOPPER_NOT_FOUND_MESSAGE }, { status: 404 });
   }
 
-  if (order.customer?.email?.toLowerCase().trim() !== email) {
-    return NextResponse.json(
-      { error: "Order not found for this email." },
-      { status: 404 }
-    );
-  }
-
-  return NextResponse.json({
-    orderId: order.orderId,
-    status: order.status ?? "new",
-    statusUpdatedAt: order.statusUpdatedAt ?? null,
-    statusHistory: (order.statusHistory ?? []).map((h) => ({
-      status: h.status,
-      note: h.note,
-      at: h.at,
-    })),
-    createdAt: order.createdAt,
-    items: (order.items ?? []).map((i) => ({
-      name: i.name ?? "",
-      price: i.price ?? 0,
-      quantity: i.quantity ?? 1,
-      ...(i.variantName ? { variantName: i.variantName } : {}),
-    })),
-    subtotal: order.subtotal ?? 0,
-    shipping: order.shipping ?? 0,
-    total: order.total ?? 0,
-    payment: order.payment ?? "cod",
-  });
+  return NextResponse.json(toShopperTrackPayload(order!));
 }

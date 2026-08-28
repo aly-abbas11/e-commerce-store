@@ -151,14 +151,14 @@ function RecipientsTab() {
     setMessage(null);
     setError(null);
     try {
-      await adminFetch("/api/messaging/contacts", {
+      const result = await adminFetch("/api/messaging/contacts", {
         method: "POST",
         body: JSON.stringify({ phone, name, city }),
       });
       setPhone("");
       setName("");
       setCity("");
-      setMessage("Number added.");
+      setMessage(result?.updated ? "Contact updated." : "Number added.");
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add number");

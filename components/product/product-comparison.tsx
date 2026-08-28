@@ -8,9 +8,8 @@ import { X, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/product/star-rating";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
-import { productsQuery } from "@/lib/sanity/queries";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 
@@ -68,7 +67,7 @@ export function CompareBar({
 
   useEffect(() => {
     if (slugs.length === 0) { setProducts([]); return; }
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then((all) => setProducts(all.filter((p) => slugs.includes(p.slug))))
       .catch(() => {});
   }, [slugs.join(",")]);
@@ -158,7 +157,7 @@ export function ComparePage() {
     if (productsParam) {
       setCompareSlugs(productsParam.split(",").filter(Boolean));
     }
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then(setAllProducts)
       .catch(() => {});
   }, []);

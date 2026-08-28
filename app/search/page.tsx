@@ -8,6 +8,7 @@ import {
   parseCatalogFilters,
 } from "@/lib/catalog";
 import type { BreadcrumbItem } from "@/components/catalog/catalog-breadcrumbs";
+import { isDemoSession } from "@/lib/demo";
 
 export const revalidate = 60;
 
@@ -64,7 +65,7 @@ export default async function SearchPage({
     );
   }
 
-  const result = await fetchCatalog(filters);
+  const result = await fetchCatalog(filters, { includeDemo: isDemoSession() });
 
   const rawParams: Record<string, string> = {};
   if (filters.query) rawParams.q = filters.query;

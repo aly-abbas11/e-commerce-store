@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { trackViewItem } from "@/lib/analytics";
+import { trackFirstParty } from "@/lib/first-party-analytics";
 import type { RecentProduct } from "@/lib/recently-viewed";
 
 const STORAGE_KEY = "voltgear-recently-viewed";
@@ -14,15 +15,26 @@ export function ProductViewTracker({
   price,
   image,
   category,
+  productId,
 }: {
   slug: string;
   name: string;
   price: number;
   image?: string;
   category: string;
+  productId?: string;
 }) {
   useEffect(() => {
     trackViewItem({ item_id: slug, item_name: name, price, quantity: 1 });
+    if (productId) {
+      trackFirstParty({
+        name: "product_view",
+        path: window.location.pathname,
+        page_type: "product",
+        product_id: productId,
+        product_slug: slug,
+      });
+    }
 
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -35,7 +47,7 @@ export function ProductViewTracker({
     } catch {
       // ignore
     }
-  }, [slug, name, price, image, category]);
+  }, [slug, name, price, image, category, productId]);
 
   return null;
 }

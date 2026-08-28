@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error ?? "Could not add." }, { status: 400 });
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, updated: Boolean(result.updated) });
 }
 
 export async function DELETE(request: Request) {
@@ -61,5 +61,8 @@ export async function DELETE(request: Request) {
     );
   }
   const result = await removeContact(phone);
-  return NextResponse.json({ ok: result.ok });
+  if (!result.ok) {
+    return NextResponse.json({ error: "Could not remove that number." }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true });
 }

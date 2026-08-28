@@ -4,9 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { X, ShoppingBag } from "lucide-react";
 
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
-import { productsQuery } from "@/lib/sanity/queries";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +77,7 @@ export function SocialProofNotifications() {
     let products: Product[] = [];
     const timeouts: ReturnType<typeof setTimeout>[] = [];
 
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then((p) => {
         if (!cancelled) products = p.filter((p) => p.stockStatus !== "out-of-stock");
       })

@@ -1,7 +1,6 @@
 import { unstable_cache } from "next/cache";
 
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { fetchSiteSettings } from "@/lib/db/store";
 import type { SiteSettings } from "@/lib/types";
 import { bodyFont as bodyInter } from "@/lib/fonts/body-inter";
 import { bodyFont as bodyJakarta } from "@/lib/fonts/body-jakarta";
@@ -11,7 +10,7 @@ import { headingFont as headingSpaceGrotesk } from "@/lib/fonts/heading-space-gr
 
 export const getSettings = unstable_cache(
   async () => {
-    return await fetchFromSanity<SiteSettings | null>(siteSettingsQuery);
+    return await fetchSiteSettings();
   },
   ["site-settings"],
   { revalidate: 60 }

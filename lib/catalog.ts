@@ -1,6 +1,8 @@
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { catalogProductFields } from "@/lib/sanity/queries";
-import { CATEGORIES } from "@/lib/categories";
+import {
+  fetchActiveCategories as fetchActiveCategoriesFromDb,
+  fetchCatalogFromDb,
+  fetchCategoryCounts as fetchCategoryCountsFromDb,
+} from "@/lib/db/store";
 import type { Product, ProductCategory } from "@/lib/types";
 
 export { CATEGORIES } from "@/lib/categories";
@@ -41,15 +43,6 @@ export interface CatalogResult {
   pageSize: number;
   totalPages: number;
 }
-
-/** Strict whitelist — raw `sort` is never interpolated into GROQ. */
-const ORDER_MAP: Record<CatalogSort, string> = {
-  featured: "featured desc, _createdAt desc",
-  newest: "_createdAt desc",
-  "price-asc": "price asc, _id asc",
-  "price-desc": "price desc, _id asc",
-  "name-asc": "name asc, _id asc",
-};
 
 function toInt(v: unknown, fallback = 1): number {
   const n = typeof v === "number" ? v : Number(v);
@@ -105,43 +98,6 @@ export function parseCatalogFilters(
   };
 }
 
-function buildFilterClause(f: CatalogFilters): {
-  clause: string;
-  params: Record<string, unknown>;
-} {
-  const parts: string[] = [`_type=="product"`];
-  const params: Record<string, unknown> = {};
-
-  if (f.category) {
-    parts.push("category == $category");
-    params.category = f.category;
-  }
-  if (f.query) {
-    params.q = `*${f.query}*`;
-    parts.push(
-      "(name match $q || category match $q || badge match $q)"
-    );
-  }
-  if (f.availability === "in-stock") {
-    // "In Stock" = purchasable states (in-stock + low-stock), never out-of-stock.
-    parts.push("stockStatus != 'out-of-stock'");
-  }
-  if (f.minPrice != null) {
-    parts.push("price >= $minPrice");
-    params.minPrice = f.minPrice;
-  }
-  if (f.maxPrice != null) {
-    parts.push("price <= $maxPrice");
-    params.maxPrice = f.maxPrice;
-  }
-
-  return { clause: parts.join(" && "), params };
-}
-
-function orderClause(sort: CatalogSort): string {
-  return ORDER_MAP[sort];
-}
-
 /** Build a URL query string for the catalog, applying `changes` over `base`. */
 export function buildCatalogUrl(
   basePath: string,
@@ -160,32 +116,18 @@ export function buildCatalogUrl(
   return sp ? `${basePath}?${sp}` : basePath;
 }
 
-/** Run the count + items queries; normalizes an out-of-range page to the last page. */
 export async function fetchCatalog(
   f: CatalogFilters,
-  opts: { basePath?: string } = {}
+  opts: { basePath?: string; includeDemo?: boolean } = {}
 ): Promise<CatalogResult> {
-  const { clause, params } = buildFilterClause(f);
-  const total = await fetchFromSanity<number>(`count(*[${clause}])`, params);
-  const totalPages = Math.max(1, Math.ceil(total / PRODUCTS_PAGE_SIZE));
-  const page = Math.min(f.page, totalPages);
-  const offset = (page - 1) * PRODUCTS_PAGE_SIZE;
-  const end = offset + PRODUCTS_PAGE_SIZE;
-  const items = await fetchFromSanity<Product[]>(
-    `*[${clause}] | order(${orderClause(f.sort)})[${offset}...${end}]{${catalogProductFields}}`,
-    params
-  );
-  void opts; // reserved for future caching hints
-  return { items, total, page, pageSize: PRODUCTS_PAGE_SIZE, totalPages };
+  void opts.basePath;
+  return fetchCatalogFromDb({ ...f, includeDemo: opts.includeDemo });
 }
 
-/** Truthful per-category product counts (one aggregate query over the real categories). */
-export async function fetchCategoryCounts(): Promise<Record<string, number>> {
-  const exprs = CATEGORIES.map((c) => `"${c.slug}":count(*[_type=="product" && category==${JSON.stringify(c.slug)}])`).join(",\n");
-  return fetchFromSanity<Record<string, number>>(`{${exprs}}`);
+export async function fetchCategoryCounts(includeDemo = false): Promise<Record<string, number>> {
+  return fetchCategoryCountsFromDb(includeDemo);
 }
 
-/** Distinct real categories that currently have products (truthful nav membership). */
-export async function fetchActiveCategories(): Promise<string[]> {
-  return fetchFromSanity<string[]>(`*[_type=="product" && defined(category)].category | order(@ asc)`);
+export async function fetchActiveCategories(includeDemo = false): Promise<string[]> {
+  return fetchActiveCategoriesFromDb(includeDemo);
 }

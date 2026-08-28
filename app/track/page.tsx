@@ -21,8 +21,8 @@ export default function TrackPage() {
           Track Your Order
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Enter your order ID and the email you used at checkout to see the
-          latest status and timeline.
+          Enter the order number from your confirmation email and the email you used
+          at checkout.
         </p>
       </div>
       <TrackOrder />

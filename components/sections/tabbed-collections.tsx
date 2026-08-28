@@ -6,20 +6,25 @@ import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
-import { CATEGORY_LINKS } from "@/lib/categories";
+import { FALLBACK_SHOP_TYPES, shopTypeLinks, type ShopType } from "@/lib/categories";
 import type { Product } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { label: "All", slug: "all" },
-  ...CATEGORY_LINKS.map((l) => ({
-    label: l.label,
-    slug: l.href.split("/").pop()!,
-  })),
-];
-
-export function TabbedCollections({ products }: { products: Product[] }) {
+export function TabbedCollections({
+  products,
+  shopTypes = FALLBACK_SHOP_TYPES,
+}: {
+  products: Product[];
+  shopTypes?: ShopType[];
+}) {
   const [active, setActive] = useState("all");
+  const tabs = [
+    { label: "All", slug: "all" },
+    ...shopTypeLinks(shopTypes).map((l) => ({
+      label: l.label,
+      slug: l.href.split("/").pop()!,
+    })),
+  ];
 
   const filtered =
     active === "all"
@@ -45,7 +50,7 @@ export function TabbedCollections({ products }: { products: Product[] }) {
       </div>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.slug}
             onClick={() => setActive(tab.slug)}

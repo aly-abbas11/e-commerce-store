@@ -1,7 +1,11 @@
-import type { QueryParams } from "@sanity/client";
-
-import { getWriteClient } from "@/lib/sanity/write";
+import {
+  idsMatchingNormalizedPhone,
+  phonesMatchingNormalized,
+  planManualAdd,
+  suppressedPhoneSet,
+} from "@/lib/broadcast-contact-rules";
 import { getAllOrders } from "@/lib/order-store";
+import { getServiceClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/messaging";
 import type {
   BroadcastContact,
@@ -9,73 +13,24 @@ import type {
   MessageRecipient,
 } from "@/lib/types";
 
-const BROADCAST_DOC_ID = "broadcast.contacts";
-
-interface BroadcastDoc {
-  _id?: string;
-  manual?: { id: string; phone: string; name?: string; city?: string; note?: string }[];
-  suppressed?: string[];
+function db() {
+  return getServiceClient();
 }
 
-interface StoredRecipient {
-  phone: string;
-  name?: string;
-  status: MessageRecipient["status"];
-  messageId?: string;
-  sentAt?: string;
-  error?: string;
-}
-
-async function fetchAdmin<T>(query: string, params?: QueryParams): Promise<T | null> {
-  const client = getWriteClient();
-  if (!client) return null;
-  try {
-    return await client.fetch<T>(query, params as QueryParams);
-  } catch (err) {
-    console.error("[messaging] fetch failed:", err);
-    return null;
-  }
-}
-
-async function ensureBroadcastDoc(client: NonNullable<ReturnType<typeof getWriteClient>>) {
-  const existing = await client.fetch<BroadcastDoc | null>(
-    `*[_id == $id][0]`,
-    { id: BROADCAST_DOC_ID } as QueryParams
-  );
-  if (existing) return existing;
-  return client.create({
-    _id: BROADCAST_DOC_ID,
-    _type: "broadcastSettings",
-    manual: [],
-    suppressed: [],
-  });
-}
-
-/**
- * Contacts = unique phone numbers pulled from orders + manually added ones,
- * minus suppressed numbers. Order-derived contacts carry name + city from the
- * most recent order so broadcasts can be personalized.
- */
 export async function getContacts(): Promise<{
   contacts: BroadcastContact[];
   manualCount: number;
   suppressed: string[];
 }> {
-  const client = getWriteClient();
-  const manual: BroadcastDoc["manual"] = [];
-  const suppressed: string[] = [];
-  if (client) {
-    try {
-      const doc = await ensureBroadcastDoc(client);
-      if (doc.manual) manual.push(...doc.manual);
-      if (doc.suppressed) suppressed.push(...doc.suppressed);
-    } catch {
-      // continue with empty lists
-    }
-  }
-
+  const [{ data: manual }, { data: suppressedRows }] = await Promise.all([
+    db().from("broadcast_contacts").select("*"),
+    db().from("broadcast_suppressed").select("phone"),
+  ]);
+  const suppressedSet = suppressedPhoneSet(
+    (suppressedRows ?? []).map((r) => String(r.phone))
+  );
+  const suppressed = Array.from(suppressedSet);
   const orders = await getAllOrders();
-  const suppressedSet = new Set(suppressed);
 
   const fromOrders = new Map<string, { name: string; city: string; lastAt: number }>();
   for (const order of orders) {
@@ -104,29 +59,44 @@ export async function getContacts(): Promise<{
     });
   });
 
-  const manualIds = new Set<string>();
+  const seenManual = new Set<string>();
+  let manualCount = 0;
   for (const m of manual ?? []) {
-    const phone = normalizePhone(m.phone);
-    if (!phone || suppressedSet.has(phone)) continue;
-    if (fromOrders.has(phone)) continue; // order-derived wins
-    manualIds.add(m.id);
+    const phone = normalizePhone(String(m.phone ?? ""));
+    if (!phone || suppressedSet.has(phone) || fromOrders.has(phone) || seenManual.has(phone)) {
+      continue;
+    }
+    seenManual.add(phone);
+    manualCount += 1;
     contacts.push({
       id: `manual-${m.id}`,
       phone,
-      name: m.name || undefined,
-      city: m.city || undefined,
-      note: m.note || undefined,
+      name: m.name ? String(m.name) : undefined,
+      city: m.city ? String(m.city) : undefined,
+      note: m.note ? String(m.note) : undefined,
       source: "manual",
     });
   }
 
   contacts.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  return { contacts, manualCount, suppressed };
+}
 
-  return {
-    contacts,
-    manualCount: manualIds.size,
-    suppressed,
-  };
+async function deleteSuppressedVariants(phone: string): Promise<void> {
+  const { data, error } = await db().from("broadcast_suppressed").select("phone");
+  if (error) {
+    console.error("[messaging] list suppressed failed:", error);
+    return;
+  }
+  const matching = phonesMatchingNormalized(
+    (data ?? []).map((row) => String(row.phone ?? "")),
+    phone
+  );
+  if (!matching.length) return;
+  const { error: delError } = await db().from("broadcast_suppressed").delete().in("phone", matching);
+  if (delError) {
+    console.error("[messaging] unsuppress failed:", delError);
+  }
 }
 
 export async function addManualContact(input: {
@@ -134,160 +104,225 @@ export async function addManualContact(input: {
   name?: string;
   city?: string;
   note?: string;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; updated?: boolean; error?: string }> {
   const phone = normalizePhone(input.phone);
   if (!phone) return { ok: false, error: "Enter a valid Pakistani mobile number." };
 
-  const client = getWriteClient();
-  if (!client) {
-    console.info(
-      "[messaging][dev] would add manual contact",
-      JSON.stringify({ ...input, phone })
-    );
-    return { ok: true };
+  const [{ data: manualRows, error: listError }, { contacts }] = await Promise.all([
+    db().from("broadcast_contacts").select("id, phone"),
+    getContacts(),
+  ]);
+  if (listError) {
+    console.error("[messaging] list contacts failed:", listError);
+    return { ok: false, error: "Could not save that contact." };
   }
 
-  const doc = await ensureBroadcastDoc(client);
-  const list = doc.manual ?? [];
-  if (list.some((m) => normalizePhone(m.phone) === phone)) {
-    return { ok: false, error: "That number is already in your manual list." };
-  }
-  const { contacts } = await getContacts();
-  if (contacts.some((c) => c.phone === phone)) {
-    return {
-      ok: false,
-      error: "That number already exists (from an order or manual list).",
-    };
-  }
-  list.push({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  const plan = planManualAdd({
     phone,
-    name: input.name?.trim() || undefined,
-    city: input.city?.trim() || undefined,
-    note: input.note?.trim() || undefined,
+    visibleContacts: contacts,
+    manualRows: (manualRows ?? []).map((row) => ({
+      id: String(row.id),
+      phone: row.phone != null ? String(row.phone) : null,
+    })),
   });
-  const suppressed = (doc.suppressed ?? []).filter((p) => p !== phone);
-  await client
-    .patch(doc._id ?? BROADCAST_DOC_ID)
-    .set({ manual: list, ...(suppressed.length !== (doc.suppressed ?? []).length ? { suppressed } : {}) })
-    .commit();
-  return { ok: true };
+  if (plan.action === "reject") {
+    return { ok: false, error: plan.error };
+  }
+
+  const fields = {
+    phone,
+    name: input.name?.trim() || null,
+    city: input.city?.trim() || null,
+    note: input.note?.trim() || null,
+  };
+
+  if (plan.action === "update") {
+    const { error } = await db()
+      .from("broadcast_contacts")
+      .update(fields)
+      .in("id", plan.ids);
+    if (error) {
+      console.error("[messaging] update contact failed:", error);
+      return { ok: false, error: "Could not save that contact." };
+    }
+  } else {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const { error } = await db().from("broadcast_contacts").insert({ id, ...fields });
+    if (error) {
+      console.error("[messaging] insert contact failed:", error);
+      return { ok: false, error: "Could not save that contact." };
+    }
+  }
+
+  await deleteSuppressedVariants(phone);
+  return { ok: true, updated: plan.action === "update" };
 }
 
 export async function removeContact(phoneRaw: string): Promise<{ ok: boolean }> {
   const phone = normalizePhone(phoneRaw);
   if (!phone) return { ok: false };
-  const client = getWriteClient();
-  if (!client) {
-    console.info(`[messaging][dev] would remove/suppress ${phone}`);
-    return { ok: true };
+
+  const { data: manualRows, error: listError } = await db()
+    .from("broadcast_contacts")
+    .select("id, phone");
+  if (listError) {
+    console.error("[messaging] list contacts for delete failed:", listError);
+    return { ok: false };
   }
 
-  const doc = await ensureBroadcastDoc(client);
-  const id = doc._id ?? BROADCAST_DOC_ID;
-  const manual = (doc.manual ?? []).filter((m) => normalizePhone(m.phone) !== phone);
-  const suppressed = Array.from(new Set([...(doc.suppressed ?? []), phone]));
-  await client.patch(id).set({ manual, suppressed }).commit();
+  const ids = idsMatchingNormalizedPhone(
+    (manualRows ?? []).map((row) => ({
+      id: String(row.id),
+      phone: row.phone != null ? String(row.phone) : null,
+    })),
+    phone
+  );
+  if (ids.length) {
+    const { error } = await db().from("broadcast_contacts").delete().in("id", ids);
+    if (error) {
+      console.error("[messaging] delete contact failed:", error);
+      return { ok: false };
+    }
+  }
+
+  const { error: suppressError } = await db().from("broadcast_suppressed").upsert({ phone });
+  if (suppressError) {
+    console.error("[messaging] suppress failed:", suppressError);
+    return { ok: false };
+  }
   return { ok: true };
 }
 
 export async function unSuppress(phoneRaw: string): Promise<{ ok: boolean }> {
   const phone = normalizePhone(phoneRaw);
   if (!phone) return { ok: false };
-  const client = getWriteClient();
-  if (!client) return { ok: true };
-  const doc = await ensureBroadcastDoc(client);
-  await client
-    .patch(doc._id ?? BROADCAST_DOC_ID)
-    .set({ suppressed: (doc.suppressed ?? []).filter((p) => p !== phone) })
-    .commit();
+  await deleteSuppressedVariants(phone);
   return { ok: true };
 }
-
-const campaignFields = `{
-  _id,
-  name,
-  text,
-  recipients,
-  sent,
-  failed,
-  queued,
-  "createdAt": _createdAt
-}`;
 
 export async function createCampaign(
   name: string | undefined,
   text: string,
-  results: { phone: string; name?: string; status: MessageRecipient["status"]; messageId?: string; error?: string }[]
+  results: {
+    phone: string;
+    name?: string;
+    status: MessageRecipient["status"];
+    messageId?: string;
+    error?: string;
+  }[]
 ): Promise<string | null> {
-  const client = getWriteClient();
-  if (!client) {
-    console.info(
-      "[messaging][dev] would persist campaign",
-      JSON.stringify({ name, text, results }, null, 2)
-    );
-    return `campaign-${Date.now()}`;
+  const sent = results.filter((r) => r.status === "sent").length;
+  const failed = results.filter((r) => r.status === "failed").length;
+  const { data, error } = await db()
+    .from("message_campaigns")
+    .insert({
+      name: name?.trim() || null,
+      text,
+      sent,
+      failed,
+      queued: results.length - sent - failed,
+    })
+    .select("id")
+    .single();
+  if (error || !data) {
+    console.error("[messaging] campaign create failed:", error);
+    return null;
   }
+  if (results.length) {
+    await db().from("message_recipients").insert(
+      results.map((r) => ({
+        campaign_id: data.id,
+        phone: r.phone,
+        name: r.name || null,
+        status: r.status,
+        message_id: r.messageId || null,
+        error: r.error || null,
+        sent_at: r.status === "sent" ? new Date().toISOString() : null,
+      }))
+    );
+  }
+  return String(data.id);
+}
 
-  const recipients: StoredRecipient[] = results.map((r) => ({
-    phone: r.phone,
-    ...(r.name ? { name: r.name } : {}),
-    status: r.status,
-    ...(r.messageId ? { messageId: r.messageId } : {}),
-    ...(r.error ? { error: r.error } : {}),
-    ...(r.status === "sent" ? { sentAt: new Date().toISOString() } : {}),
-  }));
-
-  const sent = recipients.filter((r) => r.status === "sent").length;
-  const failed = recipients.filter((r) => r.status === "failed").length;
-
-  const doc = await client.create({
-    _id: `messageCampaign.${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    _type: "messageCampaign",
-    ...(name?.trim() ? { name: name.trim() } : {}),
-    text,
+function mapCampaign(
+  row: Record<string, unknown>,
+  recipients: MessageRecipient[]
+): MessageCampaign {
+  return {
+    _id: String(row.id),
+    name: row.name ? String(row.name) : undefined,
+    text: String(row.text ?? ""),
     recipients,
-    sent,
-    failed,
-    queued: recipients.length - sent - failed,
-  });
-  return doc._id;
+    sent: Number(row.sent ?? 0),
+    failed: Number(row.failed ?? 0),
+    queued: Number(row.queued ?? 0),
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+  };
+}
+
+async function recipientsFor(campaignId: string): Promise<MessageRecipient[]> {
+  const { data } = await db()
+    .from("message_recipients")
+    .select("*")
+    .eq("campaign_id", campaignId);
+  return (data ?? []).map((r) => ({
+    phone: String(r.phone ?? ""),
+    name: r.name ? String(r.name) : undefined,
+    status: r.status as MessageRecipient["status"],
+    messageId: r.message_id ? String(r.message_id) : undefined,
+    sentAt: r.sent_at ? String(r.sent_at) : undefined,
+    error: r.error ? String(r.error) : undefined,
+  }));
 }
 
 export async function listCampaigns(): Promise<MessageCampaign[]> {
-  return (
-    (await fetchAdmin<MessageCampaign[]>(
-      `*[_type == "messageCampaign"] | order(_createdAt desc)${campaignFields}`
-    )) ?? []
+  const { data, error } = await db()
+    .from("message_campaigns")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return [];
+  return Promise.all(
+    (data ?? []).map(async (row) =>
+      mapCampaign(row as Record<string, unknown>, await recipientsFor(String(row.id)))
+    )
   );
 }
 
 export async function getCampaign(id: string): Promise<MessageCampaign | null> {
-  return fetchAdmin<MessageCampaign>(
-    `*[_id == $id][0]${campaignFields}`,
-    { id } as QueryParams
-  );
+  const { data, error } = await db().from("message_campaigns").select("*").eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return mapCampaign(data as Record<string, unknown>, await recipientsFor(id));
 }
 
 export async function updateCampaignResults(
   id: string,
   recipients: MessageRecipient[]
 ): Promise<boolean> {
-  const client = getWriteClient();
-  if (!client) return false;
-  try {
-    await client
-      .patch(id)
-      .set({
-        recipients,
-        sent: recipients.filter((r) => r.status === "sent").length,
-        failed: recipients.filter((r) => r.status === "failed").length,
-        queued: recipients.filter((r) => r.status === "queued").length,
-      })
-      .commit();
-    return true;
-  } catch (err) {
-    console.error("[messaging] updateCampaignResults failed:", err);
+  const { error } = await db()
+    .from("message_campaigns")
+    .update({
+      sent: recipients.filter((r) => r.status === "sent").length,
+      failed: recipients.filter((r) => r.status === "failed").length,
+      queued: recipients.filter((r) => r.status === "queued").length,
+    })
+    .eq("id", id);
+  if (error) {
+    console.error("[messaging] updateCampaignResults failed:", error);
     return false;
   }
+  await db().from("message_recipients").delete().eq("campaign_id", id);
+  if (recipients.length) {
+    await db().from("message_recipients").insert(
+      recipients.map((r) => ({
+        campaign_id: id,
+        phone: r.phone,
+        name: r.name || null,
+        status: r.status,
+        message_id: r.messageId || null,
+        error: r.error || null,
+        sent_at: r.sentAt || null,
+      }))
+    );
+  }
+  return true;
 }

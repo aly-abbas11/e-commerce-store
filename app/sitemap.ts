@@ -1,25 +1,27 @@
 import type { MetadataRoute } from "next";
 
-import { CATEGORY_LINKS } from "@/lib/categories";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { shopTypeLinks } from "@/lib/categories";
+import { publicSiteUrl } from "@/lib/deploy-rules";
+import { fetchShopTypes, fetchSitemapPages, fetchSitemapProducts } from "@/lib/db/store";
 
 export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const base = publicSiteUrl();
   const now = new Date();
 
   let products: { slug: string; _updatedAt?: string }[] = [];
   let pages: { slug: string; pageType?: string; _updatedAt?: string }[] = [];
+  let shopTypeHrefs: { href: string }[] = [];
   try {
-    [products, pages] = await Promise.all([
-      fetchFromSanity<{ slug: string; _updatedAt?: string }[]>(
-        `*[_type == "product"]{ "slug": slug.current, _updatedAt }`
-      ),
-      fetchFromSanity<{ slug: string; pageType?: string; _updatedAt?: string }[]>(
-        `*[_type == "page"]{ "slug": slug.current, pageType, _updatedAt }`
-      ),
+    const [p, pagesRows, types] = await Promise.all([
+      fetchSitemapProducts(),
+      fetchSitemapPages(),
+      fetchShopTypes(),
     ]);
+    products = p;
+    pages = pagesRows;
+    shopTypeHrefs = shopTypeLinks(types);
   } catch {
     products = [];
     pages = [];
@@ -44,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: path === "" ? ("daily" as const) : ("weekly" as const),
       priority: path === "" ? 1 : 0.7,
     })),
-    ...CATEGORY_LINKS.map((link) => ({
+    ...shopTypeHrefs.map((link) => ({
       url: `${base}${link.href}`,
       lastModified: now,
       changeFrequency: "weekly" as const,

@@ -5,6 +5,8 @@ import {
   parseCatalogFilters,
 } from "@/lib/catalog";
 import type { BreadcrumbItem } from "@/components/catalog/catalog-breadcrumbs";
+import { fetchShopTypes } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
 
 export const revalidate = 60;
 
@@ -20,9 +22,11 @@ export default async function ProductsPage({
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const filters = parseCatalogFilters(searchParams);
-  const [result, categoryCounts] = await Promise.all([
-    fetchCatalog(filters),
-    fetchCategoryCounts(),
+  const demo = isDemoSession();
+  const [result, categoryCounts, shopTypes] = await Promise.all([
+    fetchCatalog(filters, { includeDemo: demo }),
+    fetchCategoryCounts(demo),
+    fetchShopTypes().catch(() => []),
   ]);
 
   const rawParams: Record<string, string> = {};
@@ -50,6 +54,7 @@ export default async function ProductsPage({
         showCategoryPills
         selectedCategory={null}
         categoryCounts={categoryCounts}
+        shopTypes={shopTypes}
         emptyMessage="No products match these filters."
         emptyActionHref="/products"
       />

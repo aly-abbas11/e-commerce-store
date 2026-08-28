@@ -3,9 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, User } from "lucide-react";
 
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchBlogPosts } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
 import { imageUrl } from "@/lib/sanity/image";
-import { blogPostsQuery } from "@/lib/sanity/queries";
 import type { Page } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export const revalidate = 60;
 export default async function BlogPage() {
   let posts: Page[] = [];
   try {
-    posts = await fetchFromSanity<Page[]>(blogPostsQuery);
+    posts = await fetchBlogPosts(isDemoSession());
   } catch {
     posts = [];
   }

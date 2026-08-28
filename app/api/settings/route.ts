@@ -1,7 +1,5 @@
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { siteSettingsQuery } from "@/lib/sanity/queries";
+import { fetchSiteSettings } from "@/lib/db/store";
 import { normalizeSettings } from "@/lib/site-config";
-import type { SiteSettings } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +12,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   try {
-    const settings = await fetchFromSanity<SiteSettings | null>(
-      siteSettingsQuery
-    );
+    const settings = await fetchSiteSettings();
     return Response.json(normalizeSettings(settings));
   } catch {
     return Response.json(normalizeSettings(null));

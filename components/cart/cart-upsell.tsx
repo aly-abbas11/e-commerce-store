@@ -5,9 +5,8 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
-import { productsQuery } from "@/lib/sanity/queries";
 import { getDefaultVariant, getStockState } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { useCart } from "@/components/cart/cart-provider";
@@ -18,7 +17,7 @@ export function CartUpsell({ excludeSlugs }: { excludeSlugs: string[] }) {
   const { addItem } = useCart();
 
   useEffect(() => {
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then((all) => {
         const addable = (p: Product) => {
           if (p.stockStatus === "out-of-stock") return false;
@@ -75,9 +74,11 @@ export function CartUpsell({ excludeSlugs }: { excludeSlugs: string[] }) {
                     name: p.name,
                     price: v?.price ?? p.price,
                     image: img ? imageUrl(img, { w: 128 }) : undefined,
+                    productId: p._id,
                     ...(v
                       ? {
                           variantKey: v._key,
+                          variantId: v._key,
                           variantName: v.name,
                           ...(v.sku ? { variantSku: v.sku } : {}),
                         }

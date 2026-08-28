@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { isCronAuthorized } from "@/lib/deploy-rules";
+
 import {
   sendAbandonedCartEmail,
   sendPostPurchaseEmail,
@@ -19,13 +21,17 @@ export const dynamic = "force-dynamic";
 /**
  * Email flow runner. Call this from any scheduler on an interval:
  *
- *   Vercel Cron:  app/api/flows/route.ts → GET with `crons: [{ path: "/api/flows", schedule: "0 * * * *" }]`
- *   GitHub Action / plain cron:  curl -fsS https://yourdomain.com/api/flows
+ *   Vercel Cron:  GET /api/flows with Authorization: Bearer CRON_SECRET
+ *   (`crons` in vercel.json; Hobby allows once per day)
  *
  * Sends every due queued event and enqueues win-back emails for customers who
  * haven't ordered in 90+ days (once per week, guarded by a dedupe key).
  */
-export async function GET() {
+export async function GET(request: Request) {
+  if (!isCronAuthorized(request.headers.get("authorization"))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const results: Record<string, number> = {};
   const errors: string[] = [];
 

@@ -32,7 +32,7 @@ export function cloudinaryImageUrl(
   const idx = base.indexOf(marker);
   if (idx === -1) return base;
 
-  const insert = `f_auto,q_${q},w_${w}/`;
+  const insert = `f_auto,q_${q},c_limit,w_${w}/`;
   return `${base.slice(0, idx + marker.length)}${insert}${base.slice(
     idx + marker.length
   )}`;

@@ -169,18 +169,20 @@ export function ProductVideoSection({ product }: { product: Product }) {
   );
 }
 
-/** Reviews — genuine reviews only; demo content is excluded by the query. */
+/** Reviews — guests never see demo rows; a demo session can. */
 export function ReviewsSection({
   product,
   reviews,
   rating,
+  includeDemo = false,
 }: {
   product: Product;
   reviews: ProductReview[];
   rating?: number;
+  includeDemo?: boolean;
 }) {
   const real = (reviews ?? []).filter(
-    (r) => !r.isDemo && r.name && typeof r.rating === "number"
+    (r) => (includeDemo || !r.isDemo) && r.name && typeof r.rating === "number"
   );
 
   const distribution = [0, 0, 0, 0, 0];

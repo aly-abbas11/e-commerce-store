@@ -2,12 +2,19 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { imageUrl } from "@/lib/sanity/image";
-import { CATEGORY_LINKS } from "@/lib/categories";
+import { FALLBACK_SHOP_TYPES, shopTypeLinks, type ShopType } from "@/lib/categories";
 import { Separator } from "@/components/ui/separator";
 import { getSocialIcon } from "@/components/icons/social-icons";
 import type { SiteSettings } from "@/lib/types";
 
-export function Footer({ settings }: { settings: SiteSettings | null }) {
+export function Footer({
+  settings,
+  shopTypes = FALLBACK_SHOP_TYPES,
+}: {
+  settings: SiteSettings | null;
+  shopTypes?: ShopType[];
+}) {
+  const links = shopTypeLinks(shopTypes);
   const brandName = settings?.brandName || "VoltGear";
   const logoUrl = settings?.logo
     ? imageUrl(settings.logo, { w: 120 })
@@ -68,7 +75,7 @@ export function Footer({ settings }: { settings: SiteSettings | null }) {
         <div>
           <h3 className="mb-3 text-sm font-semibold">Shop</h3>
           <ul className="space-y-2">
-            {CATEGORY_LINKS.map((link) => (
+            {links.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}

@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Expand, ImageOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { cloudinaryImageUrl } from "@/lib/cloudinary";
 import { imageUrl } from "@/lib/sanity/image";
 import type { Product } from "@/lib/types";
@@ -23,13 +24,13 @@ export function ProductGallery({
   const sources: GallerySource[] = [
     ...(variantImage ? [variantImage] : []),
     ...(product.cloudinaryImages ?? []).map((id) => ({
-      src: cloudinaryImageUrl(id, { w: 1400 }),
-      thumb: cloudinaryImageUrl(id, { w: 200 }),
+      src: cloudinaryImageUrl(id, { w: PRODUCT_IMAGE.gallery }),
+      thumb: cloudinaryImageUrl(id, { w: PRODUCT_IMAGE.thumb }),
       alt: `${product.name} (gallery image)`,
     })),
     ...(product.images ?? []).map((img) => ({
-      src: imageUrl(img, { w: 1400 }),
-      thumb: imageUrl(img, { w: 200 }),
+      src: imageUrl(img, { w: PRODUCT_IMAGE.gallery }),
+      thumb: imageUrl(img, { w: PRODUCT_IMAGE.thumb }),
       alt: product.name,
     })),
   ];
@@ -94,8 +95,9 @@ export function ProductGallery({
             alt={current.alt}
             fill
             priority
+            quality={90}
             sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
+            className="object-contain"
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -159,6 +161,7 @@ export function ProductGallery({
                   alt={lb.alt}
                   fill
                   sizes="(max-width: 768px) 90vw, 700px"
+                  quality={90}
                   className="object-contain"
                 />
               </div>

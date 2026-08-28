@@ -1,6 +1,4 @@
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { siteSettingsQuery } from "@/lib/sanity/queries";
-import { getWriteClient } from "@/lib/sanity/write";
+import { fetchProductBySlug, fetchSiteSettings } from "@/lib/db/store";
 import { normalizeSettings } from "@/lib/site-config";
 import { getStockState } from "@/lib/stock";
 import type { OrderItem, Product, ProductVariant, SiteSettings } from "@/lib/types";
@@ -120,7 +118,8 @@ function findVariant(
  */
 export async function resolveCheckout(
   items: CheckoutLine[],
-  giftWrap: boolean
+  giftWrap: boolean,
+  includeDemo = false
 ): Promise<CheckoutResolutionResult> {
   const lines: ResolvedOrderItem[] = [];
   const mismatched: PriceMismatch[] = [];
@@ -142,7 +141,7 @@ export async function resolveCheckout(
       return { ok: false, error: CHECKOUT_ERRORS.invalidQuantity };
     }
 
-    const product = await fetchProductForCheckout(slug);
+    const product = await fetchProductForCheckout(slug, includeDemo);
     if (!product) {
       return { ok: false, error: CHECKOUT_ERRORS.unavailable };
     }
@@ -229,7 +228,7 @@ export async function resolveShippingAndTotal(
 ): Promise<{ shipping: number; total: number }> {
   let settings: SiteSettings | null = null;
   try {
-    settings = await fetchFromSanity<SiteSettings | null>(siteSettingsQuery);
+    settings = await fetchSiteSettings();
   } catch {
     settings = null;
   }
@@ -245,26 +244,6 @@ export async function resolveShippingAndTotal(
  * (token, uncached) when available so a price/stock change is honored at the
  * moment the order is placed; falls back to the storefront fetch otherwise.
  */
-async function fetchProductForCheckout(slug: string): Promise<Product | null> {
-  const query = `*[_type == "product" && slug.current == $slug && !(_id in path("drafts.**"))][0]{
-    name,
-    price,
-    stockStatus,
-    variants[]{
-      _key,
-      name,
-      sku,
-      price,
-      stockStatus
-    }
-  }`;
-  const client = getWriteClient();
-  if (client) {
-    try {
-      return await client.fetch<Product | null>(query, { slug });
-    } catch {
-      // fall through to the storefront fetch
-    }
-  }
-  return fetchFromSanity<Product | null>(query, { slug });
+async function fetchProductForCheckout(slug: string, includeDemo: boolean): Promise<Product | null> {
+  return fetchProductBySlug(slug, includeDemo);
 }

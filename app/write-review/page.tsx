@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 import { WriteReviewForm } from "@/components/reviews/write-review-form";
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { reviewProductsQuery } from "@/lib/sanity/queries";
+import { fetchReviewProducts } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
 import type { Product } from "@/lib/types";
 
 export const revalidate = 60;
@@ -24,7 +24,7 @@ interface ReviewProduct {
 export default async function WriteReviewPage() {
   let products: ReviewProduct[] = [];
   try {
-    products = await fetchFromSanity<ReviewProduct[]>(reviewProductsQuery);
+    products = await fetchReviewProducts(isDemoSession());
   } catch {
     products = [];
   }

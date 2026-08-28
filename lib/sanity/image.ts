@@ -1,13 +1,17 @@
-import type { SanityImageSource } from "@sanity/image-url";
-
-import { urlFor } from "@/lib/sanity/client";
+import { cloudinaryImageUrl } from "@/lib/cloudinary";
+import type { StoreImage } from "@/lib/types";
 
 export function imageUrl(
-  source: SanityImageSource,
-  { w = 800, h, quality = 80 }: { w?: number; h?: number; quality?: number } = {}
+  source: StoreImage | null | undefined | unknown,
+  { w = 800 }: { w?: number; h?: number; quality?: number } = {}
 ): string {
   if (!source) return "";
-  let url = urlFor(source).auto("format").quality(quality).width(w);
-  if (h) url = url.height(h);
-  return url.url();
+  if (typeof source !== "string") return "";
+  if (
+    source.includes("res.cloudinary.com") ||
+    source.includes("/image/upload/")
+  ) {
+    return cloudinaryImageUrl(source, { w });
+  }
+  return source;
 }

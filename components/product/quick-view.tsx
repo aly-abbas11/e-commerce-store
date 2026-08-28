@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/product/star-rating";
 import { imageUrl } from "@/lib/sanity/image";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { getStockState, getDefaultVariant } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
@@ -49,11 +50,12 @@ export function QuickViewButton({ product }: { product: Product }) {
           <div className="relative aspect-square bg-muted">
             {image ? (
               <Image
-                src={imageUrl(image, { w: 600 })}
+                src={imageUrl(image, { w: PRODUCT_IMAGE.card })}
                 alt={product.name}
                 fill
+                quality={90}
                 sizes="(max-width: 640px) 100vw, 50vw"
-                className="object-cover"
+                className="object-contain p-3"
               />
             ) : (
               <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -119,9 +121,11 @@ export function QuickViewButton({ product }: { product: Product }) {
                     name: product.name,
                     price: defaultVariant?.price ?? product.price,
                     image: image ? imageUrl(image, { w: 128 }) : undefined,
+                    productId: product._id,
                     ...(defaultVariant
                       ? {
                           variantKey: defaultVariant._key,
+                          variantId: defaultVariant._key,
                           variantName: defaultVariant.name,
                           ...(defaultVariant.sku
                             ? { variantSku: defaultVariant.sku }

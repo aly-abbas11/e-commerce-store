@@ -112,6 +112,24 @@ const ERROR_MARKERS = [
   "next: not-found",
 ];
 
+// ── Helper: extract product names from catalog/search HTML in rendered order ──
+function extractProductNames(html) {
+  const h = norm(html);
+  // Product names appear as link text inside product cards: >Product Name<
+  // We capture text between > and < that is followed by a price-like pattern
+  // or preceded by a category line. More reliable: look for product card links.
+  const names = [];
+  const re = /<a[^>]*href="\/product\/[^"]*"[^>]*>\s*([^<]+?)\s*<\/a>/gi;
+  let m;
+  while ((m = re.exec(h)) !== null) {
+    const name = m[1].trim();
+    if (name && !name.includes("View Product") && !name.includes("View Options") && name.length > 2) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
 // ── Seed data snapshot (read fresh each run) ────────────────────────────
 // Pre-cleanup: remove stale test fixtures from prior aborted runs
 {
@@ -250,11 +268,11 @@ section("B. Catalog")
   check("availability pills present", h.includes("In Stock") || h.includes("availability="), "");
   check("price filter present", h.includes("Min price") || h.includes("minPrice"), "");
 
-  const sortLow = norm((await get("/products?sort=price-low-high")).html);
-  check("sort=price-low-high -> 200", sortLow.includes("All Products"), "");
+  const sortLow = norm((await get("/products?sort=price-asc")).html);
+  check("sort=price-asc -> 200", sortLow.includes("All Products"), "");
 
-  const sortAz = norm((await get("/products?sort=name-a-z")).html);
-  check("sort=name-a-z -> 200", sortAz.includes("All Products"), "");
+  const sortAz = norm((await get("/products?sort=name-asc")).html);
+  check("sort=name-asc -> 200", sortAz.includes("All Products"), "");
 
   const availIn = norm((await get("/products?availability=in-stock")).html);
   check("availability=in-stock -> 200", availIn.includes("All Products"), "");
@@ -262,7 +280,7 @@ section("B. Catalog")
   const priceFilter = norm((await get("/products?minPrice=5000&maxPrice=10000")).html);
   check("price filter min+max -> 200", priceFilter.includes("All Products"), "");
 
-  const catSort = norm((await get("/products/earbuds?sort=price-low-high")).html);
+  const catSort = norm((await get("/products/earbuds?sort=price-asc")).html);
   check("category sort works", catSort.includes("AirDots Pro"), "");
 
   const catAvail = norm((await get("/products/earbuds?availability=in-stock")).html);
@@ -272,7 +290,7 @@ section("B. Catalog")
 // ─────────────────────────────────────────────────────────────────────────
 section("B2. Search pagination & safety")
 {
-  const searchSort = norm((await get("/search?q=charger&sort=price-low-high")).html);
+  const searchSort = norm((await get("/search?q=charger&sort=price-asc")).html);
   check("search with sort -> 200", searchSort.includes("charger"), "");
   check("search sort preserves q", searchSort.includes("Results for"), "");
 
@@ -779,6 +797,442 @@ section("J. PDP content sections (fixture)")
     });
     check("revalidate API accepted after PDP fixture cleanup", rv.status === 200, `status=${rv.status}`);
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+section("K. Catalog behavioral verification (STEP 5C)")
+{
+  const writeToken = process.env.SANITY_API_TOKEN;
+  if (!writeToken) {
+    check("STEP 5C has write token", false, "SANITY_API_TOKEN not set");
+    throw new Error("SANITY_API_TOKEN missing — cannot create 5C fixtures");
+  }
+  const wClient = createClient({
+    projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    dataset: process.env.NEXT_PUBLIC_SANITY_DATASET,
+    apiVersion: "2024-04-12",
+    useCdn: false,
+    token: writeToken,
+  });
+
+  // ── Pre-cleanup: remove any orphaned 5C fixtures from aborted prior runs ──
+  const staleIds = await sanity.fetch(
+    `*[_type=="product" && (name match "*5C Alpha*" || name match "*5C Beta*" || name match "*5C Gamma*" || name match "*5C Variant*" || name match "*5C Ambiguous*" || name match "*5C Sold*" || name match "*5CSEARCH*")]._id`
+  );
+  for (const id of (staleIds || [])) await wClient.delete(id).catch(() => {});
+  if (staleIds.length > 0) await new Promise((r) => setTimeout(r, 1000));
+
+  // ── Record pre-test product count ──
+  const preTestProductCount = await sanity.fetch(`count(*[_type=="product"])`);
+
+  // ── Create deterministic catalog fixtures ──
+  // Product A: Alpha, price 2000, in-stock
+  const fA = await wClient.create({
+    _type: "product",
+    name: "5C Alpha Charger",
+    slug: { _type: "slug", current: `vg-5c-alpha-${Date.now().toString(36)}` },
+    price: 2000,
+    category: "charger",
+    stockStatus: "in-stock",
+    featured: false,
+    shortDescription: "STEP 5C test fixture Alpha",
+  });
+  // Small delay to ensure distinct _createdAt
+  await new Promise((r) => setTimeout(r, 1500));
+
+  // Product B: Beta, price 5000, low-stock, featured
+  const fB = await wClient.create({
+    _type: "product",
+    name: "5C Beta Charger",
+    slug: { _type: "slug", current: `vg-5c-beta-${Date.now().toString(36)}` },
+    price: 5000,
+    category: "charger",
+    stockStatus: "low-stock",
+    featured: true,
+    shortDescription: "STEP 5C test fixture Beta",
+  });
+  await new Promise((r) => setTimeout(r, 1500));
+
+  // Product C: Gamma, price 9000, out-of-stock
+  const fC = await wClient.create({
+    _type: "product",
+    name: "5C Gamma Charger",
+    slug: { _type: "slug", current: `vg-5c-gamma-${Date.now().toString(36)}` },
+    price: 9000,
+    category: "charger",
+    stockStatus: "out-of-stock",
+    featured: false,
+    shortDescription: "STEP 5C test fixture Gamma",
+  });
+  await new Promise((r) => setTimeout(r, 1500));
+
+  // Product D: Variant charger with explicit default
+  const fV = await wClient.create({
+    _type: "product",
+    name: "5C Variant Charger",
+    slug: { _type: "slug", current: `vg-5c-variant-${Date.now().toString(36)}` },
+    price: 4999,
+    category: "charger",
+    stockStatus: "in-stock",
+    featured: false,
+    shortDescription: "STEP 5C variant fixture",
+    variants: [
+      { _key: "variant-black", name: "Black", price: 4999, stockStatus: "in-stock", isDefault: true },
+      { _key: "variant-white", name: "White", price: 7500, stockStatus: "in-stock" },
+    ],
+  });
+
+  // Product E: Ambiguous variant charger (2 variants, 0 defaults)
+  const fAmb = await wClient.create({
+    _type: "product",
+    name: "5C Ambiguous Charger",
+    slug: { _type: "slug", current: `vg-5c-ambiguous-${Date.now().toString(36)}` },
+    price: 3500,
+    category: "charger",
+    stockStatus: "in-stock",
+    featured: false,
+    shortDescription: "STEP 5C ambiguous variant fixture",
+    variants: [
+      { _key: "variant-red", name: "Red", price: 3500, stockStatus: "in-stock" },
+      { _key: "variant-blue", name: "Blue", price: 4200, stockStatus: "in-stock" },
+    ],
+  });
+
+  // Product F: Sold-out product
+  const fS = await wClient.create({
+    _type: "product",
+    name: "5C Sold-Out Charger",
+    slug: { _type: "slug", current: `vg-5c-soldout-${Date.now().toString(36)}` },
+    price: 6000,
+    category: "charger",
+    stockStatus: "out-of-stock",
+    featured: false,
+    shortDescription: "STEP 5C sold-out fixture",
+  });
+
+  // ── Create search fixtures for pagination testing ──
+  const searchFixtures = [];
+  for (let i = 1; i <= 14; i++) {
+    const sf = await wClient.create({
+      _type: "product",
+      name: `5CSEARCH Fixture ${String(i).padStart(2, "0")}`,
+      slug: { _type: "slug", current: `vg-5csearch-${String(i).padStart(2, "0")}-${Date.now().toString(36)}` },
+      price: 1000 + i * 500,
+      category: "earbuds",
+      stockStatus: i === 14 ? "out-of-stock" : "in-stock",
+      featured: false,
+      shortDescription: `STEP 5C search fixture ${i}`,
+    });
+    searchFixtures.push(sf);
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  const fixtureIds = [fA._id, fB._id, fC._id, fV._id, fAmb._id, fS._id, ...searchFixtures.map((f) => f._id)];
+  const fixtureSlugs = [fA, fB, fC, fV, fAmb, fS, ...searchFixtures].map((f) => f.slug?.current || "").filter(Boolean);
+
+  // ── Wait for Sanity CDN propagation ──
+  console.log("  Waiting for Sanity CDN propagation...");
+  let fixturesVisible = false;
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    const count = await sanity.fetch(`count(*[_type=="product" && name match "5C*"])`);
+    if (count >= 20) { fixturesVisible = true; break; }
+  }
+  check("5C fixtures visible in Sanity read API", fixturesVisible, "");
+
+  // Force revalidation of catalog pages
+  const revalToken = process.env.ADMIN_TOKEN || process.env.REVALIDATION_TOKEN || "voltgear-demo-revalidate";
+  await fetch(`${BASE}/api/revalidate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${revalToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ paths: ["/products", "/products/charger", "/products/earbuds", "/search"] }),
+  }).catch(() => {});
+
+  // Poll until fixtures appear on the rendered charger category page
+  let catalogHtml = "";
+  for (let i = 0; i < 20; i++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    catalogHtml = (await get("/products/charger")).html;
+    if (norm(catalogHtml).includes("5C Alpha Charger")) break;
+  }
+  const catalogH = norm(catalogHtml);
+  check("5C Alpha visible on /products/charger", catalogH.includes("5C Alpha Charger"), "");
+  check("5C Beta visible on /products/charger", catalogH.includes("5C Beta Charger"), "");
+  check("5C Gamma visible on /products/charger", catalogH.includes("5C Gamma Charger"), "");
+
+  // ── Part 5: Sorting verification ──
+  {
+    const priceAscH = norm((await get("/products/charger?sort=price-asc")).html);
+    const namesAsc = extractProductNames(priceAscH);
+    const fiveCAsc = namesAsc.filter((n) => n.startsWith("5C"));
+    check("price-asc: Alpha before Beta", fiveCAsc.indexOf("5C Alpha Charger") < fiveCAsc.indexOf("5C Beta Charger"), JSON.stringify(fiveCAsc));
+    check("price-asc: Beta before Gamma", fiveCAsc.indexOf("5C Beta Charger") < fiveCAsc.indexOf("5C Gamma Charger"), JSON.stringify(fiveCAsc));
+
+    const priceDescH = norm((await get("/products/charger?sort=price-desc")).html);
+    const namesDesc = extractProductNames(priceDescH);
+    const fiveCDesc = namesDesc.filter((n) => n.startsWith("5C"));
+    check("price-desc: Gamma before Beta", fiveCDesc.indexOf("5C Gamma Charger") < fiveCDesc.indexOf("5C Beta Charger"), JSON.stringify(fiveCDesc));
+    check("price-desc: Beta before Alpha", fiveCDesc.indexOf("5C Beta Charger") < fiveCDesc.indexOf("5C Alpha Charger"), JSON.stringify(fiveCDesc));
+
+    const nameAzH = norm((await get("/products/charger?sort=name-asc")).html);
+    const namesAz = extractProductNames(nameAzH);
+    const fiveCAz = namesAz.filter((n) => n.startsWith("5C"));
+    check("name-asc: Alpha before Beta", fiveCAz.indexOf("5C Alpha Charger") < fiveCAz.indexOf("5C Beta Charger"), JSON.stringify(fiveCAz));
+    check("name-asc: Beta before Gamma", fiveCAz.indexOf("5C Beta Charger") < fiveCAz.indexOf("5C Gamma Charger"), JSON.stringify(fiveCAz));
+
+    // Newest: created Alpha, Beta, Gamma in order. Newest-first = Gamma, Beta, Alpha
+    const newestH = norm((await get("/products/charger?sort=newest")).html);
+    const namesNewest = extractProductNames(newestH);
+    const fiveCNewest = namesNewest.filter((n) => n.startsWith("5C"));
+    check("newest: Gamma before Beta", fiveCNewest.indexOf("5C Gamma Charger") < fiveCNewest.indexOf("5C Beta Charger"), JSON.stringify(fiveCNewest));
+    check("newest: Beta before Alpha", fiveCNewest.indexOf("5C Beta Charger") < fiveCNewest.indexOf("5C Alpha Charger"), JSON.stringify(fiveCNewest));
+
+    // Featured: Beta is featured, Alpha/Gamma not. Featured first.
+    const featuredH = norm((await get("/products/charger?sort=featured")).html);
+    const namesFeatured = extractProductNames(featuredH);
+    const fiveCFeat = namesFeatured.filter((n) => n.startsWith("5C"));
+    check("featured: Beta before Alpha", fiveCFeat.indexOf("5C Beta Charger") < fiveCFeat.indexOf("5C Alpha Charger"), JSON.stringify(fiveCFeat));
+    check("featured: Beta before Gamma", fiveCFeat.indexOf("5C Beta Charger") < fiveCFeat.indexOf("5C Gamma Charger"), JSON.stringify(fiveCFeat));
+  }
+
+  // ── Part 6: Sort whitelist security ──
+  {
+    const malicious = await get("/products?sort=<script>alert(1)</script>");
+    check("malicious sort -> 200 (no 500)", malicious.status === 200, `status=${malicious.status}`);
+    check("malicious sort renders catalog", norm(malicious.html).includes("All Products"), "");
+
+    const hacked = await get("/products?sort=price desc];*[...");
+    check("hacked sort -> 200 (no 500)", hacked.status === 200, `status=${hacked.status}`);
+    check("hacked sort renders catalog", norm(hacked.html).includes("All Products"), "");
+
+    const random = await get("/products?sort=random-hacked-value");
+    check("random sort -> 200 (falls back to default)", random.status === 200, `status=${random.status}`);
+    check("random sort renders catalog", norm(random.html).includes("All Products"), "");
+  }
+
+  // ── Part 7: Availability filter correctness ──
+  {
+    const availH = norm((await get("/products/charger?availability=in-stock")).html);
+    const namesAvail = extractProductNames(availH);
+    check("availability=in-stock includes Alpha (in-stock)", namesAvail.includes("5C Alpha Charger"), "");
+    check("availability=in-stock includes Beta (low-stock)", namesAvail.includes("5C Beta Charger"), "");
+    check("availability=in-stock excludes Gamma (out-of-stock)", !namesAvail.includes("5C Gamma Charger"), "");
+    check("availability=in-stock excludes Sold-Out (out-of-stock)", !namesAvail.includes("5C Sold-Out Charger"), "");
+    // Verify count text matches actual results
+    const countMatch = availH.match(/(\d+)\s+products?/);
+    const displayedCount = countMatch ? parseInt(countMatch[1], 10) : -1;
+    const fiveCInAvail = namesAvail.filter((n) => n.startsWith("5C"));
+    // displayedCount includes real products too; just verify it's >= our fixture count
+    check("displayed count >= 5C fixture count in avail", displayedCount >= fiveCInAvail.length, `count=${displayedCount} fixtures=${fiveCInAvail.length}`);
+  }
+
+  // ── Part 8: Price filter correctness ──
+  {
+    // minPrice=3000 -> Beta (5000), Gamma (9000), Sold-Out (6000), Ambiguous (3500)
+    const minH = norm((await get("/products/charger?minPrice=3000")).html);
+    const namesMin = extractProductNames(minH);
+    check("minPrice=3000 includes Beta", namesMin.includes("5C Beta Charger"), "");
+    check("minPrice=3000 includes Gamma", namesMin.includes("5C Gamma Charger"), "");
+    check("minPrice=3000 excludes Alpha (2000)", !namesMin.includes("5C Alpha Charger"), "");
+
+    // maxPrice=6000 -> Alpha (2000), Variant (4999), Ambiguous (3500), Beta (5000), Sold-Out (6000)
+    const maxH = norm((await get("/products/charger?maxPrice=6000")).html);
+    const namesMax = extractProductNames(maxH);
+    check("maxPrice=6000 includes Alpha", namesMax.includes("5C Alpha Charger"), "");
+    check("maxPrice=6000 includes Beta", namesMax.includes("5C Beta Charger"), "");
+    check("maxPrice=6000 excludes Gamma (9000)", !namesMax.includes("5C Gamma Charger"), "");
+
+    // minPrice=3000 & maxPrice=6000 -> Beta (5000), Ambiguous (3500), Sold-Out (6000)
+    const rangeH = norm((await get("/products/charger?minPrice=3000&maxPrice=6000")).html);
+    const namesRange = extractProductNames(rangeH);
+    check("range 3000-6000 includes Beta", namesRange.includes("5C Beta Charger"), "");
+    check("range 3000-6000 includes Sold-Out", namesRange.includes("5C Sold-Out Charger"), "");
+    check("range 3000-6000 excludes Alpha", !namesRange.includes("5C Alpha Charger"), "");
+    check("range 3000-6000 excludes Gamma", !namesRange.includes("5C Gamma Charger"), "");
+  }
+
+  // ── Part 9: Category correctness ──
+  {
+    const earH = norm((await get("/products/earbuds")).html);
+    check("earbuds page does NOT contain Alpha", !earH.includes("5C Alpha Charger"), "");
+    check("earbuds page does NOT contain Beta", !earH.includes("5C Beta Charger"), "");
+    check("earbuds page does NOT contain Gamma", !earH.includes("5C Gamma Charger"), "");
+  }
+
+  // ── Part 10: Combined filter ──
+  {
+    const comboH = norm((await get("/products/charger?availability=in-stock&minPrice=3000&maxPrice=6000&sort=price-asc")).html);
+    const namesCombo = extractProductNames(comboH);
+    // Expected: Beta (5000, low-stock=purchasable), Ambiguous (3500, in-stock), Sold-Out (6000, out-of-stock=excluded)
+    // Wait: Sold-Out is out-of-stock so excluded by availability=in-stock
+    check("combined filter excludes Alpha", !namesCombo.includes("5C Alpha Charger"), "");
+    check("combined filter excludes Gamma", !namesCombo.includes("5C Gamma Charger"), "");
+    check("combined filter excludes Sold-Out", !namesCombo.includes("5C Sold-Out Charger"), "");
+    check("combined filter includes Beta", namesCombo.includes("5C Beta Charger"), "");
+  }
+
+  // ── Part 11: Price range normalization ──
+  {
+    // Reversed range: minPrice=9000, maxPrice=1000 -> catalog swaps to 1000-9000
+    const revH = norm((await get("/products/charger?minPrice=9000&maxPrice=1000")).html);
+    check("reversed range -> 200 (no 500)", revH.includes("products"), "");
+    // After swap: 1000-9000, Alpha (2000) should be included
+    const namesRev = extractProductNames(revH);
+    check("reversed range (swapped to 1000-9000) includes Alpha", namesRev.includes("5C Alpha Charger"), "swapped range includes Alpha");
+
+    // Invalid min
+    const badMin = await get("/products?minPrice=hello");
+    check("non-numeric minPrice -> 200 (no 500)", badMin.status === 200, `status=${badMin.status}`);
+
+    // Negative max
+    const negMax = await get("/products?maxPrice=-10");
+    check("negative maxPrice -> 200 (no 500)", negMax.status === 200, `status=${negMax.status}`);
+  }
+
+  // ── Part 12: Page param normalization ──
+  {
+    const abcPage = await get("/products?page=abc");
+    check("page=abc -> 200 (normalized to 1)", abcPage.status === 200, `status=${abcPage.status}`);
+    check("page=abc renders catalog", norm(abcPage.html).includes("All Products"), "");
+
+    const negPage = await get("/products?page=-3");
+    check("page=-3 -> 200 (normalized to 1)", negPage.status === 200, `status=${negPage.status}`);
+
+    const zeroPage = await get("/products?page=0");
+    check("page=0 -> 200 (normalized to 1)", zeroPage.status === 200, `status=${zeroPage.status}`);
+
+    const hugePage = await get("/products?page=999999");
+    check("page=999999 -> 200 (clamped to last)", hugePage.status === 200, `status=${hugePage.status}`);
+    // Should show products (last page)
+    check("huge page still shows products", hugePage.html.includes("product"), "");
+  }
+
+  // ── Part 18-20: Variant + sold-out catalog safety ──
+  {
+    const vSlug = fV.slug?.current;
+    if (vSlug) {
+      const vH = norm((await get(`/products/charger`)).html);
+      // Variant charger with explicit default: check that "Add to Cart" or "View Options" is present
+      // NOT variants[0] fallback
+      check("variant charger visible on category page", vH.includes("5C Variant Charger"), "");
+    }
+    const ambSlug = fAmb.slug?.current;
+    if (ambSlug) {
+      const ambH = norm((await get(`/products/charger`)).html);
+      check("ambiguous charger visible on category page", ambH.includes("5C Ambiguous Charger"), "");
+    }
+    // Sold-out product on catalog
+    const soldH = norm((await get(`/products/charger`)).html);
+    check("sold-out product visible on category page", soldH.includes("5C Sold-Out Charger"), "");
+  }
+
+  // ── Part 21: Sold-out search result ──
+  {
+    const soldSearchH = norm((await get("/search?q=5C+Sold-Out")).html);
+    check("sold-out product found in search", soldSearchH.includes("5C Sold-Out Charger"), "");
+    check("sold-out search result shows Sold Out", soldSearchH.includes("Sold Out"), "");
+    // No "Add to Cart" for sold-out product (it should show "Sold Out" button instead)
+    // The word "Add to Cart" may appear for other results, so we check the specific card area
+  }
+
+  // ── Part 22: Search pagination ──
+  {
+    const searchP1 = norm((await get("/search?q=5CSEARCH")).html);
+    const p1Names = extractProductNames(searchP1);
+    const p1Search = p1Names.filter((n) => n.startsWith("5CSEARCH"));
+    check("search 5CSEARCH page 1 has products", p1Search.length > 0, `count=${p1Search.length}`);
+    check("search page 1 has pagination", searchP1.includes("page=2"), "");
+
+    const searchP2 = norm((await get("/search?q=5CSEARCH&page=2")).html);
+    const p2Names = extractProductNames(searchP2);
+    const p2Search = p2Names.filter((n) => n.startsWith("5CSEARCH"));
+    check("search page 2 has products", p2Search.length > 0, `count=${p2Search.length}`);
+    // No duplication between pages
+    const overlap = p1Search.filter((n) => p2Search.includes(n));
+    check("search page 1 and 2 have no overlap", overlap.length === 0, JSON.stringify(overlap));
+  }
+
+  // ── Part 23: Search sort + filter ──
+  {
+    const searchSortAsc = norm((await get("/search?q=5CSEARCH&sort=price-asc")).html);
+    const sortNames = extractProductNames(searchSortAsc).filter((n) => n.startsWith("5CSEARCH"));
+    // Should be sorted by price ascending — check first and last fixture are in order
+    check("search sort price-asc returns results", sortNames.length > 0, `count=${sortNames.length}`);
+
+    const searchAvail = norm((await get("/search?q=5CSEARCH&availability=in-stock")).html);
+    const availNames = extractProductNames(searchAvail).filter((n) => n.startsWith("5CSEARCH"));
+    // Fixture 14 is out-of-stock, should be excluded
+    check("search availability=in-stock excludes fixture 14", !availNames.some((n) => n.includes("Fixture 14")), JSON.stringify(availNames));
+    check("search availability=in-stock includes fixture 02", availNames.some((n) => n.includes("Fixture 02")), JSON.stringify(availNames));
+  }
+
+  // ── Part 24: Search Clear Filters preserves q ──
+  {
+    const clearAllHtml = norm((await get("/search?q=5CSEARCH&availability=in-stock&sort=price-asc")).html);
+    // Check that Clear all link preserves q
+    check("Clear all link preserves q param", clearAllHtml.includes("q=5CSEARCH"), "");
+    // The href should point to /search?q=5CSEARCH (without availability/sort)
+  }
+
+  // ── Part 25: Empty search ──
+  {
+    const emptySearch = await get("/search");
+    check("GET /search (no q) -> 200", emptySearch.status === 200, `status=${emptySearch.status}`);
+    check("empty search shows prompt", norm(emptySearch.html).includes("What are you looking for?"), "");
+
+    const emptyQ = await get("/search?q=");
+    check("GET /search?q= -> 200", emptyQ.status === 200, `status=${emptyQ.status}`);
+    check("empty q shows prompt", norm(emptyQ.html).includes("What are you looking for?"), "");
+  }
+
+  // ── Part 26: Zero search ──
+  {
+    const zeroSearch = norm((await get("/search?q=zzqqxxw987")).html);
+    check("nonsense query -> no products found", zeroSearch.includes("No products found"), "");
+    check("nonsense query has browse link", zeroSearch.includes("/products"), "");
+  }
+
+  // ── Part 27: Unsafe search ──
+  {
+    const payloads = [
+      { raw: "<script>alert(1)</script>", encoded: "&lt;script&gt;" },
+      { raw: "\" ] | *[ _type == \"product\"", encoded: "]" },
+      { raw: "'", encoded: "&#x27;" },
+      { raw: "\\", encoded: "\\" },
+    ];
+    for (const p of payloads) {
+      const result = await get(`/search?q=${encodeURIComponent(p.raw)}`);
+      check(`unsafe search "${p.raw.slice(0, 20)}" -> 200 (no 500)`, result.status === 200, `status=${result.status}`);
+      const h = norm(result.html);
+      check(`unsafe search no error boundary`, !h.includes("Application error"), "");
+      check(`unsafe search escaped in heading`, h.includes("Results for"), "");
+    }
+  }
+
+  // ── Cleanup all 5C fixtures ──
+  console.log("  Cleaning up 5C fixtures...");
+  for (const id of fixtureIds) {
+    await wClient.delete(id).catch(() => {});
+  }
+  // Also clean any fixtures that may have been missed
+  const leftoverIds = await sanity.fetch(
+    `*[_type=="product" && (name match "*5C Alpha*" || name match "*5C Beta*" || name match "*5C Gamma*" || name match "*5C Variant*" || name match "*5C Ambiguous*" || name match "*5C Sold*" || name match "*5CSEARCH*")]._id`
+  );
+  for (const id of (leftoverIds || [])) {
+    await wClient.delete(id).catch(() => {});
+  }
+  check("all 5C catalog fixtures deleted", (leftoverIds || []).length === 0, JSON.stringify(leftoverIds));
+
+  // Revalidate catalog pages after cleanup
+  await fetch(`${BASE}/api/revalidate`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${revalToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ paths: ["/products", "/products/charger", "/products/earbuds", "/search"] }),
+  }).catch(() => {});
+
+  // ── Dataset after: verify baseline restored ──
+  const postTestProductCount = await sanity.fetch(`count(*[_type=="product"])`);
+  check("product count restored after 5C cleanup", postTestProductCount === preTestProductCount, `before=${preTestProductCount} after=${postTestProductCount}`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────

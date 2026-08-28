@@ -28,6 +28,11 @@ import { useCart, cartLineKey } from "@/components/cart/cart-provider";
 import { saveLastOrder } from "@/lib/review-reminder";
 import { formatPrice } from "@/lib/utils";
 import { trackBeginCheckout, trackPurchase } from "@/lib/analytics";
+import {
+  checkoutValidationCategoryFromHttp,
+  trackFirstParty,
+  validationCategoryFromFieldName,
+} from "@/lib/first-party-analytics";
 import { useSiteConfig } from "@/lib/use-site-config";
 import type { PriceMismatch } from "@/lib/checkout-server";
 
@@ -108,6 +113,7 @@ export default function CheckoutPage() {
 
   async function placeOrder(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (placing || placedOrder) return;
     setPlacing(true);
     setPriceChanged(null);
 
@@ -140,6 +146,12 @@ export default function CheckoutPage() {
       // authoritative prices (by line identity, never by slug alone), clear the
       // confirmation, and ask the customer to review — no automatic resubmit.
       if (res.status === 409 && data.code === "PRICE_CHANGED") {
+        trackFirstParty({
+          name: "checkout_validation_error",
+          path: "/checkout",
+          page_type: "checkout",
+          properties: { category: "price_changed" },
+        });
         for (const line of data.lines ?? []) {
           updateItemPrice(
             line.variantKey ? `${line.slug}::${line.variantKey}` : line.slug,
@@ -155,7 +167,21 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (!res.ok) throw new Error(data.error ?? "Failed");
+      if (!res.ok) {
+        const category = checkoutValidationCategoryFromHttp(
+          res.status,
+          typeof data.error === "string" ? data.error : undefined
+        );
+        if (category) {
+          trackFirstParty({
+            name: "checkout_validation_error",
+            path: "/checkout",
+            page_type: "checkout",
+            properties: { category },
+          });
+        }
+        throw new Error(data.error ?? "Failed");
+      }
       setPlacedOrder(data.orderId);
       setPlacedTotal(typeof data.total === "number" ? data.total : total);
       setPriceChanged(null);
@@ -228,6 +254,32 @@ export default function CheckoutPage() {
   }, [items.length, step, giftWrap]);
 
   useEffect(() => {
+    trackFirstParty({
+      name: "checkout_started",
+      path: "/checkout",
+      page_type: "checkout",
+    });
+  }, []);
+
+  useEffect(() => {
+    if (step === 1) {
+      trackFirstParty({
+        name: "checkout_step",
+        path: "/checkout",
+        page_type: "checkout",
+        properties: { step: "details" },
+      });
+    } else if (step === 2) {
+      trackFirstParty({
+        name: "checkout_step",
+        path: "/checkout",
+        page_type: "checkout",
+        properties: { step: "confirm" },
+      });
+    }
+  }, [step]);
+
+  useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") onLeave();
     };
@@ -259,7 +311,7 @@ export default function CheckoutPage() {
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Order number
             </p>
-            <p className="mt-1 font-mono text-lg font-bold">{placedOrder}</p>
+            <p className="mt-1 text-lg font-bold tabular-nums">{placedOrder}</p>
           </div>
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -459,6 +511,24 @@ export default function CheckoutPage() {
               <form
                 id="details-form"
                 className="mt-6 grid gap-4 sm:grid-cols-2"
+                onInvalidCapture={(e) => {
+                  const target = e.target;
+                  if (
+                    !(target instanceof HTMLInputElement) &&
+                    !(target instanceof HTMLSelectElement) &&
+                    !(target instanceof HTMLTextAreaElement)
+                  ) {
+                    return;
+                  }
+                  trackFirstParty({
+                    name: "checkout_validation_error",
+                    path: "/checkout",
+                    page_type: "checkout",
+                    properties: {
+                      category: validationCategoryFromFieldName(target.name),
+                    },
+                  });
+                }}
                 onSubmit={(e) => {
                   e.preventDefault();
                   setCustomer(
@@ -638,7 +708,7 @@ export default function CheckoutPage() {
                   >
                     <ChevronLeft className="mr-1 h-4 w-4" /> Back to details
                   </Button>
-                  <Button type="submit" size="lg" disabled={placing}>
+                  <Button type="submit" size="lg" disabled={placing || Boolean(placedOrder)}>
                     {placing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

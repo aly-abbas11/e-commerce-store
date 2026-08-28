@@ -22,6 +22,7 @@ import { useCart } from "@/components/cart/cart-provider";
 import { trackAddToCart } from "@/lib/analytics";
 import { cloudinaryImageUrl } from "@/lib/cloudinary";
 import { imageUrl } from "@/lib/sanity/image";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { getVariantStockState } from "@/lib/stock";
 import type { PublicSiteConfig } from "@/lib/site-config";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -65,8 +66,8 @@ export function PurchaseSection({
     const v = variant;
     if (!v?.image) return null;
     return {
-      src: imageUrl(v.image, { w: 1400 }),
-      thumb: imageUrl(v.image, { w: 200 }),
+      src: imageUrl(v.image, { w: PRODUCT_IMAGE.gallery }),
+      thumb: imageUrl(v.image, { w: PRODUCT_IMAGE.thumb }),
       alt: `${product.name} — ${v.name}`,
     };
   }, [variant, product.name]);
@@ -86,9 +87,11 @@ export function PurchaseSection({
         name: product.name,
         price,
         image: itemImage,
+        productId: product._id,
         ...(variant && hasVariants
           ? {
               variantKey: variant._key,
+              variantId: variant._key,
               variantName: variant.name,
               ...(variant.sku ? { variantSku: variant.sku } : {}),
             }

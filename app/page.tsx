@@ -9,23 +9,16 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/product/product-card";
 import { Hero } from "@/components/sections/hero";
 import { TestimonialSection } from "@/components/sections/testimonial-section";
-import { CATEGORY_LINKS } from "@/lib/categories";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchHero, fetchShopTypes, fetchSiteSettings, fetchTestimonials, fetchAllProducts, fetchBlogPosts } from "@/lib/db/store";
+import { FALLBACK_SHOP_TYPES, shopTypeLinks } from "@/lib/categories";
+import { isDemoSession } from "@/lib/demo";
 import { imageUrl } from "@/lib/sanity/image";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { normalizeSettings } from "@/lib/site-config";
-import {
-  blogPostsQuery,
-  heroQuery,
-  productsQuery,
-  siteSettingsQuery,
-  testimonialsQuery,
-} from "@/lib/sanity/queries";
 import type {
-  HeroSection,
   Page,
   Product,
   SiteSettings,
-  Testimonial,
 } from "@/lib/types";
 
 const RecentlyViewed = dynamic(
@@ -41,7 +34,7 @@ export const revalidate = 60;
 export async function generateMetadata(): Promise<Metadata> {
   let settings: SiteSettings | null = null;
   try {
-    settings = await fetchFromSanity<SiteSettings | null>(siteSettingsQuery);
+    settings = await fetchSiteSettings();
   } catch {
     settings = null;
   }
@@ -67,14 +60,16 @@ function hasUsableImage(product: Product) {
 
 async function getHomeData() {
   try {
-    const [hero, products, testimonials, posts, settings] = await Promise.all([
-      fetchFromSanity<HeroSection | null>(heroQuery),
-      fetchFromSanity<Product[]>(productsQuery),
-      fetchFromSanity<Testimonial[]>(testimonialsQuery),
-      fetchFromSanity<Page[]>(blogPostsQuery),
-      fetchFromSanity<SiteSettings | null>(siteSettingsQuery),
+    const demo = isDemoSession();
+    const [hero, products, testimonials, posts, settings, shopTypes] = await Promise.all([
+      fetchHero(demo),
+      fetchAllProducts(demo),
+      fetchTestimonials(demo),
+      fetchBlogPosts(demo),
+      fetchSiteSettings(),
+      fetchShopTypes(),
     ]);
-    return { hero, products, testimonials, posts, settings };
+    return { hero, products, testimonials, posts, settings, shopTypes };
   } catch {
     return {
       hero: null,
@@ -82,6 +77,7 @@ async function getHomeData() {
       testimonials: [],
       posts: [],
       settings: null,
+      shopTypes: FALLBACK_SHOP_TYPES,
     };
   }
 }
@@ -157,7 +153,7 @@ function ShopByCategory({
               <div className="relative aspect-[4/5] overflow-hidden bg-muted">
                 {image && (
                   <Image
-                    src={imageUrl(image, { w: 600 })}
+                    src={imageUrl(image, { w: PRODUCT_IMAGE.card })}
                     alt={`${card.label} products`}
                     fill
                     sizes="(max-width: 640px) 50vw, 25vw"
@@ -246,7 +242,7 @@ function BlogSection({ posts }: { posts: Page[] }) {
 }
 
 export default async function HomePage() {
-  const { hero, products, testimonials, posts, settings } =
+  const { hero, products, testimonials, posts, settings, shopTypes } =
     await getHomeData();
   const config = normalizeSettings(settings);
 
@@ -256,7 +252,7 @@ export default async function HomePage() {
     ? featured
     : products.filter((p) => p.stockStatus !== "out-of-stock");
 
-  const categoryCards = CATEGORY_LINKS.map((cat) => {
+  const categoryCards = shopTypeLinks(shopTypes).map((cat) => {
     const slug = cat.href.split("/").pop() as string;
     const candidates = products.filter((p) => p.category === slug);
     const rep =

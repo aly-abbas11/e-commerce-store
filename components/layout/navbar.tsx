@@ -15,7 +15,7 @@ import {
 import { useCart } from "@/components/cart/cart-provider";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { MegaMenu } from "@/components/layout/mega-menu";
-import { CATEGORY_LINKS } from "@/lib/categories";
+import { FALLBACK_SHOP_TYPES, shopTypeLinks, type ShopType } from "@/lib/categories";
 import { trackSearch } from "@/lib/analytics";
 import { imageUrl } from "@/lib/sanity/image";
 import type { SiteSettings } from "@/lib/types";
@@ -71,7 +71,13 @@ function SearchForm({
   );
 }
 
-export function Navbar({ settings }: { settings: SiteSettings | null }) {
+export function Navbar({
+  settings,
+  shopTypes = FALLBACK_SHOP_TYPES,
+}: {
+  settings: SiteSettings | null;
+  shopTypes?: ShopType[];
+}) {
   const { count, openCart } = useCart();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -79,6 +85,7 @@ export function Navbar({ settings }: { settings: SiteSettings | null }) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   const brandName = settings?.brandName || "VoltGear";
+  const links = shopTypeLinks(shopTypes);
   const logoUrl = settings?.logo
     ? imageUrl(settings.logo, { w: 256 })
     : undefined;
@@ -164,7 +171,7 @@ export function Navbar({ settings }: { settings: SiteSettings | null }) {
                 aria-hidden
               />
             </button>
-            <MegaMenu open={megaOpen} />
+            <MegaMenu open={megaOpen} shopTypes={shopTypes} />
           </div>
 
           {PAGE_LINKS.map((link) => (
@@ -248,7 +255,7 @@ export function Navbar({ settings }: { settings: SiteSettings | null }) {
               aria-label="Categories"
               className="mt-2 grid grid-cols-2 gap-2"
             >
-              {CATEGORY_LINKS.map((link) => {
+              {links.map((link) => {
                 const cat = link.href.split("/").pop()!;
                 const emoji: Record<string, string> = { smartwatch: "⌚", "power-bank": "🔋", charger: "🔌", earbuds: "🎧" };
                 return (

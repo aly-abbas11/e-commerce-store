@@ -4,16 +4,16 @@ import { notFound } from "next/navigation";
 import { CalendarDays, User } from "lucide-react";
 
 import { ContentBlocks } from "@/components/sections/content-blocks";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchPageBySlug, fetchPageSlugs } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
 import { imageUrl } from "@/lib/sanity/image";
-import { pageBySlugQuery, pageSlugsQuery } from "@/lib/sanity/queries";
 import type { Page } from "@/lib/types";
 
 export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {
-    const slugs = await fetchFromSanity<{ slug: string }[]>(pageSlugsQuery);
+    const slugs = await fetchPageSlugs();
     return slugs.map(({ slug }) => ({ slug }));
   } catch {
     return [];
@@ -27,9 +27,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   let page: Page | null = null;
   try {
-    page = await fetchFromSanity<Page | null>(pageBySlugQuery, {
-      slug: params.slug,
-    });
+    page = await fetchPageBySlug(params.slug, isDemoSession());
   } catch {
     page = null;
   }
@@ -54,9 +52,7 @@ export default async function StaticPage({
 }) {
   let page: Page | null = null;
   try {
-    page = await fetchFromSanity<Page | null>(pageBySlugQuery, {
-      slug: params.slug,
-    });
+    page = await fetchPageBySlug(params.slug, isDemoSession());
   } catch {
     page = null;
   }

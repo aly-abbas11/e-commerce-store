@@ -49,9 +49,11 @@ export function StickyAddToCart({ product }: { product: Product }) {
         name: product.name,
         price: defaultVariant?.price ?? product.price,
         image: itemImage,
+        productId: product._id,
         ...(defaultVariant
           ? {
               variantKey: defaultVariant._key,
+              variantId: defaultVariant._key,
               variantName: defaultVariant.name,
               ...(defaultVariant.sku ? { variantSku: defaultVariant.sku } : {}),
             }

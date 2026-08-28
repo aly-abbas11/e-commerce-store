@@ -12,6 +12,7 @@ import { StarRating } from "@/components/product/star-rating";
 import { QuickViewButton } from "@/components/product/quick-view";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
 import { CompareButton } from "@/components/product/product-comparison";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { imageUrl } from "@/lib/sanity/image";
 import { getStockState, getDefaultVariant } from "@/lib/stock";
 import type { Product } from "@/lib/types";
@@ -42,16 +43,17 @@ export function ProductCard({ product, className }: { product: Product; classNam
         className
       )}
     >
-      <Link href={`/product/${product.slug}`} className="block">
+      <Link href={`/product/${product.slug}`} prefetch={false} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
           {image ? (
             <Image
               ref={imgRef}
-              src={imageUrl(image, { w: 640 })}
+              src={imageUrl(image, { w: PRODUCT_IMAGE.card })}
               alt={product.name}
               fill
+              quality={90}
               sizes="(max-width: 768px) 50vw, 25vw"
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -126,9 +128,11 @@ export function ProductCard({ product, className }: { product: Product; classNam
                 name: product.name,
                 price: defaultVariant?.price ?? product.price,
                 image: image ? imageUrl(image, { w: 128 }) : undefined,
+                productId: product._id,
                 ...(defaultVariant
                   ? {
                       variantKey: defaultVariant._key,
+                      variantId: defaultVariant._key,
                       variantName: defaultVariant.name,
                       ...(defaultVariant.sku
                         ? { variantSku: defaultVariant.sku }

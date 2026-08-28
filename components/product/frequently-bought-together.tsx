@@ -6,9 +6,8 @@ import { ShoppingCart, Check, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
-import { productsQuery } from "@/lib/sanity/queries";
 import { getDefaultVariant, getStockState } from "@/lib/stock";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
@@ -29,7 +28,7 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
   const { addItem } = useCart();
 
   useEffect(() => {
-    fetchFromSanity<Product[]>(productsQuery)
+    fetchStoreProducts()
       .then((products) => {
         const addable = (p: Product) => {
           if (p.stockStatus === "out-of-stock") return false;
@@ -56,7 +55,9 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
         name: current.name,
         price: v.price ?? current.price,
         image: current.images?.[0] ? imageUrl(current.images[0], { w: 128 }) : undefined,
+        productId: current._id,
         variantKey: v._key,
+        variantId: v._key,
         variantName: v.name,
         ...(v.sku ? { variantSku: v.sku } : {}),
       };
@@ -67,6 +68,7 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
       name: current.name,
       price: current.price,
       image: current.images?.[0] ? imageUrl(current.images[0], { w: 128 }) : undefined,
+      productId: current._id,
     };
   }, [current]);
 
@@ -101,9 +103,11 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
           name: i.product.name,
           price: v?.price ?? i.product.price,
           image: i.product.images?.[0] ? imageUrl(i.product.images[0], { w: 128 }) : undefined,
+          productId: i.product._id,
           ...(v
             ? {
                 variantKey: v._key,
+                variantId: v._key,
                 variantName: v.name,
                 ...(v.sku ? { variantSku: v.sku } : {}),
               }

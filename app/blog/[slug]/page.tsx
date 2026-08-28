@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { CalendarDays, ChevronRight, Clock, User } from "lucide-react";
 
 import { ContentBlocks } from "@/components/sections/content-blocks";
-import { fetchFromSanity } from "@/lib/sanity/client";
+import { fetchBlogPosts, fetchPageBySlug } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
+import { publicSiteUrl } from "@/lib/deploy-rules";
 import { imageUrl } from "@/lib/sanity/image";
-import { pageBySlugQuery, blogPostsQuery } from "@/lib/sanity/queries";
 import type { ContentBlock, Page } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,7 @@ export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {
-    const posts = await fetchFromSanity<Page[]>(blogPostsQuery);
+    const posts = await fetchBlogPosts();
     return posts.map((post) => ({ slug: post.slug }));
   } catch {
     return [];
@@ -43,9 +44,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   let post: Page | null = null;
   try {
-    post = await fetchFromSanity<Page | null>(pageBySlugQuery, {
-      slug: params.slug,
-    });
+    post = await fetchPageBySlug(params.slug, isDemoSession());
   } catch {
     post = null;
   }
@@ -74,9 +73,7 @@ export default async function BlogPostPage({
 }) {
   let post: Page | null = null;
   try {
-    post = await fetchFromSanity<Page | null>(pageBySlugQuery, {
-      slug: params.slug,
-    });
+    post = await fetchPageBySlug(params.slug, isDemoSession());
   } catch {
     post = null;
   }
@@ -91,7 +88,7 @@ export default async function BlogPostPage({
       })
     : "Draft";
   const mins = readingMinutes(post.sections);
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltique.example.com";
+  const siteUrl = publicSiteUrl();
 
   const jsonLd = {
     "@context": "https://schema.org",

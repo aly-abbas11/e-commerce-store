@@ -5,6 +5,7 @@ import { ArrowRight, Banknote, ShoppingBag, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { imageUrl } from "@/lib/sanity/image";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { getStockState } from "@/lib/stock";
 import type { PublicSiteConfig } from "@/lib/site-config";
 import type { HeroSection } from "@/lib/types";
@@ -109,12 +110,13 @@ export function Hero({
               <div className="relative aspect-square overflow-hidden bg-muted">
                 {image ? (
                   <Image
-                    src={imageUrl(image, { w: 900 })}
+                    src={imageUrl(image, { w: PRODUCT_IMAGE.gallery })}
                     alt={featured.name}
                     fill
                     priority
+                    quality={90}
                     sizes="(max-width: 1024px) 92vw, 44vw"
-                    className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    className="object-contain p-6"
                   />
                 ) : null}
                 {discount > 0 && (

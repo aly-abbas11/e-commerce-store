@@ -1,12 +1,7 @@
 import type { PortableTextBlock } from "@portabletext/types";
-import type { SanityImageSource } from "@sanity/image-url";
 
 export type StockStatus = "in-stock" | "low-stock" | "out-of-stock";
-export type ProductCategory =
-  | "smartwatch"
-  | "power-bank"
-  | "charger"
-  | "earbuds";
+export type ProductCategory = string;
 
 export interface ProductReview {
   name?: string;
@@ -18,6 +13,8 @@ export interface ProductReview {
   isDemo?: boolean;
 }
 
+export type StoreImage = string;
+
 export interface ProductVariant {
   _key?: string;
   name: string;
@@ -25,14 +22,14 @@ export interface ProductVariant {
   price?: number;
   compareAtPrice?: number;
   stockStatus: StockStatus;
-  image?: SanityImageSource;
+  image?: StoreImage;
   isDefault?: boolean;
 }
 
 export interface ProductVideo {
   url?: string;
   cloudinaryPublicId?: string;
-  poster?: SanityImageSource;
+  poster?: StoreImage;
 }
 
 export interface ProductFaqItem {
@@ -48,7 +45,7 @@ export interface Product {
   category: ProductCategory;
   price: number;
   compareAtPrice?: number;
-  images: SanityImageSource[];
+  images: StoreImage[];
   cloudinaryImages?: string[];
   shortDescription?: string;
   description?: PortableTextBlock[];
@@ -67,12 +64,13 @@ export interface Product {
   reviews?: ProductReview[];
   featured?: boolean;
   badge?: string;
+  isDemo?: boolean;
 }
 
 export interface HeroSection {
   headline: string;
   subheadline?: string;
-  backgroundImage?: SanityImageSource;
+  backgroundImage?: StoreImage;
   backgroundVideo?: string;
   primaryCta?: { label?: string; href?: string };
   secondaryCta?: { label?: string; href?: string };
@@ -92,7 +90,7 @@ export interface Testimonial {
 export interface SiteSettings {
   brandName: string;
   tagline?: string;
-  logo?: SanityImageSource;
+  logo?: StoreImage;
   primaryColor?: string;
   secondaryColor?: string;
   theme?: "dark" | "light";
@@ -136,7 +134,7 @@ export type ContentBlock =
       products?: Product[];
     }
   | { _type: "faq"; items?: { question: string; answer: string }[] }
-  | { _type: "inlineImage"; image?: SanityImageSource; dimensions?: { width?: number; height?: number } }
+  | { _type: "inlineImage"; image?: StoreImage; dimensions?: { width?: number; height?: number } }
   | { _type: "quote"; text?: string }
   | { _type: "cta"; label?: string; href?: string }
   | { _type: "contactForm"; heading?: string };
@@ -146,12 +144,13 @@ export interface Page {
   slug: string;
   pageType?: "static" | "blog";
   excerpt?: string;
-  coverImage?: SanityImageSource;
+  coverImage?: StoreImage;
   publishedAt?: string;
   author?: string;
   sections?: ContentBlock[];
-  keywords?: string[];
-  seo?: { title?: string; description?: string };
+    keywords?: string[];
+    seo?: { title?: string; description?: string };
+    isDemo?: boolean;
 }
 
 export interface OrderCustomer {
@@ -200,6 +199,7 @@ export interface Order {
   statusUpdatedAt?: string;
   statusHistory?: OrderStatusHistoryEntry[];
   createdAt: string;
+  isDemo?: boolean;
 }
 
 export type EmailEventKind =

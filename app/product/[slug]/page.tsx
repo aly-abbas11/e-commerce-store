@@ -18,18 +18,14 @@ import {
   ReviewsSection,
   SpecificationsSection,
 } from "@/components/product/product-info-sections";
-import { fetchFromSanity } from "@/lib/sanity/client";
-import { getWriteClient } from "@/lib/sanity/write";
+import { fetchApprovedReviews, fetchAllProducts, fetchProductBySlug, fetchProductSlugs } from "@/lib/db/store";
+import { isDemoSession } from "@/lib/demo";
+import { publicSiteUrl } from "@/lib/deploy-rules";
 import { getSettings } from "@/lib/sanity/settings";
 import { cloudinaryImageUrl } from "@/lib/cloudinary";
 import { imageUrl } from "@/lib/sanity/image";
+import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { normalizeSettings } from "@/lib/site-config";
-import {
-  approvedReviewsQuery,
-  productBySlugQuery,
-  productSlugsQuery,
-  productsQuery,
-} from "@/lib/sanity/queries";
 import type { Product, ProductReview } from "@/lib/types";
 
 export const revalidate = 60;
@@ -44,7 +40,7 @@ const StickyAddToCart = dynamic(
 
 export async function generateStaticParams() {
   try {
-    const slugs = await fetchFromSanity<{ slug: string }[]>(productSlugsQuery);
+    const slugs = await fetchProductSlugs();
     return slugs.map(({ slug }) => ({ slug }));
   } catch {
     return [];
@@ -58,9 +54,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   let product: Product | null = null;
   try {
-    product = await fetchFromSanity<Product | null>(productBySlugQuery, {
-      slug: params.slug,
-    });
+    product = await fetchProductBySlug(params.slug, isDemoSession());
   } catch {
     product = null;
   }
@@ -74,7 +68,7 @@ export async function generateMetadata({
       description: product.shortDescription,
       type: "website",
       images: product.images?.[0]
-        ? [imageUrl(product.images[0], { w: 800 })]
+        ? [imageUrl(product.images[0], { w: PRODUCT_IMAGE.gallery })]
         : [],
     },
   };
@@ -85,28 +79,18 @@ export default async function ProductPage({
 }: {
   params: { slug: string };
 }) {
+  const demo = isDemoSession();
   let product: Product | null = null;
   let related: Product[] = [];
   let settings = null;
   let approvedReviews: ProductReview[] = [];
   try {
-    product = await fetchFromSanity<Product | null>(productBySlugQuery, {
-      slug: params.slug,
-    });
+    product = await fetchProductBySlug(params.slug, demo);
     if (product) {
-      // reviewSubmission documents use private (dotted) IDs, so approved
-      // reviews can only be read through the token client — never the
-      // anonymous storefront client.
-      const writeClient = getWriteClient();
-      const reviewPromise = writeClient
-        ? (writeClient.fetch<ProductReview[]>(approvedReviewsQuery, {
-            productId: product._id,
-          }) as Promise<ProductReview[]>)
-        : Promise.resolve<ProductReview[]>([]);
       [related, settings, approvedReviews] = await Promise.all([
-        fetchFromSanity<Product[]>(productsQuery),
+        fetchAllProducts(demo),
         getSettings().catch(() => null),
-        reviewPromise,
+        fetchApprovedReviews(product._id, demo),
       ]);
     }
   } catch {
@@ -138,15 +122,17 @@ export default async function ProductPage({
     })
     .slice(0, 8);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const siteUrl = publicSiteUrl();
   const availability: Record<string, string> = {
     "in-stock": "https://schema.org/InStock",
     "low-stock": "https://schema.org/LimitedAvailability",
     "out-of-stock": "https://schema.org/OutOfStock",
   };
   const productImages = [
-    ...(product.cloudinaryImages ?? []).map((id) => cloudinaryImageUrl(id, { w: 800 })),
-    ...(product.images ?? []).map((img) => imageUrl(img, { w: 800 })),
+    ...(product.cloudinaryImages ?? []).map((id) =>
+      cloudinaryImageUrl(id, { w: PRODUCT_IMAGE.gallery })
+    ),
+    ...(product.images ?? []).map((img) => imageUrl(img, { w: PRODUCT_IMAGE.gallery })),
   ];
   const realReviews = (productWithReviews.reviews ?? []).filter(
     (r) => !r.isDemo && r.name && typeof r.rating === "number"
@@ -208,6 +194,7 @@ export default async function ProductPage({
         price={product.price}
         image={product.images?.[0] ? imageUrl(product.images[0], { w: 128 }) : undefined}
         category={product.category}
+        productId={product._id}
       />
       <script
         type="application/ld+json"
@@ -247,6 +234,7 @@ export default async function ProductPage({
         product={productWithReviews}
         reviews={productWithReviews.reviews ?? []}
         rating={product.rating}
+        includeDemo={demo}
       />
       <ProductFaqSection product={productWithReviews} />
 

@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { pageTypeFromPath, trackFirstParty } from "@/lib/first-party-analytics";
+
 export interface CartItem {
   slug: string;
   name: string;
@@ -19,6 +21,8 @@ export interface CartItem {
   variantKey?: string;
   variantName?: string;
   variantSku?: string;
+  productId?: string;
+  variantId?: string;
 }
 
 /**
@@ -29,6 +33,23 @@ export interface CartItem {
  */
 export function cartLineKey(item: { slug: string; variantKey?: string }): string {
   return item.variantKey ? `${item.slug}::${item.variantKey}` : item.slug;
+}
+
+function trackCartLine(
+  name: "add_to_cart" | "remove_from_cart",
+  item: { slug: string; productId?: string; variantId?: string },
+  quantity: number,
+) {
+  const path = typeof window !== "undefined" ? window.location.pathname : "/";
+  trackFirstParty({
+    name,
+    path,
+    page_type: pageTypeFromPath(path),
+    ...(item.productId ? { product_id: item.productId } : {}),
+    ...(item.variantId ? { variant_id: item.variantId } : {}),
+    product_slug: item.slug,
+    properties: { quantity },
+  });
 }
 
 interface CartContextValue {
@@ -79,26 +100,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const existing = prev.find((i) => cartLineKey(i) === key);
         if (existing) {
           return prev.map((i) =>
-            cartLineKey(i) === key ? { ...i, quantity: i.quantity + quantity } : i
+            cartLineKey(i) === key
+              ? {
+                  ...i,
+                  quantity: i.quantity + quantity,
+                  productId: i.productId ?? item.productId,
+                  variantId: i.variantId ?? item.variantId,
+                }
+              : i
           );
         }
         return [...prev, { ...item, quantity }];
       });
+      trackCartLine("add_to_cart", item, quantity);
     },
     []
   );
 
-  const removeItem = useCallback((key: string) => {
-    setItems((prev) => prev.filter((i) => cartLineKey(i) !== key));
-  }, []);
+  const removeItem = useCallback(
+    (key: string) => {
+      const existing = items.find((i) => cartLineKey(i) === key);
+      setItems((prev) => prev.filter((i) => cartLineKey(i) !== key));
+      if (existing) {
+        trackCartLine("remove_from_cart", existing, existing.quantity);
+      }
+    },
+    [items]
+  );
 
-  const updateQuantity = useCallback((key: string, quantity: number) => {
-    setItems((prev) =>
-      quantity <= 0
-        ? prev.filter((i) => cartLineKey(i) !== key)
-        : prev.map((i) => (cartLineKey(i) === key ? { ...i, quantity } : i))
-    );
-  }, []);
+  const updateQuantity = useCallback(
+    (key: string, quantity: number) => {
+      const existing = items.find((i) => cartLineKey(i) === key);
+      setItems((prev) =>
+        quantity <= 0
+          ? prev.filter((i) => cartLineKey(i) !== key)
+          : prev.map((i) => (cartLineKey(i) === key ? { ...i, quantity } : i))
+      );
+      if (quantity <= 0 && existing) {
+        trackCartLine("remove_from_cart", existing, existing.quantity);
+      }
+    },
+    [items]
+  );
 
   const updateItemPrice = useCallback((key: string, price: number) => {
     setItems((prev) =>

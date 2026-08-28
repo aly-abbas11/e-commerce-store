@@ -7,6 +7,7 @@ import { PriceFilter } from "@/components/catalog/price-filter";
 import { ProductGrid, EmptyState } from "@/components/catalog/product-grid";
 import { CatalogPagination } from "@/components/catalog/catalog-pagination";
 import { SortSelect } from "@/components/catalog/sort-select";
+import type { ShopType } from "@/lib/categories";
 import type { CatalogFilters, CatalogResult } from "@/lib/catalog";
 import type { BreadcrumbItem } from "@/components/catalog/catalog-breadcrumbs";
 
@@ -21,6 +22,7 @@ export interface CatalogViewProps {
   showCategoryPills: boolean;
   selectedCategory: string | null;
   categoryCounts: Record<string, number>;
+  shopTypes?: ShopType[];
   emptyMessage: string;
   emptyActionHref?: string;
   query?: string;
@@ -37,6 +39,7 @@ export function CatalogView({
   showCategoryPills,
   selectedCategory,
   categoryCounts,
+  shopTypes,
   emptyMessage,
   emptyActionHref,
   query,
@@ -57,7 +60,12 @@ export function CatalogView({
       </header>
 
       {showCategoryPills && (
-        <CategoryPills basePath={basePath} selected={selectedCategory} counts={categoryCounts} />
+        <CategoryPills
+          basePath={basePath}
+          selected={selectedCategory}
+          counts={categoryCounts}
+          shopTypes={shopTypes}
+        />
       )}
 
       <div className="lg:flex lg:gap-8">

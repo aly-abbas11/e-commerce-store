@@ -1,16 +1,18 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/categories";
+import { FALLBACK_SHOP_TYPES, type ShopType } from "@/lib/categories";
 
 export function CategoryPills({
   basePath = "/products",
   selected,
   counts,
+  shopTypes = FALLBACK_SHOP_TYPES,
 }: {
   basePath?: string;
   selected?: string | null;
   counts: Record<string, number>;
+  shopTypes?: ShopType[];
 }) {
   return (
     <nav
@@ -18,16 +20,18 @@ export function CategoryPills({
       className="mb-6 flex flex-wrap items-center gap-2"
     >
       <Button asChild variant={selected ? "outline" : "default"}>
-        <Link href={basePath}>All Products</Link>
+        <Link href={basePath.startsWith("/products/") ? "/products" : basePath}>
+          All Products
+        </Link>
       </Button>
-      {CATEGORIES.map((cat) => (
+      {shopTypes.map((cat) => (
         <Button
           key={cat.slug}
           asChild
           variant={selected === cat.slug ? "default" : "outline"}
         >
-          <Link href={`${basePath}/${cat.slug}`}>
-            {cat.label} <span className="ml-1 text-xs opacity-60">({counts[cat.slug] ?? 0})</span>
+          <Link href={`/products/${cat.slug}`}>
+            {cat.name} <span className="ml-1 text-xs opacity-60">({counts[cat.slug] ?? 0})</span>
           </Link>
         </Button>
       ))}
