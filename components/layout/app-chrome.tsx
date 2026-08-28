@@ -10,7 +10,6 @@ import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { GadgetFooter } from "@/components/gadget/gadget-footer";
 import { GadgetNavbar } from "@/components/gadget/gadget-navbar";
-import { DemoBanner } from "@/components/demo/demo-banner";
 import { TrustBar } from "@/components/sections/trust-bar";
 import { chromeMode } from "@/lib/storefront-layout-rules";
 import type { ShopType } from "@/lib/categories";
@@ -25,6 +24,7 @@ export function AppChrome({
   cartEffects,
   urgencyTicker,
   compareBar,
+  demoBanner,
 }: {
   children: ReactNode;
   settings: SiteSettings | null;
@@ -34,6 +34,7 @@ export function AppChrome({
   cartEffects: ReactNode;
   urgencyTicker: ReactNode;
   compareBar: ReactNode;
+  demoBanner: ReactNode;
 }) {
   const pathname = usePathname();
   if (!pathname) {
@@ -50,7 +51,7 @@ export function AppChrome({
       <WishlistProvider>
         {mode === "gadget" ? (
           <>
-            <DemoBanner />
+            {demoBanner}
             <GadgetNavbar settings={settings} shopTypes={shopTypes} />
             <main className="flex-1">{children}</main>
             <GadgetFooter settings={settings} shopTypes={shopTypes} />
@@ -61,7 +62,7 @@ export function AppChrome({
           <>
             <FirstPartyTracker />
             {urgencyTicker}
-            <DemoBanner />
+            {demoBanner}
             <Navbar settings={settings} shopTypes={shopTypes} />
             <main className="flex-1">{children}</main>
             <TrustBar settings={settings} />

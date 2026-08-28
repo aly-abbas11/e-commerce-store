@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 
 import { AppChrome } from "@/components/layout/app-chrome";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { shouldLoadClarity } from "@/lib/clarity-rules";
 import { publicSiteUrl } from "@/lib/deploy-rules";
 import { FALLBACK_SHOP_TYPES } from "@/lib/categories";
@@ -198,6 +199,7 @@ export default async function RootLayout({
           reviewReminder={<ReviewReminderPopup />}
           cartEffects={<CartEffects />}
           compareBar={<CompareBarWrapper />}
+          demoBanner={<DemoBanner />}
         >
           {children}
         </AppChrome>
