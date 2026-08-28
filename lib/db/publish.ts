@@ -1,0 +1,286 @@
+import { categoryIsAssignable } from "@/lib/db/category-rules";
+
+export type PublishStatus = "draft" | "published" | "unpublished";
+
+export interface ProductDocument {
+  name: string;
+  slug: string;
+  brand?: string;
+  sku?: string;
+  category: string;
+  price: number;
+  compareAtPrice?: number;
+  images: string[];
+  cloudinaryImages?: string[];
+  shortDescription?: string;
+  description?: unknown;
+  features?: string[];
+  specifications?: { label: string; value: string }[];
+  compatibility?: string[];
+  inTheBox?: string[];
+  productVideo?: { url?: string; cloudinaryPublicId?: string; poster?: string };
+  variants?: Array<{
+    _key?: string;
+    name: string;
+    sku?: string;
+    price?: number;
+    compareAtPrice?: number;
+    stockStatus: string;
+    image?: string;
+    isDefault?: boolean;
+  }>;
+  productFaq?: { question: string; answer: string }[];
+  stockStatus: string;
+  rating?: number;
+  reviewCount?: number;
+  reviews?: Array<{
+    name?: string;
+    rating?: number;
+    date?: string;
+    comment?: string;
+    verified?: boolean;
+    image?: string;
+    isDemo?: boolean;
+  }>;
+  featured?: boolean;
+  badge?: string;
+  isDemo?: boolean;
+  costPrice?: number;
+}
+
+export function shopVisible(status: unknown): boolean {
+  return status === "published";
+}
+
+export function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Keep extras the short admin form does not show. Video on the form wins. */
+export function mergeProductForm(
+  existing: ProductDocument | undefined,
+  form: ProductDocument
+): ProductDocument {
+  const name = form.name?.trim() ?? "";
+  const slug = form.slug?.trim() || slugify(name);
+  const videoUrl = form.productVideo?.url?.trim() || "";
+  const poster = form.productVideo?.poster?.trim() || undefined;
+  const productVideo = videoUrl
+    ? { url: videoUrl, poster, cloudinaryPublicId: undefined }
+    : poster
+      ? { url: undefined, poster, cloudinaryPublicId: existing?.productVideo?.cloudinaryPublicId }
+      : undefined;
+
+  return {
+    name,
+    slug,
+    category: form.category?.trim() ?? "",
+    price: Number.isFinite(form.price) ? form.price : 0,
+    compareAtPrice: form.compareAtPrice,
+    images: form.images ?? [],
+    shortDescription: form.shortDescription,
+    description: form.description,
+    stockStatus: form.stockStatus || "in-stock",
+    featured: Boolean(form.featured),
+    isDemo: Boolean(form.isDemo),
+    costPrice:
+      form.costPrice != null && Number.isFinite(form.costPrice) && form.costPrice >= 0
+        ? form.costPrice
+        : existing?.costPrice,
+    productVideo,
+    brand: existing?.brand,
+    sku: existing?.sku,
+    badge: existing?.badge,
+    cloudinaryImages: existing?.cloudinaryImages,
+    features: existing?.features,
+    specifications: existing?.specifications,
+    compatibility: existing?.compatibility,
+    inTheBox: existing?.inTheBox,
+    variants: existing?.variants,
+    productFaq: existing?.productFaq,
+    reviews: existing?.reviews,
+    rating: existing?.rating,
+    reviewCount: existing?.reviewCount,
+  };
+}
+
+
+export function canSaveDraft(
+  input: {
+    name?: string;
+    slug?: string;
+    category?: string;
+  },
+  types: { slug: string }[]
+): { ok: true } | { ok: false; error: string } {
+  if (!input.name?.trim() || !input.slug?.trim()) {
+    return { ok: false, error: "Name and slug are required to save a draft." };
+  }
+  const category = categoryIsAssignable(input.category, types);
+  if (!category.ok) return category;
+  return { ok: true };
+}
+
+export function canPublish(
+  input: {
+    name?: string;
+    slug?: string;
+    category?: string;
+    price?: number;
+  },
+  types: { slug: string }[]
+): { ok: true } | { ok: false; error: string } {
+  if (!input.name?.trim() || !input.slug?.trim()) {
+    return { ok: false, error: "Name and slug are required to publish." };
+  }
+  const category = categoryIsAssignable(input.category, types);
+  if (!category.ok) return category;
+  if (input.price == null || !Number.isFinite(input.price) || input.price < 0) {
+    return { ok: false, error: "A non-negative price is required to publish." };
+  }
+  return { ok: true };
+}
+
+export function slugTaken(
+  slug: string,
+  existing: { id: string; slug: string }[],
+  currentId?: string
+): boolean {
+  const s = slug.trim();
+  return existing.some((row) => row.slug === s && row.id !== currentId);
+}
+
+export function applySaveDraft<T extends Record<string, unknown>>(
+  live: T,
+  draft: ProductDocument
+): T & { draft: ProductDocument } {
+  return { ...live, draft };
+}
+
+export function toLiveProductRow(doc: ProductDocument) {
+  return {
+    name: doc.name.trim(),
+    slug: doc.slug.trim(),
+    brand: doc.brand?.trim() || null,
+    sku: doc.sku?.trim() || null,
+    category: doc.category,
+    price: doc.price,
+    compare_at_price: doc.compareAtPrice ?? null,
+    short_description: doc.shortDescription ?? null,
+    description: doc.description ?? null,
+    features: doc.features ?? [],
+    specifications: doc.specifications ?? [],
+    compatibility: doc.compatibility ?? [],
+    in_the_box: doc.inTheBox ?? [],
+    product_video: doc.productVideo ?? null,
+    product_faq: doc.productFaq ?? [],
+    stock_status: doc.stockStatus || "in-stock",
+    rating: doc.rating ?? null,
+    review_count: doc.reviewCount ?? doc.reviews?.length ?? 0,
+    featured: Boolean(doc.featured),
+    badge: doc.badge?.trim() || null,
+    cloudinary_images: doc.cloudinaryImages ?? [],
+    cost_price:
+      doc.costPrice != null && Number.isFinite(doc.costPrice) && doc.costPrice >= 0
+        ? doc.costPrice
+        : null,
+    is_demo: Boolean(doc.isDemo),
+    status: "published" as const,
+    draft: null,
+  };
+}
+
+export function toImageRows(productId: string, images: string[]) {
+  return images
+    .filter(Boolean)
+    .map((url, sort_order) => ({
+      product_id: productId,
+      url,
+      sort_order,
+      source: url.includes("supabase.co") ? "supabase" : "cloudinary",
+    }));
+}
+
+export function toVariantRows(
+  productId: string,
+  variants: ProductDocument["variants"] = []
+) {
+  return variants.map((v, i) => ({
+    product_id: productId,
+    key: v._key || `v${i}`,
+    name: v.name,
+    sku: v.sku ?? null,
+    price: v.price ?? null,
+    compare_at_price: v.compareAtPrice ?? null,
+    stock_status: v.stockStatus || "in-stock",
+    image_url: v.image ?? null,
+    is_default: Boolean(v.isDefault),
+  }));
+}
+
+export function toReviewRows(
+  productId: string,
+  reviews: ProductDocument["reviews"] = []
+) {
+  return reviews.map((r) => ({
+    product_id: productId,
+    name: r.name ?? null,
+    rating: r.rating ?? null,
+    review_date: r.date ?? null,
+    comment: r.comment ?? null,
+    verified: Boolean(r.verified),
+    image: r.image ?? null,
+    is_demo: Boolean(r.isDemo),
+  }));
+}
+
+export function mergeApprovedReview(
+  draft: ProductDocument | null,
+  liveReviews: NonNullable<ProductDocument["reviews"]>,
+  approved: NonNullable<ProductDocument["reviews"]>[number]
+): {
+  draft: ProductDocument | null;
+  liveReviews: NonNullable<ProductDocument["reviews"]>;
+} {
+  const nextLive = [...liveReviews, approved];
+  if (!draft) return { draft: null, liveReviews: nextLive };
+  const reviews = [...(draft.reviews ?? []), approved];
+  return {
+    draft: { ...draft, reviews, reviewCount: reviews.length },
+    liveReviews: nextLive,
+  };
+}
+
+export function textToPortableText(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+  return [
+    {
+      _type: "block",
+      _key: "b1",
+      style: "normal",
+      markDefs: [],
+      children: [{ _type: "span", _key: "s1", text: trimmed, marks: [] }],
+    },
+  ];
+}
+
+export function portableTextToPlain(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((block) => {
+      if (!block || typeof block !== "object") return "";
+      const children = (block as { children?: { text?: string }[] }).children;
+      if (!Array.isArray(children)) return "";
+      return children.map((c) => c.text ?? "").join("");
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+export const ADMIN_COOKIE = "vg_admin";

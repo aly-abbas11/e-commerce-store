@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "tsx --test lib/db/migration-rules.test.ts lib/db/publish.test.ts lib/db/order-rules.test.ts lib/email-rules.test.ts lib/db/demo-rules.test.ts lib/gadget-preview.test.ts lib/deploy-rules.test.ts lib/clarity-rules.test.ts lib/storefront-layout-rules.test.ts lib/db/category-rules.test.ts lib/product-image.test.ts lib/cloudinary.test.ts lib/db/dashboard-rules.test.ts lib/db/order-id.test.ts lib/db/analytics-rules.test.ts lib/db/analytics-ingest-rules.test.ts lib/db/analytics-session-rules.test.ts lib/db/analytics-traffic-rules.test.ts lib/db/analytics-insight-rules.test.ts lib/first-party-analytics.test.ts lib/db/analytics-cleanup-rules.test.ts lib/db/analytics-checkout-rules.test.ts lib/db/analytics-bundle-rules.test.ts lib/broadcast-contact-rules.test.ts lib/db/map.test.ts",
+    "migrate:sanity": "tsx scripts/migrate-sanity-to-supabase.ts"
   },
   "dependencies": {
     "@portabletext/react": "^3.2.4",
@@ -23,6 +25,7 @@
     "@sanity/client": "^7.26.2",
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^3.99.0",
+    "@supabase/supabase-js": "^2.112.4",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
@@ -44,6 +47,7 @@
     "playwright": "^1.62.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

@@ -1,0 +1,1 @@
+-- No automatic seed. Catalog is copied from Sanity by scripts/migrate-sanity-to-supabase.mjs
