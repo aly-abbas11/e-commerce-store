@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
+import { headers } from "next/headers";
 
-import { CartProvider } from "@/components/cart/cart-provider";
-import { WishlistProvider } from "@/components/wishlist/wishlist-provider";
-import { Footer } from "@/components/layout/footer";
-import { Navbar } from "@/components/layout/navbar";
-import { TrustBar } from "@/components/sections/trust-bar";
+import { AppChrome } from "@/components/layout/app-chrome";
+import { shouldLoadClarity } from "@/lib/clarity-rules";
+import { publicSiteUrl } from "@/lib/deploy-rules";
+import { FALLBACK_SHOP_TYPES } from "@/lib/categories";
+import { fetchShopTypes } from "@/lib/db/store";
 import { getSettings, resolveFonts } from "@/lib/sanity/settings";
+import { pathnameFromHeaders } from "@/lib/storefront-layout-rules";
 import { normalizeSettings } from "@/lib/site-config";
 import { resolveTheme, themeCssVars, themePreviewScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -46,8 +48,7 @@ const CompareBarWrapper = dynamic(
   { ssr: false, loading: () => null }
 );
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const SITE_URL = publicSiteUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -93,7 +94,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings: SiteSettings | null = await getSettings().catch(() => null);
+  const hdrs = headers();
+  const pathname = pathnameFromHeaders({
+    "x-pathname": hdrs.get("x-pathname"),
+    "next-url": hdrs.get("next-url"),
+  });
+  const skipStorefrontFetch = pathname.startsWith("/admin");
+
+  const settings: SiteSettings | null = skipStorefrontFetch
+    ? null
+    : await getSettings().catch(() => null);
+  const shopTypes = skipStorefrontFetch
+    ? FALLBACK_SHOP_TYPES
+    : await fetchShopTypes().catch(() => FALLBACK_SHOP_TYPES);
   const config = normalizeSettings(settings);
 
   if (settings?.seo?.title) {
@@ -110,6 +123,11 @@ export default async function RootLayout({
   const { heading, body } = resolveFonts(settings);
   const brandVars = themeCssVars(settings);
   const brandName = settings?.brandName || "VoltGear";
+  const loadClarity = shouldLoadClarity({
+    id: CLARITY_ID,
+    isAdmin: !pathname || pathname.startsWith("/admin"),
+    host: hdrs.get("x-forwarded-host") || hdrs.get("host") || "",
+  });
 
   const jsonLd = [
     {
@@ -163,7 +181,7 @@ export default async function RootLayout({
             />
           </>
         )}
-        {CLARITY_ID && (
+        {loadClarity && (
           <script
             dangerouslySetInnerHTML={{
               __html: `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","${CLARITY_ID}");`,
@@ -172,19 +190,17 @@ export default async function RootLayout({
         )}
       </head>
       <body className="flex min-h-screen flex-col bg-background font-sans antialiased">
-        <CartProvider>
-          <WishlistProvider>
-          <UrgencyTicker announcement={config.announcement} />
-          <Navbar settings={settings} />
-          <main className="flex-1">{children}</main>
-          <TrustBar settings={settings} />
-          <Footer settings={settings} />
-          <CartDrawer />
-          <ReviewReminderPopup />
-          <CartEffects />
-          <CompareBarWrapper />
-          </WishlistProvider>
-        </CartProvider>
+        <AppChrome
+          settings={settings}
+          shopTypes={shopTypes}
+          urgencyTicker={<UrgencyTicker announcement={config.announcement} />}
+          cartDrawer={<CartDrawer />}
+          reviewReminder={<ReviewReminderPopup />}
+          cartEffects={<CartEffects />}
+          compareBar={<CompareBarWrapper />}
+        >
+          {children}
+        </AppChrome>
       </body>
     </html>
   );
