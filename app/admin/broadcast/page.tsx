@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminBroadcastPage() {
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-10 lg:px-8">
+    <div className="max-w-5xl">
       <BroadcastManager />
     </div>
   );

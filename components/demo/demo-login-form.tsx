@@ -2,15 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { setAdminToken } from "@/lib/admin-token";
 
-export function AdminLoginForm() {
+export function DemoLoginForm() {
   const router = useRouter();
+  const [username, setUsername] = useState("demo");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,15 +20,15 @@ export function AdminLoginForm() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/login", {
+      const res = await fetch("/api/demo/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ username, password }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Login failed");
-      setAdminToken(json.token);
-      router.replace("/admin");
+      router.replace("/");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -42,21 +42,31 @@ export function AdminLoginForm() {
       className="mx-auto mt-16 w-full max-w-sm space-y-4 rounded-xl border bg-card p-6"
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Lock className="h-5 w-5" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400">
+          <User className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-lg font-bold">Admin sign in</h1>
+          <h1 className="text-lg font-bold">Demo sign in</h1>
           <p className="text-xs text-muted-foreground">
-            Enter the admin password to manage the store.
+            Test the shop. Orders and demo catalog can be wiped from admin.
           </p>
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="admin-password">Password</Label>
+        <Label htmlFor="demo-username">Username</Label>
         <Input
-          id="admin-password"
+          id="demo-username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          required
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="demo-password">Password</Label>
+        <Input
+          id="demo-password"
           type="password"
           required
           value={password}
@@ -74,7 +84,7 @@ export function AdminLoginForm() {
             Signing in…
           </>
         ) : (
-          "Sign in"
+          "Sign in as demo"
         )}
       </Button>
     </form>
