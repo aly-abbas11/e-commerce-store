@@ -31,6 +31,7 @@ export function CartUpsell({ excludeSlugs }: { excludeSlugs: string[] }) {
         setProducts(suggestions);
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [excludeSlugs.join(",")]);
 
   if (products.length === 0) return null;

@@ -36,7 +36,7 @@ describe("Sanity CDN URLs", () => {
     );
     assert.equal(
       isSanityCdnUrl(
-        "https://xkqahftdjgkwncgrdkhc.supabase.co/storage/v1/object/public/product-images/x.jpg"
+        "https://dvdiixgojsmautkehccl.supabase.co/storage/v1/object/public/product-images/x.jpg"
       ),
       false
     );

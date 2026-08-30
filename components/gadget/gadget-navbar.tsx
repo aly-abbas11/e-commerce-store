@@ -80,7 +80,7 @@ export function GadgetNavbar({
               name="q"
               type="search"
               placeholder="Search"
-              className="h-11 w-full rounded-sm border border-zinc-700 bg-zinc-900 pl-10 pr-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-yellow-400"
+              className="h-11 w-full rounded-sm border border-zinc-700 bg-zinc-900 pl-10 pr-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-golden-400"
             />
           </div>
         </form>
@@ -93,7 +93,7 @@ export function GadgetNavbar({
         >
           <ShoppingBag className="h-5 w-5" />
           {count > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-sm bg-yellow-400 px-1 text-[10px] font-black text-zinc-950">
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-sm bg-golden-400 px-1 text-[10px] font-black text-zinc-950">
               {count}
             </span>
           ) : null}

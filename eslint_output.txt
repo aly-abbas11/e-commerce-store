@@ -1,0 +1,69 @@
+
+D:\e commerce store (2)\e commerce store\app\checkout\page.tsx
+  88:19  error  '_setPayment' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  93:20  error  '_setGiftWrap' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\app\page.tsx
+   84:10  error  '_FeaturedProducts' is defined but never used        @typescript-eslint/no-unused-vars
+  221:9   error  '_merchandise' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  225:9   error  '_categoryCards' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\components\catalog\catalog-sidebar.tsx
+   75:3  error  'onChange' is defined but never used  @typescript-eslint/no-unused-vars
+  108:3  error  'onChange' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\components\product\purchase-section.tsx
+  43:11  error  '_config' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\components\sections\trust-bar.tsx
+  4:38  error  '_settings' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\commerce.ts
+   11:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   19:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   68:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  215:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\heroSection.ts
+  10:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\page.ts
+   10:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   17:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  101:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  163:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\product.ts
+   17:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   24:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   43:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   49:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  150:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  238:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  262:34  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\siteSettings.ts
+   10:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  160:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  168:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\sanity\schemas\testimonial.ts
+  10:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\e commerce store (2)\e commerce store\scripts\verify-inventory-rpc.ts
+  111:18  error  'testConcurrencyRace' is defined but never used  @typescript-eslint/no-unused-vars
+  132:18  error  'testPermissions' is defined but never used      @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\tailwind.config.ts
+  104:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 40 problems (40 errors, 0 warnings)
+

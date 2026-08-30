@@ -10,7 +10,6 @@ import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { GadgetFooter } from "@/components/gadget/gadget-footer";
 import { GadgetNavbar } from "@/components/gadget/gadget-navbar";
-import { TrustBar } from "@/components/sections/trust-bar";
 import { chromeMode } from "@/lib/storefront-layout-rules";
 import type { ShopType } from "@/lib/categories";
 import type { SiteSettings } from "@/lib/types";
@@ -65,7 +64,6 @@ export function AppChrome({
             {demoBanner}
             <Navbar settings={settings} shopTypes={shopTypes} />
             <main className="flex-1">{children}</main>
-            <TrustBar settings={settings} />
             <Footer settings={settings} shopTypes={shopTypes} />
             {cartDrawer}
             {reviewReminder}

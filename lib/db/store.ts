@@ -418,49 +418,103 @@ export async function createOrderRow(input: {
   total: number;
   isDemo?: boolean;
 }): Promise<string | null> {
-  const row: Record<string, unknown> = {
-    order_id: input.orderId,
-    customer: input.customer,
-    payment: input.payment,
-    subtotal: input.subtotal,
-    shipping: input.shipping,
-    total: input.total,
-    status: "new",
-    is_demo: Boolean(input.isDemo),
-  };
-  let { data, error } = await db().from("orders").insert(row).select("id").single();
-  if (isMissingIsDemoColumn(error)) {
-    demoColumnMissing = true;
-    const rest = { ...row };
-    delete (rest as { is_demo?: boolean }).is_demo;
-    ({ data, error } = await db().from("orders").insert(rest).select("id").single());
+  const { data: rpcData, error: rpcError } = await db().rpc("checkout_decrement_inventory", {
+    p_order_id: input.orderId,
+    p_customer: input.customer,
+    p_payment: input.payment,
+    p_subtotal: input.subtotal,
+    p_shipping: input.shipping,
+    p_total: input.total,
+    p_is_demo: Boolean(input.isDemo),
+    p_items: input.items,
+  });
+
+  if (!rpcError && rpcData?.ok) {
+    return input.orderId;
   }
-  if (error) {
-    if (error.code === "23505") return null;
-    console.error("[order] create failed:", error);
-    return null;
-  }
-  if (!data) return null;
-  if (input.items.length) {
-    const { error: itemErr } = await db().from("order_items").insert(
-      input.items.map((i) => ({
-        order_id: data.id,
-        slug: i.slug,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        variant_key: i.variantKey,
-        variant_name: i.variantName,
-        variant_sku: i.variantSku,
-        line_total: i.lineTotal,
-      }))
-    );
-    if (itemErr) {
-      console.error("[order] items failed:", itemErr);
+
+  // If the RPC doesn't exist (e.g. migration pending) or fails, fallback to existing non-atomic path
+  if (rpcError && (rpcError.code === 'PGRST202' || rpcError.message?.includes('could not find') || rpcError.code === '42883')) {
+    console.warn("[order] Atomic RPC unavailable, falling back to legacy create");
+    const row: Record<string, unknown> = {
+      order_id: input.orderId,
+      customer: input.customer,
+      payment: input.payment,
+      subtotal: input.subtotal,
+      shipping: input.shipping,
+      total: input.total,
+      status: "new",
+      is_demo: Boolean(input.isDemo),
+    };
+    let { data, error } = await db().from("orders").insert(row).select("id").single();
+    if (isMissingIsDemoColumn(error)) {
+      demoColumnMissing = true;
+      const rest = { ...row };
+      delete (rest as { is_demo?: boolean }).is_demo;
+      ({ data, error } = await db().from("orders").insert(rest).select("id").single());
+    }
+    if (error) {
+      if (error.code === "23505") return null;
+      console.error("[order] create failed:", error);
       return null;
     }
+    if (!data) return null;
+    if (input.items.length) {
+      const { error: itemErr } = await db().from("order_items").insert(
+        input.items.map((i) => ({
+          order_id: data.id,
+          slug: i.slug,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          variant_key: i.variantKey,
+          variant_name: i.variantName,
+          variant_sku: i.variantSku,
+          line_total: i.lineTotal,
+        }))
+      );
+      if (itemErr) {
+        console.error("[order] items failed:", itemErr);
+        return null;
+      }
+    }
+    return input.orderId;
   }
-  return input.orderId;
+
+  // Check if it's a designated business error thrown by our RPC
+  if (rpcError?.message?.includes('BUSINESS_ERROR:')) {
+    console.error("[order] atomic create business rejection:", rpcError);
+    throw new Error("ATOMIC_BUSINESS_ERROR:" + rpcError.message.split('BUSINESS_ERROR:')[1]);
+  }
+
+  // Generic DB error (constraints, serialization failure, etc.)
+  console.error("[order] atomic create infra failed:", rpcError);
+  throw new Error("ATOMIC_INFRA_ERROR: Something went wrong placing your order.");
+}
+
+export async function cancelOrderRestoreInventoryRow(orderId: string, note: string): Promise<{ ok: boolean, error?: string }> {
+  const { data, error } = await db().rpc("cancel_order_restore_inventory", {
+    p_order_id: orderId,
+    p_note: note
+  });
+
+  if (!error && data?.ok) {
+    return { ok: true };
+  }
+
+  if (error && (error.code === 'PGRST202' || error.message?.includes('could not find') || error.code === '42883')) {
+    console.warn("[order] Atomic cancellation RPC unavailable, falling back to legacy status update");
+    const updated = await updateOrderStatusRow(orderId, 'cancelled', note);
+    if (!updated) return { ok: false, error: "Failed to update status" };
+    return { ok: true };
+  }
+
+  if (error?.message?.includes('BUSINESS_ERROR:')) {
+    return { ok: false, error: error.message.split('BUSINESS_ERROR:')[1].trim() };
+  }
+
+  console.error("[order] atomic cancellation infra failed:", error);
+  return { ok: false, error: 'Cancellation failed due to a system error.' };
 }
 
 export async function updateOrderAttributionRow(

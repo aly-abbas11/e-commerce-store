@@ -137,13 +137,13 @@ export default async function Home2Page() {
 
       {testimonials.length ? (
         <section className="bg-zinc-950 px-4 py-16 text-white lg:px-8 lg:py-20">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-400">Proof</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-golden-400">Proof</p>
           <h2 className="mt-2 text-2xl font-black uppercase tracking-tight">What buyers say</h2>
           <div className="mt-8 grid gap-px bg-zinc-800 md:grid-cols-3">
             {testimonials.slice(0, 3).map((item, i) => (
               <blockquote key={`${item.customerName}-${i}`} className="bg-zinc-950 p-6">
                 <p className="text-sm leading-relaxed text-zinc-200">“{item.reviewText}”</p>
-                <footer className="mt-4 text-xs font-bold uppercase tracking-widest text-yellow-400">
+                <footer className="mt-4 text-xs font-bold uppercase tracking-widest text-golden-400">
                   {item.customerName}
                 </footer>
               </blockquote>

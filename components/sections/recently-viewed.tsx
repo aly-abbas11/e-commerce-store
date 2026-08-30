@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye } from "lucide-react";
+
 
 import { fetchStoreProductBySlug } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/types";
 import type { RecentProduct } from "@/lib/recently-viewed";
+import { Section, SectionHeader } from "@/components/ui/section";
 
 const STORAGE_KEY = "voltgear-recently-viewed";
 
@@ -39,11 +40,11 @@ export function RecentlyViewed() {
   if (products.length === 0) return null;
 
   return (
-    <section className="container mx-auto px-4 py-16 lg:px-8">
-      <div className="mb-8 flex items-center gap-2">
-        <Eye className="h-5 w-5 text-primary" />
-        <h2 className="text-2xl font-bold tracking-tight">Recently Viewed</h2>
-      </div>
+    <Section className="border-t bg-background">
+      <SectionHeader
+        eyebrow="Your History"
+        title="Recently Viewed"
+      />
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
         {products.slice(0, 4).map((product) => {
           const img = product.images?.[0];
@@ -76,6 +77,6 @@ export function RecentlyViewed() {
           );
         })}
       </div>
-    </section>
+    </Section>
   );
 }

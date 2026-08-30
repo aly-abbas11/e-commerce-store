@@ -45,6 +45,7 @@ export function FrequentlyBoughtTogether({ current }: { current: Product }) {
         setItems(suggestions.map((p) => ({ product: p, selected: true })));
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current._id]);
 
   const currentLine = useMemo(() => {

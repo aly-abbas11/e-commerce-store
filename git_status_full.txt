@@ -1,0 +1,134 @@
+ M .env.example
+ M .gitignore
+ M app/api/checkout/route.ts
+ M app/api/orders/[orderId]/status/route.ts
+ M app/checkout/page.tsx
+ M app/globals.css
+ M app/home2/page.tsx
+ M app/layout.tsx
+ M app/not-found.tsx
+ M app/page.tsx
+ M app/product/[slug]/page.tsx
+ M app/track/page.tsx
+ M app/warranty/page.tsx
+ M components/admin/admin-shell.tsx
+ M components/admin/hero-form.tsx
+ M components/cart/cart-drawer.tsx
+ M components/catalog/active-filters.tsx
+ M components/catalog/catalog-view.tsx
+ M components/catalog/product-grid.tsx
+ M components/catalog/sort-select.tsx
+ M components/effects/confetti.tsx
+ M components/gadget/gadget-buy-box.tsx
+ M components/gadget/gadget-footer.tsx
+ M components/gadget/gadget-hero.tsx
+ M components/gadget/gadget-navbar.tsx
+ M components/layout/app-chrome.tsx
+ M components/layout/footer.tsx
+ M components/layout/mega-menu.tsx
+ M components/layout/navbar.tsx
+ M components/layout/theme-toggle.tsx
+ M components/messaging/broadcast-manager.tsx
+ M components/orders/track-order.tsx
+ M components/product/product-card.tsx
+ M components/product/purchase-section.tsx
+ M components/product/sticky-add-to-cart.tsx
+ M components/sections/hero.tsx
+ M components/sections/recently-viewed.tsx
+ M components/sections/testimonial-section.tsx
+ M components/sections/trust-bar.tsx
+ M components/ui/badge.tsx
+ M components/ui/button.tsx
+ M components/ui/card.tsx
+ M components/ui/dialog.tsx
+ M components/ui/input.tsx
+ M components/ui/sheet.tsx
+ M components/ui/skeleton.tsx
+ M docs/plans/2026-08-26-t01-supabase-replace-sanity-plan.md
+ M lib/categories.ts
+ M lib/db/admin-store.ts
+ M lib/db/map.ts
+ M lib/db/migration-rules.test.ts
+ M lib/db/store.ts
+ M lib/order-store.ts
+ M lib/theme.ts
+ M lib/types.ts
+ M next.config.mjs
+ M package-lock.json
+ M package.json
+ M tailwind.config.ts
+?? .agents/
+?? .superpowers/
+?? AGENTS.md
+?? app/admin/homepage-sections/
+?? app/api/admin/homepage-sections/
+?? app/contact/
+?? app/faq/
+?? app/template.tsx
+?? app/wishlist/
+?? brand-guidelines/
+?? build2.log
+?? build3.log
+?? build4.log
+?? build5.log
+?? build6.log
+?? build_check.txt
+?? components/admin/homepage-section-form.tsx
+?? components/admin/homepage-sections-list.tsx
+?? components/catalog/catalog-sidebar.tsx
+?? components/effects/anime-burst.ts
+?? components/product/floating-add-to-cart-bar.tsx
+?? components/sections/brand-logos.tsx
+?? components/sections/compatibility-banner.tsx
+?? components/sections/dynamic-homepage-section.tsx
+?? components/sections/featured-categories.tsx
+?? components/sections/figma-homepage.tsx
+?? components/sections/mobile-category-strip.tsx
+?? components/sections/newsletter-block.tsx
+?? components/ui/magic-card.tsx
+?? components/ui/realistic-bubble.tsx
+?? components/ui/section.tsx
+?? components/ui/spotlight-card.tsx
+?? diff-output.txt
+?? diff.txt
+?? docs/agent/
+?? docs/staging-supabase-setup.md
+?? errors.txt
+?? eslint.json
+?? eslint2.json
+?? eslint3.json
+?? frontend-design/
+?? full_test_output.txt
+?? git_status_full.txt
+?? lib/db/homepage-sections-store.ts
+?? lib/db/homepage-sections.test.ts
+?? lib/db/inventory-rpc.test.ts
+?? lib/demo-hero-slides.test.ts
+?? lib/demo-hero-slides.ts
+?? lib/fallback-images.ts
+?? lint.txt
+?? lint_output.txt
+?? linterrors.txt
+?? linterrors2.txt
+?? next-env.d.ts
+?? old_data.sql
+?? opencode.json
+?? public/
+?? scripts/test-ui.mjs
+?? scripts/verify-inventory-rpc.ts
+?? skill-creator/
+?? supabase/migrations/20260829071200_numeric_inventory.sql
+?? supabase/migrations/20260829090000_hero_background_images.sql
+?? supabase/migrations/20260829093000_homepage_sections.sql
+?? test_errors.txt
+?? test_full_output.txt
+?? test_output.txt
+?? tmp_diff.txt
+?? tmp_diff2.txt
+?? ts_error.log
+?? ts_validation.log
+?? tsc_errors.log
+?? ui-test-dashboard.png
+?? ui-test-login.png
+?? ui-test-orders.png
+?? ui-test-products.png

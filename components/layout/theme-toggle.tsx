@@ -26,7 +26,7 @@ function applyTheme(next: "dark" | "light") {
  * first-time visitors. The inline head script prevents any flash.
  */
 export function ThemeToggle({ className }: { className?: string }) {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
 
   useEffect(() => {
     let stored: string | null = null;

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test lib/db/migration-rules.test.ts lib/db/publish.test.ts lib/db/order-rules.test.ts lib/email-rules.test.ts lib/db/demo-rules.test.ts lib/gadget-preview.test.ts lib/deploy-rules.test.ts lib/clarity-rules.test.ts lib/storefront-layout-rules.test.ts lib/db/category-rules.test.ts lib/product-image.test.ts lib/cloudinary.test.ts lib/db/dashboard-rules.test.ts lib/db/order-id.test.ts lib/db/analytics-rules.test.ts lib/db/analytics-ingest-rules.test.ts lib/db/analytics-session-rules.test.ts lib/db/analytics-traffic-rules.test.ts lib/db/analytics-insight-rules.test.ts lib/first-party-analytics.test.ts lib/db/analytics-cleanup-rules.test.ts lib/db/analytics-checkout-rules.test.ts lib/db/analytics-bundle-rules.test.ts lib/broadcast-contact-rules.test.ts lib/db/map.test.ts",
+    "test": "tsx --test lib/db/migration-rules.test.ts lib/db/publish.test.ts lib/db/order-rules.test.ts lib/email-rules.test.ts lib/db/demo-rules.test.ts lib/gadget-preview.test.ts lib/deploy-rules.test.ts lib/clarity-rules.test.ts lib/storefront-layout-rules.test.ts lib/db/category-rules.test.ts lib/product-image.test.ts lib/cloudinary.test.ts lib/db/dashboard-rules.test.ts lib/db/order-id.test.ts lib/db/analytics-rules.test.ts lib/db/analytics-ingest-rules.test.ts lib/db/analytics-session-rules.test.ts lib/db/analytics-traffic-rules.test.ts lib/db/analytics-insight-rules.test.ts lib/first-party-analytics.test.ts lib/db/analytics-cleanup-rules.test.ts lib/db/analytics-checkout-rules.test.ts lib/db/analytics-bundle-rules.test.ts lib/broadcast-contact-rules.test.ts lib/db/map.test.ts lib/demo-hero-slides.test.ts lib/db/homepage-sections.test.ts",
     "migrate:sanity": "tsx scripts/migrate-sanity-to-supabase.ts"
   },
   "dependencies": {
@@ -26,10 +26,12 @@
     "@sanity/image-url": "^2.1.1",
     "@sanity/vision": "^3.99.0",
     "@supabase/supabase-js": "^2.112.4",
+    "animejs": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.31.0",
+    "motion": "^13.1.1",
     "next": "14.2.35",
     "next-sanity": "^9.12.3",
     "react": "^18",

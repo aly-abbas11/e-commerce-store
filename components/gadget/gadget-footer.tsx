@@ -23,7 +23,7 @@ export function GadgetFooter({
           </p>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Shop</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-golden-400">Shop</h2>
           <ul className="mt-3 space-y-1">
             {links.map((link) => (
               <li key={link.href}>
@@ -35,7 +35,7 @@ export function GadgetFooter({
           </ul>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Help</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-golden-400">Help</h2>
           <ul className="mt-3 space-y-1 text-sm">
             <li>
               <Link href="/track" className="flex min-h-11 items-center hover:text-white">
@@ -55,7 +55,7 @@ export function GadgetFooter({
           </ul>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Pay on delivery</h2>
+          <h2 className="text-xs font-bold uppercase tracking-widest text-golden-400">Pay on delivery</h2>
           <p className="mt-3 text-sm">
             {settings?.phone || "COD on every order."}
           </p>

@@ -158,17 +158,17 @@ export function TrackOrder() {
   const steps = result ? buildTimeline(result) : [];
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border bg-card p-5 sm:p-6">
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-border/50 bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             search(orderId, email);
           }}
-          className="space-y-4"
+          className="space-y-5"
         >
           <div className="space-y-2">
-            <Label htmlFor="orderId">Order number</Label>
+            <Label htmlFor="orderId" className="text-sm font-bold text-slate-800">Order number</Label>
             <Input
               id="orderId"
               value={orderId}
@@ -176,13 +176,14 @@ export function TrackOrder() {
               required
               autoComplete="off"
               placeholder="e.g. VG-1042"
+              className="h-12 rounded-xl bg-slate-50/50"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[13px] text-muted-foreground/80">
               Enter the order number from your confirmation email
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email used at checkout</Label>
+            <Label htmlFor="email" className="text-sm font-bold text-slate-800">Email used at checkout</Label>
             <Input
               id="email"
               type="email"
@@ -191,15 +192,16 @@ export function TrackOrder() {
               required
               autoComplete="email"
               placeholder="you@example.com"
+              className="h-12 rounded-xl bg-slate-50/50"
             />
           </div>
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto h-12 rounded-xl px-8 font-bold text-[15px] tracking-wide">
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
               <Search className="mr-2 h-4 w-4" />
             )}
-            Track order
+            Track Order
           </Button>
         </form>
       </div>
@@ -207,62 +209,76 @@ export function TrackOrder() {
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800"
         >
           {error}
         </div>
       )}
 
       {result && (
-        <div className="space-y-6">
-          <div className="rounded-xl border bg-card p-5 sm:p-6">
-            <p className="text-sm text-muted-foreground">{result.orderId}</p>
-            <h2 className="mt-1 text-2xl font-bold tracking-tight">
-              {STATUS_LABEL[result.status]}
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Updated {formatDate(result.statusUpdatedAt ?? result.createdAt)}
-            </p>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="rounded-2xl border border-border/50 bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between border-b border-border/40 pb-5 mb-6">
+               <div>
+                 <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-wider">{result.orderId}</p>
+                 <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
+                   {STATUS_LABEL[result.status]}
+                 </h2>
+               </div>
+               <div className="text-right">
+                 <p className="text-[13px] text-muted-foreground">Updated</p>
+                 <p className="text-[14px] font-semibold text-slate-900">{formatDate(result.statusUpdatedAt ?? result.createdAt)}</p>
+               </div>
+            </div>
 
-            <ol className="mt-6">
+            <ol className="mt-8">
               {steps.map((step, i) => {
                 const isLast = i === steps.length - 1;
                 const done = step.state === "complete" || step.state === "current";
                 return (
-                  <li key={step.key} className="relative flex gap-3 pb-6 last:pb-0">
+                  <li key={step.key} className="relative flex gap-4 pb-8 last:pb-0">
                     {!isLast && (
                       <span
-                        className={`absolute left-[7px] top-5 h-full w-px ${
-                          step.state === "complete" ? "bg-primary/40" : "bg-border"
+                        className={`absolute left-[11px] top-6 h-full w-[2px] ${
+                          step.state === "complete" ? "bg-primary" : "bg-slate-100"
                         }`}
                       />
                     )}
                     <span
-                      className={`mt-1 h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                      className={`mt-1 h-6 w-6 shrink-0 rounded-full border-2 flex items-center justify-center ${
                         step.state === "current"
-                          ? "border-primary bg-primary"
+                          ? "border-primary bg-primary shadow-[0_0_0_4px_rgba(8,127,140,0.15)]"
                           : step.state === "complete"
-                            ? "border-primary bg-primary/30"
-                            : "border-border bg-background"
+                            ? "border-primary bg-primary"
+                            : "border-slate-200 bg-white"
                       }`}
                       aria-hidden
-                    />
-                    <div>
+                    >
+                      {step.state === "complete" && (
+                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      {step.state === "current" && (
+                         <div className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <div className="-mt-0.5">
                       <p
-                        className={`text-sm font-semibold ${
-                          step.state === "upcoming" ? "text-muted-foreground" : "text-foreground"
+                        className={`text-[15px] font-bold ${
+                          step.state === "upcoming" ? "text-slate-400" : "text-slate-900"
                         }`}
                       >
                         {step.label}
                         {step.state === "current" && (
-                          <span className="ml-2 text-xs font-normal text-primary">current</span>
+                          <span className="ml-3 inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">current</span>
                         )}
                       </p>
                       {done && step.note ? (
-                        <p className="mt-0.5 text-sm text-muted-foreground">{step.note}</p>
+                        <p className="mt-1 text-sm text-slate-500 leading-relaxed max-w-lg">{step.note}</p>
                       ) : null}
                       {done && step.at ? (
-                        <p className="text-xs text-muted-foreground/70">{formatDate(step.at)}</p>
+                        <p className="mt-1 text-[12px] font-medium text-slate-400">{formatDate(step.at)}</p>
                       ) : null}
                     </div>
                   </li>
@@ -271,55 +287,54 @@ export function TrackOrder() {
             </ol>
           </div>
 
-          <div className="rounded-xl border bg-card p-5 sm:p-6">
-            <h3 className="text-lg font-bold tracking-tight">Items</h3>
-            <ul className="mt-4 divide-y divide-border">
+          <div className="rounded-2xl border border-border/50 bg-white p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <h3 className="text-lg font-bold tracking-tight text-slate-900">Order Items</h3>
+            <ul className="mt-5 divide-y divide-border/40">
               {result.items.map((item, i) => (
                 <li
                   key={`${item.name}-${i}`}
-                  className="flex items-center justify-between gap-4 py-3 text-sm"
+                  className="flex items-center justify-between gap-4 py-4 text-sm"
                 >
-                  <span>
+                  <span className="font-medium text-slate-800">
                     {item.name}
                     {item.variantName && (
                       <span className="text-muted-foreground"> — {item.variantName}</span>
                     )}
-                    <span className="ml-2 text-muted-foreground">× {item.quantity}</span>
+                    <span className="ml-2 px-1.5 py-0.5 rounded-sm bg-slate-100 text-slate-500 text-xs font-bold font-mono">×{item.quantity}</span>
                   </span>
-                  <span className="font-semibold">
+                  <span className="font-bold text-slate-900">
                     {formatPrice(item.price * item.quantity)}
                   </span>
                 </li>
               ))}
             </ul>
-            <dl className="mt-4 space-y-1 border-t border-border pt-4 text-sm">
-              <div className="flex justify-between text-muted-foreground">
+            <dl className="mt-2 space-y-2 border-t border-border/40 pt-5 text-sm">
+              <div className="flex justify-between text-slate-500 font-medium">
                 <dt>Subtotal</dt>
-                <dd>{formatPrice(result.subtotal)}</dd>
+                <dd className="text-slate-900">{formatPrice(result.subtotal)}</dd>
               </div>
-              <div className="flex justify-between text-muted-foreground">
+              <div className="flex justify-between text-slate-500 font-medium">
                 <dt>Shipping</dt>
-                <dd>{result.shipping > 0 ? formatPrice(result.shipping) : "Free"}</dd>
+                <dd className="text-slate-900">{result.shipping > 0 ? formatPrice(result.shipping) : "Free"}</dd>
               </div>
-              <div className="flex justify-between text-base font-bold">
+              <div className="flex justify-between text-base font-black text-slate-900 pt-2">
                 <dt>Total</dt>
-                <dd>{formatPrice(result.total)}</dd>
+                <dd className="text-primary">{formatPrice(result.total)}</dd>
               </div>
-              <div className="flex justify-between text-muted-foreground">
-                <dt>Payment</dt>
-                <dd>
-                  {result.payment === "cod" ? "Cash on delivery" : result.payment}
+              <div className="flex justify-between text-slate-500 mt-4 text-[12px] font-semibold uppercase tracking-wider">
+                <dt>Payment Method</dt>
+                <dd className="text-slate-700">
+                  {result.payment === "cod" ? "Cash on Delivery" : result.payment}
                 </dd>
               </div>
             </dl>
           </div>
 
-          <p className="text-sm text-muted-foreground">
+          <p className="text-[13px] font-medium text-slate-500 text-center">
             Questions about your order?{" "}
-            <Link href="/contact" className="font-medium text-primary hover:underline">
-              Contact us
+            <Link href="/contact" className="font-bold text-primary hover:underline">
+              Contact Support
             </Link>
-            .
           </p>
         </div>
       )}

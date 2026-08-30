@@ -11,7 +11,7 @@ import { fetchShopTypes } from "@/lib/db/store";
 import { getSettings, resolveFonts } from "@/lib/sanity/settings";
 import { pathnameFromHeaders } from "@/lib/storefront-layout-rules";
 import { normalizeSettings } from "@/lib/site-config";
-import { resolveTheme, themeCssVars, themePreviewScript } from "@/lib/theme";
+import { themeCssVars, themePreviewScript } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import type { SiteSettings } from "@/lib/types";
 import "./globals.css";
@@ -120,7 +120,7 @@ export default async function RootLayout({
     metadata.description = settings.seo.description;
   }
 
-  const theme = resolveTheme(settings);
+
   const { heading, body } = resolveFonts(settings);
   const brandVars = themeCssVars(settings);
   const brandName = settings?.brandName || "VoltGear";
@@ -156,7 +156,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(theme === "dark" && "dark", heading.variable, body.variable)}
+      className={cn(heading.variable, body.variable)}
     >
       <head>
         <script

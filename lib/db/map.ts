@@ -140,10 +140,20 @@ export function mapHero(
   featured?: Product | null
 ): HeroSection | null {
   if (!row) return null;
+  const backgroundImages = Array.isArray(row.background_images)
+    ? (row.background_images as string[]).filter((url): url is string => Boolean(url))
+    : row.background_image_url
+    ? [String(row.background_image_url)]
+    : [];
+  const primaryBgImage = row.background_image_url
+    ? String(row.background_image_url)
+    : backgroundImages[0] ?? undefined;
+
   return {
     headline: String(row.headline ?? ""),
     subheadline: row.subheadline ? String(row.subheadline) : undefined,
-    backgroundImage: row.background_image_url ? String(row.background_image_url) : undefined,
+    backgroundImage: primaryBgImage,
+    backgroundImages: backgroundImages.length ? backgroundImages : undefined,
     backgroundVideo: row.background_video ? String(row.background_video) : undefined,
     primaryCta: row.primary_cta as HeroSection["primaryCta"],
     secondaryCta: row.secondary_cta as HeroSection["secondaryCta"],

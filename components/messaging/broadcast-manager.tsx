@@ -428,7 +428,7 @@ function SendTab() {
             rows={6}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Asalam o Alaikum {name}! 🎉 Use code VOLT10 for 10% off at VoltGear — visit our store now!"
+            placeholder="Asalam o Alaikum {name}! Use code VOLT10 for 10% off at VoltGear — visit our store now!"
           />
           <p className="text-right text-xs text-muted-foreground">
             {text.length}/4096 · use {"{name}"} to personalize

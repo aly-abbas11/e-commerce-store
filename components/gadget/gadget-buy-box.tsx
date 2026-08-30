@@ -138,7 +138,7 @@ export function GadgetBuyBox({
             type="button"
             disabled={outOfStock}
             onClick={handleAdd}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 bg-yellow-400 px-6 text-sm font-black uppercase tracking-wide text-zinc-950 hover:bg-yellow-300 disabled:bg-zinc-200 disabled:text-zinc-500"
+            className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 bg-golden-400 px-6 text-sm font-black uppercase tracking-wide text-zinc-950 hover:bg-golden-300 disabled:bg-zinc-200 disabled:text-zinc-500"
           >
             {added ? (
               <>

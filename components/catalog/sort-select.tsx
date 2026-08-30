@@ -13,8 +13,8 @@ export function SortSelect({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="catalog-sort" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Sort
+      <label htmlFor="catalog-sort" className="text-sm font-medium text-foreground">
+        Sort by:
       </label>
       <select
         id="catalog-sort"
@@ -30,11 +30,11 @@ export function SortSelect({
             });
           }
         }}
-        className="appearance-none rounded-lg border bg-background px-3 py-2 pr-8 text-sm font-medium outline-none focus:border-primary"
+        className="appearance-none rounded border border-border bg-background px-3 py-1.5 pr-8 text-sm font-medium outline-none hover:border-primary focus:border-primary"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
-            {opt.label}
+            {opt.label === "Featured" ? "Recommended" : opt.label}
           </option>
         ))}
       </select>
