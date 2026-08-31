@@ -159,7 +159,7 @@ export function GadgetFeaturedProduct({ product }: { product: Product }) {
               className={`mt-2 text-sm font-semibold ${
                 stock.soldOut
                   ? "text-[var(--g-taupe)]"
-                  : stock.low
+                  : stock.status === "low-stock"
                     ? "text-amber-700"
                     : "text-[var(--g-forest)]"
               }`}
