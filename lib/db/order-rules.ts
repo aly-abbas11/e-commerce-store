@@ -15,6 +15,9 @@ export const ORDER_STATUS_VALUES: OrderStatus[] = [
 export const SHOPPER_NOT_FOUND_MESSAGE =
   "We couldn't find an order for those details. Check the order number and email.";
 
+export const SHOPPER_CANCEL_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const SHOPPER_CANCEL_NOTE = "Cancelled by customer";
+
 export type ShopperTrackPayload = {
   orderId: string;
   status: OrderStatus;
@@ -31,6 +34,8 @@ export type ShopperTrackPayload = {
   shipping: number;
   total: number;
   payment: string;
+  cancellable: boolean;
+  cancelUntil: string | null;
 };
 
 export type AdminListRow = {
@@ -58,6 +63,37 @@ export function shopperLookupNotFound(
   return !emailsMatch(order.customer?.email, email);
 }
 
+export function canShopperCancel(order: Order, now: Date = new Date()): boolean {
+  const status = order.status ?? "new";
+  if (status !== "new" && status !== "processing") return false;
+  const created = Date.parse(order.createdAt ?? "");
+  if (!Number.isFinite(created)) return false;
+  return now.getTime() - created <= SHOPPER_CANCEL_WINDOW_MS;
+}
+
+export function shopperCancelUntil(order: Order): string | null {
+  const status = order.status ?? "new";
+  if (status !== "new" && status !== "processing") return null;
+  const created = Date.parse(order.createdAt ?? "");
+  if (!Number.isFinite(created)) return null;
+  return new Date(created + SHOPPER_CANCEL_WINDOW_MS).toISOString();
+}
+
+export function shopperCancelBlockReason(
+  order: Order,
+  now: Date = new Date()
+): string | null {
+  if (canShopperCancel(order, now)) return null;
+  const status = order.status ?? "new";
+  if (status === "cancelled") {
+    return "This order is already cancelled.";
+  }
+  if (status === "shipped" || status === "delivered") {
+    return "This order can no longer be cancelled online. Contact us if you need help.";
+  }
+  return "The 24-hour cancel window has ended. Contact us if you need help.";
+}
+
 export function toShopperTrackPayload(order: Order): ShopperTrackPayload {
   return {
     orderId: order.orderId,
@@ -79,6 +115,8 @@ export function toShopperTrackPayload(order: Order): ShopperTrackPayload {
     shipping: order.shipping ?? 0,
     total: order.total ?? 0,
     payment: order.payment ?? "cod",
+    cancellable: canShopperCancel(order),
+    cancelUntil: shopperCancelUntil(order),
   };
 }
 
