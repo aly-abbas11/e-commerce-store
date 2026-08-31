@@ -433,9 +433,9 @@ export async function createOrderRow(input: {
     return input.orderId;
   }
 
-  // If the RPC doesn't exist (e.g. migration pending) or fails, fallback to existing non-atomic path
-  if (rpcError && (rpcError.code === 'PGRST202' || rpcError.message?.includes('could not find') || rpcError.code === '42883')) {
-    console.warn("[order] Atomic RPC unavailable, falling back to legacy create");
+  // If the RPC doesn't exist (e.g. migration pending) or fails due to type mismatch (22P02), fallback to existing non-atomic path
+  if (rpcError && (rpcError.code === 'PGRST202' || rpcError.message?.includes('could not find') || rpcError.code === '42883' || rpcError.code === '22P02')) {
+    console.warn("[order] Atomic RPC unavailable or type-mismatched, falling back to legacy create");
     const row: Record<string, unknown> = {
       order_id: input.orderId,
       customer: input.customer,
@@ -475,7 +475,28 @@ export async function createOrderRow(input: {
       );
       if (itemErr) {
         console.error("[order] items failed:", itemErr);
-        return null;
+        return null; // The loop will retry
+      }
+      
+      // Manually decrement inventory since we bypassed the RPC
+      for (const item of input.items) {
+        if (!item.slug) continue;
+        if (item.variantKey) {
+          const { data: pv } = await db().from("product_variants").select("id, quantity, product_id").eq("key", item.variantKey).single();
+          if (pv) {
+             const { data: p } = await db().from("products").select("slug").eq("id", pv.product_id).single();
+             if (p && p.slug === item.slug && pv.quantity != null) {
+               const qty = Math.max(0, pv.quantity - (item.quantity ?? 1));
+               await db().from("product_variants").update({ quantity: qty, stock_status: qty === 0 ? 'out-of-stock' : (qty <= 5 ? 'low-stock' : 'in-stock') }).eq("id", pv.id);
+             }
+          }
+        } else {
+          const { data: prod } = await db().from("products").select("id, quantity").eq("slug", item.slug).single();
+          if (prod && prod.quantity != null) {
+            const qty = Math.max(0, prod.quantity - (item.quantity ?? 1));
+            await db().from("products").update({ quantity: qty, stock_status: qty === 0 ? 'out-of-stock' : (qty <= 5 ? 'low-stock' : 'in-stock') }).eq("id", prod.id);
+          }
+        }
       }
     }
     return input.orderId;
