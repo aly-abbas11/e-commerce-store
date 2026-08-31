@@ -1,5 +1,6 @@
 import type {
   HeroSection,
+  HeroSlide,
   Page,
   Product,
   ProductReview,
@@ -149,6 +150,22 @@ export function mapHero(
     secondaryCta: row.secondary_cta as HeroSection["secondaryCta"],
     stats: Array.isArray(row.stats) ? (row.stats as HeroSection["stats"]) : undefined,
     featuredProduct: featured ?? undefined,
+  };
+}
+
+export function mapHeroSlide(
+  row: Record<string, unknown>,
+  product: Product
+): HeroSlide {
+  const overrideTitle = row.title ? String(row.title).trim() : "";
+  const overrideSubtitle = row.subtitle ? String(row.subtitle).trim() : "";
+  return {
+    id: String(row.id),
+    title: overrideTitle || product.name,
+    subtitle: overrideSubtitle || undefined,
+    imageUrl: String(row.image_url ?? ""),
+    product,
+    sortOrder: Number(row.sort_order ?? 0),
   };
 }
 
