@@ -433,9 +433,16 @@ export async function createOrderRow(input: {
     return input.orderId;
   }
 
-  // If the RPC doesn't exist (e.g. migration pending) or fails due to type mismatch (22P02), fallback to existing non-atomic path
-  if (rpcError && (rpcError.code === 'PGRST202' || rpcError.message?.includes('could not find') || rpcError.code === '42883' || rpcError.code === '22P02')) {
-    console.warn("[order] Atomic RPC unavailable or type-mismatched, falling back to legacy create");
+  // Check if it's a designated business error thrown by our RPC
+  if (rpcError?.message?.includes('BUSINESS_ERROR:')) {
+    console.error("[order] atomic create business rejection:", rpcError);
+    throw new Error("ATOMIC_BUSINESS_ERROR:" + rpcError.message.split('BUSINESS_ERROR:')[1]);
+  }
+
+  // If the RPC fails for ANY infra reason (e.g. migration pending, type mismatch 22P02, syntax error), 
+  // fallback to existing non-atomic path robustly rather than crashing.
+  if (rpcError) {
+    console.warn("[order] Atomic RPC unavailable or failed, falling back to legacy create");
     const row: Record<string, unknown> = {
       order_id: input.orderId,
       customer: input.customer,
@@ -502,14 +509,7 @@ export async function createOrderRow(input: {
     return input.orderId;
   }
 
-  // Check if it's a designated business error thrown by our RPC
-  if (rpcError?.message?.includes('BUSINESS_ERROR:')) {
-    console.error("[order] atomic create business rejection:", rpcError);
-    throw new Error("ATOMIC_BUSINESS_ERROR:" + rpcError.message.split('BUSINESS_ERROR:')[1]);
-  }
-
-  // Generic DB error (constraints, serialization failure, etc.)
-  console.error("[order] atomic create infra failed:", rpcError);
+  // Should never be reached if rpcData is invalid AND rpcError is missing, but caught safely:
   throw new Error("ATOMIC_INFRA_ERROR: Something went wrong placing your order.");
 }
 
