@@ -1,5 +1,10 @@
 # Orders — release notes
 
+## 2026-09-01 — T-20 Shopper self-cancel
+
+- Customers can cancel from `/track` within 24 hours while status is new or processing.
+- Same cancelled email as admin; history note: “Cancelled by customer”.
+
 ## 2026-08-26 — Admin orders and shopper tracking (T-03)
 
 - Staff can pack from **Orders** in `/admin`: compact table, search by ID / name / email, then a full COD detail with contact, address, items, and timeline.

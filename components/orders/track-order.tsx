@@ -32,6 +32,8 @@ interface TrackResponse {
   shipping: number;
   total: number;
   payment: string;
+  cancellable: boolean;
+  cancelUntil: string | null;
 }
 
 const STATUS_LABEL: Record<OrderStatus, string> = {
@@ -117,11 +119,16 @@ export function TrackOrder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TrackResponse | null>(null);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   async function search(o: string, e: string) {
     setLoading(true);
     setError(null);
     setResult(null);
+    setConfirmCancel(false);
+    setCancelError(null);
     try {
       const res = await fetch(
         `/api/orders/${encodeURIComponent(o.trim())}?email=${encodeURIComponent(e.trim())}`
@@ -140,6 +147,42 @@ export function TrackOrder() {
       setError("Something went wrong. Try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function cancelOrder() {
+    if (!result) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(result.orderId)}/cancel`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim() }),
+        }
+      );
+      const body = await res.json().catch(() => null);
+      if (res.status === 404) {
+        setCancelError(SHOPPER_NOT_FOUND_MESSAGE);
+        return;
+      }
+      if (!res.ok || !body?.order) {
+        setCancelError(
+          typeof body?.error === "string"
+            ? body.error
+            : "Could not cancel. Try again."
+        );
+        if (body?.order) setResult(body.order);
+        return;
+      }
+      setResult(body.order);
+      setConfirmCancel(false);
+    } catch {
+      setCancelError("Could not cancel. Try again.");
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -269,6 +312,62 @@ export function TrackOrder() {
                 );
               })}
             </ol>
+
+            {result.cancellable ? (
+              <div className="mt-6 border-t border-border pt-5">
+                {!confirmCancel ? (
+                  <>
+                    <p className="text-xs text-muted-foreground">
+                      You can cancel until{" "}
+                      {formatDate(result.cancelUntil)} while we haven&apos;t shipped.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-3 w-full sm:w-auto"
+                      onClick={() => {
+                        setCancelError(null);
+                        setConfirmCancel(true);
+                      }}
+                    >
+                      Cancel order
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                    <p className="text-sm font-medium text-foreground">
+                      Cancel this order? You can&apos;t undo this.
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={cancelling}
+                        onClick={() => setConfirmCancel(false)}
+                      >
+                        Keep order
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={cancelling}
+                        onClick={() => void cancelOrder()}
+                      >
+                        {cancelling ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Yes, cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {cancelError ? (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {cancelError}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="rounded-xl border bg-card p-5 sm:p-6">

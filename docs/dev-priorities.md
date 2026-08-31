@@ -6,10 +6,7 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-**T-16** — Homepage redesign · 🟡 In Progress (closeout / residual polish)  
-**T-19** — Gadget craft system · ✅ Done (motion/type/icons/copy tokens shipped)
-
-Parked: **T-15** — First-party traffic, funnel tracking & conversion insights · 🟡 In Progress (resume when you say so)
+Parked: **T-15** — First-party traffic · 🟡 In Progress · **T-16** — Homepage redesign closeout
 
 ## Program
 
@@ -38,6 +35,7 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-17 | `/product2` redesign (match T-16 language) | ⚪ Planned | T-16 | Guided buy / Biometic chrome. Spawned from T-16 impact analysis. |
 | T-18 | Gadget catalog entry chrome | ⚪ Planned | T-16 | Preview catalog/nav entry points matching T-16. Spawned from T-16 impact analysis. |
 | T-19 | Gadget craft system: motion, type, copy, icons | ✅ Done | T-16 | Craft tokens + home reveals + buy trust microcopy + glyphs. Plans/UI approved 2026-09-01. Preview only. |
+| T-20 | Shopper self-cancel on Track (24h, new/processing) | ✅ Done | T-03, T-04 | Cancel from `/track` within 24h while new/processing; same cancelled email. Spec: `docs/superpowers/specs/2026-09-01-t20-shopper-self-cancel-design.md`. Shipped 2026-09-01. |
 
 ## Suggested build order
 

@@ -21,6 +21,8 @@ Unknown IDs 404. Admin pages send `noindex`. Unsigned visits redirect to `/admin
 
 `/track` auto-searches when `?orderId=` and `?email=` are in the URL. After a match it stacks: status headline, pipeline timeline (placed → processing → shipped → delivered; cancelled only when cancelled), items and totals, then a contact link.
 
+When the order is still `new` or `processing` and less than 24 hours old, Track shows **Cancel order** (confirm inline). `POST /api/orders/[orderId]/cancel` with `{ email }` sets `cancelled`, note `Cancelled by customer`, and sends the same cancelled email as admin.
+
 ## Status updates
 
 `POST /api/orders/[orderId]/status` is unchanged in contract: admin-only, `{ status, note }`, writes history, emails when status is not `new`. T-03 does not change email copy.
@@ -33,6 +35,7 @@ Unknown IDs 404. Admin pages send `noindex`. Unsigned visits redirect to `/admin
 | `app/admin/orders/[orderId]/page.tsx` | Full detail |
 | `app/api/admin/orders/route.ts` | Admin list JSON |
 | `app/api/orders/[orderId]/route.ts` | Shopper lookup (redacted) |
+| `app/api/orders/[orderId]/cancel/route.ts` | Shopper self-cancel (24h, new/processing) |
 | `app/api/orders/[orderId]/status/route.ts` | Admin status + email |
 | `components/admin/order-list.tsx` | Table + search |
 | `components/admin/order-detail.tsx` | Detail + status form |
