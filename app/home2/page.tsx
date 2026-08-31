@@ -2,15 +2,24 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { GadgetHero } from "@/components/gadget/gadget-hero";
+import { GadgetHeroSlider } from "@/components/gadget/gadget-hero-slider";
 import { gadgetImageSrc } from "@/components/gadget/gadget-image";
 import { GadgetProductCard } from "@/components/gadget/gadget-product-card";
 import { FALLBACK_SHOP_TYPES, shopTypeLinks } from "@/lib/categories";
-import { fetchAllProducts, fetchHero, fetchShopTypes, fetchSiteSettings, fetchTestimonials } from "@/lib/db/store";
+import {
+  fetchHeroSlides,
+  fetchHomeBestsellers,
+  fetchAllProducts,
+  fetchShopTypes,
+  fetchSiteSettings,
+  fetchTestimonials,
+} from "@/lib/db/store";
 import { isDemoSession } from "@/lib/demo";
 import { PRODUCT_IMAGE } from "@/lib/product-image";
 import { normalizeSettings } from "@/lib/site-config";
+import { getStockState } from "@/lib/stock";
 import type { Product, Testimonial } from "@/lib/types";
+import { formatPrice } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -27,71 +36,82 @@ export default async function Home2Page() {
   const demo = isDemoSession();
   let products: Product[] = [];
   let testimonials: Testimonial[] = [];
-  let hero = null;
+  let slides: Awaited<ReturnType<typeof fetchHeroSlides>> = [];
+  let bestsellers: Product[] = [];
   let settings = null;
   let shopTypes = shopTypeLinks(FALLBACK_SHOP_TYPES);
   try {
-    const [h, p, t, s, types] = await Promise.all([
-      fetchHero(demo),
+    const [s, p, t, set, types, best] = await Promise.all([
+      fetchHeroSlides(demo),
       fetchAllProducts(demo),
       fetchTestimonials(demo),
       fetchSiteSettings(),
       fetchShopTypes(),
+      fetchHomeBestsellers(demo),
     ]);
-    hero = h;
+    slides = s;
     products = p;
     testimonials = t;
-    settings = s;
+    settings = set;
     shopTypes = shopTypeLinks(types);
+    bestsellers = best;
   } catch {
     products = [];
   }
 
   const config = normalizeSettings(settings);
+  const threshold = Number(config.freeShippingThreshold ?? 0);
 
-  const featured = products.filter((p) => p.featured);
-  const merchandise = (featured.length ? featured : products.filter((p) => p.stockStatus !== "out-of-stock")).slice(
-    0,
-    8
-  );
-  const heroProduct =
-    hero?.featuredProduct ??
-    merchandise.find((p) => hasUsableImage(p) && p.stockStatus !== "out-of-stock") ??
-    merchandise.find((p) => hasUsableImage(p)) ??
-    null;
+  const categoryCards = shopTypes
+    .map((cat) => {
+      const slug = cat.href.split("/").pop() as string;
+      const candidates = products.filter((p) => p.category === slug);
+      const rep =
+        candidates.find((p) => !getStockState(p.stockStatus).soldOut && hasUsableImage(p)) ??
+        null;
+      return rep ? { ...cat, product: rep } : null;
+    })
+    .filter((c): c is { label: string; href: string; product: Product } => Boolean(c));
 
-  const categoryCards = shopTypes.map((cat) => {
-    const slug = cat.href.split("/").pop() as string;
-    const candidates = products.filter((p) => p.category === slug);
-    const rep =
-      candidates.find((p) => p.featured && hasUsableImage(p)) ??
-      candidates.find((p) => hasUsableImage(p)) ??
-      candidates[0];
-    return rep ? { ...cat, product: rep } : null;
-  }).filter((c): c is { label: string; href: string; product: Product } => Boolean(c));
+  const trust = [
+    { label: "Cash on delivery", show: Boolean(config.codEnabled) },
+    {
+      label: threshold > 0 ? `Free shipping over ${formatPrice(threshold)}` : "Fast shipping",
+      show: true,
+    },
+    { label: "Easy returns / warranty", show: true },
+    { label: "Authentic, curated products", show: true },
+  ].filter((t) => t.show);
 
   return (
-    <div className="bg-white text-zinc-950">
-      <GadgetHero
-        headline={hero?.headline || heroProduct?.name || "Power your everyday."}
-        subheadline={hero?.subheadline}
-        product={heroProduct}
-        codEnabled={config.codEnabled}
-        freeShippingThreshold={config.freeShippingThreshold}
-      />
+    <div className="bg-[#fafafa] text-[#171717]">
+      <GadgetHeroSlider slides={slides} />
+
+      <section className="grid grid-cols-2 gap-3 px-4 py-6 lg:grid-cols-4 lg:gap-4 lg:px-8">
+        {trust.map((item) => (
+          <div
+            key={item.label}
+            className="rounded-xl border border-[#eaeaea] bg-white px-3 py-4 text-center text-xs text-[#666666] sm:text-sm"
+          >
+            {item.label}
+          </div>
+        ))}
+      </section>
 
       {categoryCards.length ? (
-        <section className="px-4 py-16 lg:px-8 lg:py-20">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Catalog</p>
-          <h2 className="mt-2 text-2xl font-black uppercase tracking-tight">Shop by type</h2>
-          <div className="mt-8 grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
+        <section className="border-t border-[#eaeaea] bg-white px-4 py-16 lg:px-8 lg:py-20">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0f766e]">
+            Shop by type
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em]">Find your accessory</h2>
+          <div className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {categoryCards.map((card) => {
               const image = gadgetImageSrc(card.product, PRODUCT_IMAGE.card);
               return (
                 <Link
                   key={card.href}
                   href={card.href}
-                  className="group relative block aspect-[3/4] overflow-hidden bg-zinc-100"
+                  className="group relative block aspect-[3/4] overflow-hidden rounded-xl border border-[#eaeaea] bg-[#fafafa]"
                 >
                   {image ? (
                     <Image
@@ -100,10 +120,10 @@ export default async function Home2Page() {
                       fill
                       quality={90}
                       sizes="(max-width: 640px) 50vw, 25vw"
-                      className="object-cover"
+                      className="object-cover transition duration-300 group-hover:scale-[1.02]"
                     />
                   ) : null}
-                  <span className="absolute inset-x-0 bottom-0 bg-zinc-950/85 px-3 py-3 text-sm font-black uppercase text-white">
+                  <span className="absolute inset-x-0 bottom-0 bg-white/95 px-3 py-3 text-sm font-semibold text-[#171717]">
                     {card.label}
                   </span>
                 </Link>
@@ -113,22 +133,24 @@ export default async function Home2Page() {
         </section>
       ) : null}
 
-      {merchandise.length ? (
-        <section className="border-t border-zinc-200 bg-zinc-50 px-4 py-16 lg:px-8 lg:py-20">
+      {bestsellers.length ? (
+        <section className="border-t border-[#eaeaea] bg-[#fafafa] px-4 py-16 lg:px-8 lg:py-20">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Picks</p>
-              <h2 className="mt-2 text-2xl font-black uppercase tracking-tight">Featured</h2>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0f766e]">
+                Bestsellers
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em]">Picked for you</h2>
             </div>
             <Link
               href="/products"
-              className="min-h-11 inline-flex items-center text-sm font-bold uppercase underline-offset-4 hover:underline"
+              className="min-h-11 inline-flex items-center text-sm text-[#666666] underline-offset-4 hover:underline"
             >
               All products
             </Link>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3">
-            {merchandise.map((product) => (
+          <div className="mt-10 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            {bestsellers.map((product) => (
               <GadgetProductCard key={product._id} product={product} />
             ))}
           </div>
@@ -136,15 +158,18 @@ export default async function Home2Page() {
       ) : null}
 
       {testimonials.length ? (
-        <section className="bg-zinc-950 px-4 py-16 text-white lg:px-8 lg:py-20">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-400">Proof</p>
-          <h2 className="mt-2 text-2xl font-black uppercase tracking-tight">What buyers say</h2>
-          <div className="mt-8 grid gap-px bg-zinc-800 md:grid-cols-3">
+        <section className="border-t border-[#eaeaea] bg-white px-4 py-16 lg:px-8 lg:py-20">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0f766e]">Proof</p>
+          <h2 className="mt-2 text-2xl font-bold tracking-[-0.03em]">What buyers say</h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
             {testimonials.slice(0, 3).map((item, i) => (
-              <blockquote key={`${item.customerName}-${i}`} className="bg-zinc-950 p-6">
-                <p className="text-sm leading-relaxed text-zinc-200">“{item.reviewText}”</p>
-                <footer className="mt-4 text-xs font-bold uppercase tracking-widest text-yellow-400">
-                  {item.customerName}
+              <blockquote
+                key={`${item.customerName}-${i}`}
+                className="rounded-xl border border-[#eaeaea] bg-[#fafafa] p-5"
+              >
+                <p className="text-sm leading-relaxed text-[#666666]">“{item.reviewText}”</p>
+                <footer className="mt-4 text-xs font-semibold text-[#171717]">
+                  — {item.customerName}
                 </footer>
               </blockquote>
             ))}

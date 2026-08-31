@@ -14,16 +14,14 @@ export function GadgetFooter({
   const links = shopTypeLinks(shopTypes);
 
   return (
-    <footer className="bg-zinc-950 text-zinc-300">
+    <footer className="bg-[#171717] text-[#aaaaaa]">
       <div className="grid gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
-          <p className="text-lg font-black uppercase tracking-tight text-white">{brandName}</p>
-          <p className="mt-3 text-sm">
-            Cash on delivery. Fast shipping. Gadget store energy — this is a preview layout.
-          </p>
+          <p className="text-lg font-bold tracking-[-0.03em] text-white">{brandName}</p>
+          <p className="mt-3 text-sm">Cool, useful tech — curated for how you actually shop.</p>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Shop</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Shop</h2>
           <ul className="mt-3 space-y-1">
             {links.map((link) => (
               <li key={link.href}>
@@ -35,7 +33,7 @@ export function GadgetFooter({
           </ul>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Help</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Help</h2>
           <ul className="mt-3 space-y-1 text-sm">
             <li>
               <Link href="/track" className="flex min-h-11 items-center hover:text-white">
@@ -43,8 +41,8 @@ export function GadgetFooter({
               </Link>
             </li>
             <li>
-              <Link href="/shipping-returns" className="flex min-h-11 items-center hover:text-white">
-                Shipping &amp; returns
+              <Link href="/warranty" className="flex min-h-11 items-center hover:text-white">
+                Warranty &amp; returns
               </Link>
             </li>
             <li>
@@ -55,15 +53,15 @@ export function GadgetFooter({
           </ul>
         </div>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-yellow-400">Pay on delivery</h2>
-          <p className="mt-3 text-sm">
-            {settings?.phone || "COD on every order."}
-          </p>
+          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Contact</h2>
+          <p className="mt-3 text-sm">{settings?.phone || "Cash on delivery available."}</p>
           {settings?.email ? <p className="mt-2 text-sm">{settings.email}</p> : null}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 px-4 py-4 text-xs text-zinc-500 lg:px-8">
-        <p>© {new Date().getFullYear()} {brandName}</p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-4 text-xs lg:px-8">
+        <p>
+          © {new Date().getFullYear()} {brandName}
+        </p>
         <Link href="/" className="min-h-11 inline-flex items-center hover:text-white">
           View current shop
         </Link>
