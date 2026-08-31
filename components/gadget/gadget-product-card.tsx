@@ -18,8 +18,12 @@ export function GadgetProductCard({ product }: { product: Product }) {
   const priceWas = product.compareAtPrice ? formatPrice(product.compareAtPrice) : "";
 
   return (
-    <article className="flex flex-col bg-white">
-      <Link href={href} prefetch={false} className="relative block aspect-square overflow-hidden bg-zinc-100">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)] shadow-[0_1px_0_rgba(26,26,26,0.04)]">
+      <Link
+        href={href}
+        prefetch={false}
+        className="relative block aspect-square overflow-hidden bg-[var(--g-cream-deep)]"
+      >
         {image ? (
           <Image
             src={image}
@@ -27,41 +31,47 @@ export function GadgetProductCard({ product }: { product: Product }) {
             fill
             quality={90}
             sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-contain p-2"
+            className="object-contain p-3 transition duration-500 hover:scale-[1.03]"
           />
         ) : (
-          <span className="flex h-full items-center justify-center text-sm text-zinc-400">No image</span>
+          <span className="flex h-full items-center justify-center text-sm text-[var(--g-taupe)]">
+            No image
+          </span>
         )}
         {stock.soldOut ? (
-          <span className="absolute left-2 top-2 bg-zinc-950 px-2 py-1 text-[10px] font-black uppercase text-white">
+          <span className="absolute left-2 top-2 rounded-full bg-[var(--g-forest)] px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--g-white)]">
             Sold out
           </span>
         ) : null}
       </Link>
-      <div className="flex flex-1 flex-col gap-2 border-x border-b border-zinc-200 p-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--g-sage)]">
           {product.category.replace("-", " ")}
         </p>
-        <Link href={href} prefetch={false} className="line-clamp-2 min-h-11 text-sm font-bold leading-snug hover:underline">
+        <Link
+          href={href}
+          prefetch={false}
+          className="line-clamp-2 min-h-11 text-sm font-semibold leading-snug text-[var(--g-charcoal)] hover:underline"
+        >
           {product.name}
         </Link>
         <p
           className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
           aria-label={off ? `${priceNow}, was ${priceWas}, ${off} percent off` : priceNow}
         >
-          <span className="text-lg font-black">{priceNow}</span>
+          <span className="text-base font-bold text-[var(--g-charcoal)]">{priceNow}</span>
           {off && product.compareAtPrice ? (
             <>
-              <span className="text-sm text-zinc-400 line-through">{priceWas}</span>
-              <span className="text-xs font-black text-zinc-950">–{off}%</span>
+              <span className="text-sm text-[var(--g-taupe)] line-through">{priceWas}</span>
+              <span className="text-xs font-bold text-[var(--g-forest)]">–{off}%</span>
             </>
           ) : null}
         </p>
         <Link
           href={href}
-          className="mt-auto inline-flex min-h-11 items-center justify-center bg-zinc-950 text-xs font-black uppercase tracking-wide text-white hover:bg-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-950"
+          className="mt-auto inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--g-forest)] text-xs font-semibold uppercase tracking-wide text-[var(--g-white)] transition hover:bg-[var(--g-forest-mid)]"
         >
-          {stock.soldOut ? "View" : "Shop"}
+          {stock.soldOut ? "View" : "Shop now"}
         </Link>
       </div>
     </article>

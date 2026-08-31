@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, ChevronRight, Clock, User } from "lucide-react";
+import { CalendarDays, Clock, User } from "lucide-react";
 
+import {
+  GadgetArticleShell,
+} from "@/components/gadget/gadget-article-shell";
 import { ContentBlocks } from "@/components/sections/content-blocks";
 import { fetchBlogPosts, fetchPageBySlug } from "@/lib/db/store";
 import { isDemoSession } from "@/lib/demo";
 import { publicSiteUrl } from "@/lib/deploy-rules";
 import { imageUrl } from "@/lib/sanity/image";
 import type { ContentBlock, Page } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 export const revalidate = 60;
 
@@ -89,19 +91,20 @@ export default async function BlogPostPage({
     : "Draft";
   const mins = readingMinutes(post.sections);
   const siteUrl = publicSiteUrl();
+  const cover = post.coverImage ? imageUrl(post.coverImage, { w: 1200 }) : null;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: post.seo?.title || post.title,
     description: post.seo?.description || post.excerpt,
-    image: post.coverImage ? imageUrl(post.coverImage, { w: 1200 }) : undefined,
+    image: cover || undefined,
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
-    author: { "@type": "Person", name: post.author || "Voltique Team" },
+    author: { "@type": "Person", name: post.author || "VoltGear Team" },
     publisher: {
       "@type": "Organization",
-      name: "Voltique",
+      name: "VoltGear",
       logo: {
         "@type": "ImageObject",
         url: `${siteUrl}/logo.png`,
@@ -109,104 +112,57 @@ export default async function BlogPostPage({
     },
     mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
     keywords: post.keywords?.join(", "),
-    wordCount: readingMinutes(post.sections) * 200,
   };
 
   return (
-    <article className="container mx-auto px-4 py-12 lg:px-8">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="mx-auto max-w-3xl">
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex items-center gap-1 text-sm text-muted-foreground">
-            <li>
-              <a href="/" className="hover:text-foreground">
-                Home
-              </a>
-            </li>
-            <li>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </li>
-            <li>
-              <a href="/blog" className="hover:text-foreground">
-                Blog & Guides
-              </a>
-            </li>
-          </ol>
-        </nav>
-
-        <h1 className="text-4xl font-bold tracking-tight">{post.title}</h1>
-
-        {post.excerpt && (
-          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-            {post.excerpt}
-          </p>
-        )}
-
-        <div
-          className={cn(
-            "mt-6 flex flex-wrap items-center gap-3 border-y py-4",
-            post.coverImage ? "border-y" : "border-b"
-          )}
-        >
-          <span
-            aria-hidden
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary"
-          >
+      <GadgetArticleShell
+        eyebrow="Blog"
+        title={post.title}
+        description={post.excerpt}
+        coverUrl={cover}
+        backHref="/blog"
+        backLabel="Back to all guides"
+      >
+        <div className="mb-8 flex flex-wrap items-center gap-3 border-b border-[var(--g-line)] pb-5 text-sm text-[var(--g-taupe)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--g-forest)] text-base font-bold text-[var(--g-white)]">
             {(post.author || "V")[0].toUpperCase()}
           </span>
-          <div className="text-sm">
-            <p className="flex items-center gap-1.5 font-semibold">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-              {post.author || "Voltique Team"}
+          <div>
+            <p className="flex items-center gap-1.5 font-semibold text-[var(--g-charcoal)]">
+              <User className="h-3.5 w-3.5" />
+              {post.author || "VoltGear Team"}
             </p>
-            <p className="flex items-center gap-3 text-muted-foreground">
+            <p className="mt-0.5 flex flex-wrap items-center gap-3">
               <span className="flex items-center gap-1.5">
                 <CalendarDays className="h-3.5 w-3.5" />
                 {publishedDate}
               </span>
-              {mins > 0 && (
+              {mins > 0 ? (
                 <span className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5" />
                   {mins} min read
                 </span>
-              )}
+              ) : null}
             </p>
           </div>
+          <Link href="/" className="ml-auto text-xs font-semibold text-[var(--g-forest)] hover:underline">
+            Shop
+          </Link>
         </div>
-
-        {post.coverImage && (
-          <div className="relative my-8 aspect-[16/9] w-full overflow-hidden rounded-xl border">
-            <Image
-              src={imageUrl(post.coverImage, { w: 1200 })}
-              alt={post.title}
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 768px"
-              className="object-cover"
-            />
-          </div>
-        )}
 
         {post.sections && post.sections.length > 0 ? (
           <ContentBlocks blocks={post.sections} />
         ) : (
-          <p className="mt-8 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+          <p className="rounded-2xl border border-dashed border-[var(--g-line)] bg-[var(--g-white)] p-8 text-center text-[var(--g-taupe)]">
             This post has no content yet.
           </p>
         )}
-
-        <div className="mt-12 border-t pt-6">
-          <a
-            href="/blog"
-            className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:underline"
-          >
-            ← Back to all guides
-          </a>
-        </div>
-      </div>
-    </article>
+      </GadgetArticleShell>
+    </>
   );
 }

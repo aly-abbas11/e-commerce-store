@@ -1,14 +1,16 @@
 import { SearchX } from "lucide-react";
+import Link from "next/link";
 
 import { CatalogBreadcrumbs } from "@/components/catalog/catalog-breadcrumbs";
 import { CatalogView } from "@/components/catalog/catalog-view";
-import { Button } from "@/components/ui/button";
+import { gadgetFontClass } from "@/components/gadget/gadget-fonts";
 import {
   fetchCatalog,
   parseCatalogFilters,
 } from "@/lib/catalog";
 import type { BreadcrumbItem } from "@/components/catalog/catalog-breadcrumbs";
 import { isDemoSession } from "@/lib/demo";
+import { products2Href } from "@/lib/gadget-preview";
 
 export const revalidate = 60;
 
@@ -33,33 +35,43 @@ export default async function SearchPage({
 
   if (!q) {
     return (
-      <div className="container mx-auto px-4 py-12 lg:px-8">
-        <CatalogBreadcrumbs items={breadcrumbs} />
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            What are you looking for?
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Search our catalog of electronics accessories.
-          </p>
-        </header>
-        <div className="rounded-lg border border-dashed p-10 text-center">
-          <SearchX className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-4 text-lg font-medium">Search VoltGear</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Enter a product name or keyword (e.g. “power bank”, “charger”).
-          </p>
-          <form action="/search" method="GET" className="mt-4">
-            <input
-              type="search"
-              name="q"
-              placeholder="Search…"
-              className="mx-auto max-w-md rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-            />
-            <Button type="submit" size="sm" className="ml-2">
-              Search
-            </Button>
-          </form>
+      <div className={`gadget-theme ${gadgetFontClass} bg-[var(--g-cream)] text-[var(--g-charcoal)]`}>
+        <div className="border-b border-[var(--g-line)] bg-[var(--g-cream-deep)]">
+          <div className="mx-auto max-w-6xl px-4 py-10 lg:px-8">
+            <h1 className="gadget-display text-4xl font-semibold tracking-[-0.03em]">
+              What are you looking for?
+            </h1>
+            <p className="mt-3 text-sm text-[var(--g-taupe)]">
+              Search chargers, earbuds, power banks, and more.
+            </p>
+          </div>
+        </div>
+        <div className="mx-auto max-w-6xl px-4 py-10 lg:px-8">
+          <div className="rounded-2xl border border-dashed border-[var(--g-line)] bg-[var(--g-white)] p-10 text-center">
+            <SearchX className="mx-auto h-10 w-10 text-[var(--g-taupe)]" />
+            <p className="mt-4 text-lg font-medium">Search the catalog</p>
+            <form action={products2Href()} method="GET" className="mt-4 flex flex-wrap justify-center gap-2">
+              <input
+                type="search"
+                name="q"
+                placeholder="Search…"
+                className="h-11 min-w-[16rem] rounded-full border border-[var(--g-line)] bg-[var(--g-cream)] px-4 text-sm outline-none focus:border-[var(--g-forest)]"
+              />
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center rounded-full bg-[var(--g-forest)] px-5 text-sm font-semibold text-[var(--g-white)]"
+              >
+                Search
+              </button>
+            </form>
+            <p className="mt-4 text-sm text-[var(--g-taupe)]">
+              Or browse{" "}
+              <Link href={products2Href()} className="font-semibold text-[var(--g-forest)] hover:underline">
+                all products
+              </Link>
+              .
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -76,20 +88,23 @@ export default async function SearchPage({
   if (filters.maxPrice != null) rawParams.maxPrice = String(filters.maxPrice);
 
   return (
-    <div className="container mx-auto px-4 py-12 lg:px-8">
-      <CatalogView
-        result={result}
-        filters={filters}
-        basePath="/search"
-        rawParams={rawParams}
-        title={`Results for “${q}”`}
-        breadcrumbs={breadcrumbs}
-        showCategoryPills={false}
-        selectedCategory={null}
-        categoryCounts={{}}
-        emptyMessage={`No products found for “${q}”.`}
-        emptyActionHref="/products"
-      />
+    <div className={`gadget-theme ${gadgetFontClass} bg-[var(--g-cream)] text-[var(--g-charcoal)]`}>
+      <div className="mx-auto max-w-6xl px-4 py-10 lg:px-8">
+        <CatalogBreadcrumbs items={breadcrumbs} />
+        <CatalogView
+          result={result}
+          filters={filters}
+          basePath="/search"
+          rawParams={rawParams}
+          title={`Results for “${q}”`}
+          breadcrumbs={breadcrumbs}
+          showCategoryPills={false}
+          selectedCategory={null}
+          categoryCounts={{}}
+          emptyMessage={`No products found for “${q}”.`}
+          emptyActionHref={products2Href()}
+        />
+      </div>
     </div>
   );
 }

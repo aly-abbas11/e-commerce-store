@@ -3,17 +3,21 @@ import { unstable_cache } from "next/cache";
 import { FALLBACK_SHOP_TYPES, type ShopType } from "@/lib/categories";
 import {
   mapHero,
+  mapHeroSlide,
   mapPage,
   mapProduct,
   mapSettings,
   mapTestimonial,
 } from "@/lib/db/map";
+import { pickBestsellers } from "@/lib/db/bestsellers-rules";
+import { MAX_HERO_SLIDES } from "@/lib/db/hero-slide-rules";
 import { formatOrderId, nextSequentialNumber } from "@/lib/db/order-id";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { OrderAttributionSnapshot } from "@/lib/db/analytics-checkout-rules";
 import type {
   EmailEventKind,
   HeroSection,
+  HeroSlide,
   Order,
   OrderCustomer,
   OrderItem,
@@ -284,6 +288,97 @@ export async function fetchHero(includeDemo = false): Promise<HeroSection | null
     });
   }
   return mapHero(data as Record<string, unknown>, featured);
+}
+
+export async function fetchHeroSlides(includeDemo = false): Promise<HeroSlide[]> {
+  const { data, error } = await execDemoQuery(() =>
+    demoFilter(db().from("hero_slides").select("*").eq("status", LIVE), includeDemo)
+      .order("sort_order", { ascending: true })
+      .limit(MAX_HERO_SLIDES)
+  );
+  if (error) {
+    // Table may not exist until migration is pushed
+    if (error.code === "42P01" || /hero_slides/i.test(error.message ?? "")) return [];
+    throw error;
+  }
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const productIds = Array.from(
+    new Set(rows.map((r) => String(r.product_id)).filter(Boolean))
+  );
+  const { data: products, error: productError } = await execDemoQuery(() =>
+    demoFilter(
+      db().from("products").select(PRODUCT_EMBED).in("id", productIds).eq("status", LIVE),
+      includeDemo
+    )
+  );
+  if (productError) throw productError;
+
+  const byId = new Map<string, Product>();
+  for (const row of products ?? []) {
+    const mapped = mapProduct(row as Record<string, unknown>, { includeDemoReviews: includeDemo });
+    if (mapped) byId.set(mapped._id, mapped);
+  }
+
+  const slides: HeroSlide[] = [];
+  for (const row of rows) {
+    const product = byId.get(String(row.product_id));
+    if (!product || !String(row.image_url ?? "").trim()) continue;
+    slides.push(mapHeroSlide(row as Record<string, unknown>, product));
+  }
+  return slides.slice(0, MAX_HERO_SLIDES);
+}
+
+async function fetchOrderCountsByProductId(products: Product[]): Promise<Record<string, number>> {
+  const slugToId = new Map(products.map((p) => [p.slug, p._id]));
+  const { data, error } = await db().from("order_items").select("slug, quantity");
+  if (error) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const slug = String(row.slug ?? "");
+    const id = slugToId.get(slug);
+    if (!id) continue;
+    const qty = Number(row.quantity ?? 0);
+    counts[id] = (counts[id] ?? 0) + (Number.isFinite(qty) ? qty : 0);
+  }
+  return counts;
+}
+
+async function fetchViewCountsByProductId(): Promise<Record<string, number>> {
+  const { data, error } = await db()
+    .from("analytics_events")
+    .select("product_id")
+    .eq("name", "product_view")
+    .not("product_id", "is", null);
+  if (error) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = String(row.product_id ?? "");
+    if (!id) continue;
+    counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export async function fetchHomeBestsellers(includeDemo = false): Promise<Product[]> {
+  const products = await fetchAllProducts(includeDemo);
+  const [orderCounts, viewCounts] = await Promise.all([
+    fetchOrderCountsByProductId(products),
+    fetchViewCountsByProductId(),
+  ]);
+  const ids = pickBestsellers({
+    products: products.map((p) => ({
+      id: p._id,
+      featured: p.featured,
+      stockStatus: p.stockStatus,
+    })),
+    orderCounts,
+    viewCounts,
+    limit: 8,
+  });
+  const byId = new Map(products.map((p) => [p._id, p]));
+  return ids.map((id) => byId.get(id)).filter(Boolean) as Product[];
 }
 
 export async function fetchTestimonials(includeDemo = false): Promise<Testimonial[]> {

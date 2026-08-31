@@ -6,7 +6,10 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-**T-15** — First-party traffic, funnel tracking & conversion insights · 🟡 In Progress
+**T-16** — Homepage redesign · 🟡 In Progress (closeout / residual polish)  
+**T-19** — Gadget craft system · ✅ Done (motion/type/icons/copy tokens shipped)
+
+Parked: **T-15** — First-party traffic, funnel tracking & conversion insights · 🟡 In Progress (resume when you say so)
 
 ## Program
 
@@ -30,7 +33,11 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-12 | Easier layout for the rest of admin | ⚪ Planned | T-09 | Orders, settings, and other admin pages after Products + Shop types feel easy. |
 | T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
 | T-14 | Commerce intelligence & delivered-revenue analytics | ✅ Done | T-03, T-13 | COD analytics: delivered revenue is the primary KPI. `/admin/analytics` live 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t14-commerce-intelligence-design.md`. Docs: `docs/modules/analytics/`. |
-| T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Schema pushed 2026-08-28. Live tracker on https://voltgear-coral.vercel.app. Open the shop once, then `/admin/analytics` → Traffic. No Clarity/GA. Do not rebuild T-14 money reports. |
+| T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Schema pushed 2026-08-28. Live tracker on https://voltgear-coral.vercel.app. Open the shop once, then `/admin/analytics` → Traffic. No Clarity/GA. Do not rebuild T-14 money reports. Parked while T-16 is active. |
+| T-16 | Homepage redesign (discovery-driven VoltGear home) | 🟡 In Progress | T-07 | Phase 1: `/home2` Biometic + Ronin-style hero slides. Spec: `docs/superpowers/specs/2026-09-01-t16-home2-redesign-design.md`. Live `/` unchanged. |
+| T-17 | `/product2` redesign (match T-16 language) | ⚪ Planned | T-16 | Guided buy / Biometic chrome. Spawned from T-16 impact analysis. |
+| T-18 | Gadget catalog entry chrome | ⚪ Planned | T-16 | Preview catalog/nav entry points matching T-16. Spawned from T-16 impact analysis. |
+| T-19 | Gadget craft system: motion, type, copy, icons | ✅ Done | T-16 | Craft tokens + home reveals + buy trust microcopy + glyphs. Plans/UI approved 2026-09-01. Preview only. |
 
 ## Suggested build order
 

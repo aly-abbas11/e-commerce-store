@@ -70,7 +70,7 @@ export function ProductGallery({
   return (
     <div className="space-y-4">
       <div
-        className="relative aspect-square cursor-zoom-in overflow-hidden rounded-xl border bg-muted select-none"
+        className="relative aspect-square cursor-zoom-in touch-pan-y overflow-hidden rounded-xl border bg-[var(--g-cream-deep,#f5f5f5)] select-none"
         onClick={openLightbox}
         onTouchStart={(e) => {
           touchStartX.current = e.touches[0]?.clientX ?? null;

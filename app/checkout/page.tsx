@@ -33,6 +33,12 @@ import {
   trackFirstParty,
   validationCategoryFromFieldName,
 } from "@/lib/first-party-analytics";
+import {
+  GADGET_SESSION_KEY,
+  product2Href,
+  products2Href,
+  readGadgetPreviewSession,
+} from "@/lib/gadget-preview";
 import { useSiteConfig } from "@/lib/use-site-config";
 import type { PriceMismatch } from "@/lib/checkout-server";
 
@@ -78,6 +84,19 @@ export default function CheckoutPage() {
     clearCart,
   } = useCart();
   const config = useSiteConfig();
+  const [gadget, setGadget] = useState(false);
+  const shopHref = gadget ? products2Href() : "/products";
+  const productHref = (slug: string) => (gadget ? product2Href(slug) : `/product/${slug}`);
+
+  useEffect(() => {
+    try {
+      const fromGadget = new URLSearchParams(window.location.search).get("from") === "gadget";
+      if (fromGadget) sessionStorage.setItem(GADGET_SESSION_KEY, "1");
+      setGadget(fromGadget || readGadgetPreviewSession());
+    } catch {
+      setGadget(false);
+    }
+  }, []);
 
   const [step, setStep] = useState(0);
   const [payment, setPayment] = useState<PaymentMethod>("cod");
@@ -318,7 +337,7 @@ export default function CheckoutPage() {
             Pay {formatPrice(placedTotal ?? total)} cash on delivery
           </div>
           <Button asChild size="lg" className="mt-8">
-            <Link href="/products">
+            <Link href={shopHref}>
               Continue Shopping <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
@@ -340,7 +359,7 @@ export default function CheckoutPage() {
             Add some products and come back to check out.
           </p>
           <Button asChild className="mt-6">
-            <Link href="/products">Start Shopping</Link>
+            <Link href={shopHref}>Start Shopping</Link>
           </Button>
         </div>
       </div>
@@ -425,7 +444,7 @@ export default function CheckoutPage() {
                     <div className="flex flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
                         <Link
-                          href={`/product/${item.slug}`}
+                          href={productHref(item.slug)}
                           className="font-medium leading-snug hover:text-primary"
                         >
                           {item.name}
@@ -478,7 +497,7 @@ export default function CheckoutPage() {
 
               <div className="mt-8 flex items-center justify-between">
                 <Link
-                  href="/products"
+                  href={shopHref}
                   className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
                 >
                   <ChevronLeft className="h-4 w-4" /> Continue shopping

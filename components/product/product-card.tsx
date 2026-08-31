@@ -19,9 +19,13 @@ import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 import { useCart } from "@/components/cart/cart-provider";
 import { dispatchAddToCartEffect } from "@/components/effects/cart-effects";
+import { useGadgetPreview } from "@/components/gadget/use-gadget-preview";
+import { product2Href } from "@/lib/gadget-preview";
 
 export function ProductCard({ product, className }: { product: Product; className?: string }) {
   const { addItem } = useCart();
+  const gadget = useGadgetPreview();
+  const href = gadget ? product2Href(product.slug) : `/product/${product.slug}`;
   const image = product.images?.[0];
   const stock = getStockState(product.stockStatus);
   const outOfStock = stock.soldOut;
@@ -43,7 +47,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
         className
       )}
     >
-      <Link href={`/product/${product.slug}`} prefetch={false} className="block">
+      <Link href={href} prefetch={false} className="block">
         <div className="relative aspect-square overflow-hidden bg-muted">
           {image ? (
             <Image
@@ -79,7 +83,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
           {product.category.replace("-", " ")}
         </p>
         <Link
-          href={`/product/${product.slug}`}
+          href={href}
           className="line-clamp-2 font-medium leading-snug transition-colors hover:text-primary"
         >
           {product.name}
@@ -89,7 +93,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
           {typeof product.reviewCount === "number" &&
             product.reviewCount > 0 && (
               <Link
-                href={`/product/${product.slug}#reviews`}
+                href={`${href}#reviews`}
                 title="View reviews"
                 className="flex items-center gap-2 rounded transition-colors hover:text-primary"
               >
@@ -115,7 +119,7 @@ export function ProductCard({ product, className }: { product: Product; classNam
 
         {outOfStock || !canDirectAdd ? (
           <Button asChild className="w-full" variant={outOfStock ? "default" : "outline"}>
-            <Link href={`/product/${product.slug}`}>
+            <Link href={href}>
               {outOfStock ? "Sold Out" : "View Options"}
             </Link>
           </Button>

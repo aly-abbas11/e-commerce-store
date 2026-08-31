@@ -78,6 +78,15 @@ export interface HeroSection {
   featuredProduct?: Product;
 }
 
+export interface HeroSlide {
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  product: Product;
+  sortOrder: number;
+}
+
 export interface Testimonial {
   customerName: string;
   reviewText: string;

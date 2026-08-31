@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Check } from "lucide-react";
 
 import { GadgetBuyBox } from "@/components/gadget/gadget-buy-box";
 import { GadgetProductCard } from "@/components/gadget/gadget-product-card";
 import { GadgetVideo } from "@/components/gadget/gadget-video";
-import { fetchAllProducts, fetchProductBySlug } from "@/lib/db/store";
+import { applyGadgetStudioImages, applyGadgetStudioImagesList } from "@/lib/gadget-product-images";
+import { products2Href } from "@/lib/gadget-preview";
+import { fetchAllProducts, fetchProductBySlug, fetchSiteSettings } from "@/lib/db/store";
 import { isDemoSession } from "@/lib/demo";
-import { getSettings } from "@/lib/sanity/settings";
 import { normalizeSettings } from "@/lib/site-config";
 import type { Product } from "@/lib/types";
 
@@ -21,8 +23,7 @@ export async function generateMetadata({
   const product = await fetchProductBySlug(params.slug, isDemoSession()).catch(() => null);
   if (!product) return { robots: { index: false, follow: false } };
   return {
-    title: `${product.name} (preview)`,
-    robots: { index: false, follow: false },
+    title: product.name,
   };
 }
 
@@ -36,7 +37,7 @@ export default async function Product2Page({ params }: { params: { slug: string 
     if (product) {
       [related, settings] = await Promise.all([
         fetchAllProducts(demo),
-        getSettings().catch(() => null),
+        fetchSiteSettings().catch(() => null),
       ]);
     }
   } catch {
@@ -44,6 +45,9 @@ export default async function Product2Page({ params }: { params: { slug: string 
   }
 
   if (!product) notFound();
+
+  product = applyGadgetStudioImages(product);
+  related = applyGadgetStudioImagesList(related);
 
   const config = normalizeSettings(settings);
   const relatedProducts = related
@@ -53,16 +57,18 @@ export default async function Product2Page({ params }: { params: { slug: string 
   const features = (product.features ?? []).filter(Boolean);
 
   return (
-    <div className="bg-white text-zinc-950">
-      <div className="px-4 py-8 lg:px-8">
-        <nav aria-label="Breadcrumb" className="text-xs font-bold uppercase tracking-widest text-zinc-500">
-          <Link href="/home2" className="hover:text-zinc-950">
+    <div className="gadget-scroll-pad-cta bg-[var(--g-cream)] text-[var(--g-charcoal)] lg:pb-10">
+      <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-xs text-[var(--g-taupe)]">
+          <Link href="/" className="hover:text-[var(--g-forest)]">
             Home
           </Link>
-          <span className="px-2">/</span>
-          <Link href={`/products/${product.category}`} className="hover:text-zinc-950">
-            {product.category.replace("-", " ")}
+          <span aria-hidden>/</span>
+          <Link href={products2Href(product.category)} className="capitalize hover:text-[var(--g-forest)]">
+            {product.category.replace(/-/g, " ")}
           </Link>
+          <span aria-hidden>/</span>
+          <span className="line-clamp-1 text-[var(--g-charcoal)]">{product.name}</span>
         </nav>
 
         <div className="mt-6">
@@ -72,11 +78,15 @@ export default async function Product2Page({ params }: { params: { slug: string 
         <GadgetVideo product={product} />
 
         {features.length ? (
-          <section className="mt-12">
-            <h2 className="text-xl font-black uppercase tracking-tight">Features</h2>
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <section className="mt-12 rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)] p-6 sm:p-8">
+            <h2 className="gadget-display text-2xl font-semibold tracking-[-0.02em]">Why you’ll like it</h2>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {features.map((f) => (
-                <li key={f} className="border border-zinc-200 px-4 py-3 text-sm font-medium">
+                <li
+                  key={f}
+                  className="flex items-start gap-2.5 rounded-xl bg-[var(--g-cream)] px-4 py-3 text-sm text-[var(--g-charcoal)]"
+                >
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-[var(--g-forest)]" aria-hidden />
                   {f}
                 </li>
               ))}
@@ -85,13 +95,13 @@ export default async function Product2Page({ params }: { params: { slug: string 
         ) : null}
 
         {specs.length ? (
-          <section className="mt-12">
-            <h2 className="text-xl font-black uppercase tracking-tight">Specs</h2>
-            <dl className="mt-4 divide-y border border-zinc-200">
+          <section className="mt-8 rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)] p-6 sm:p-8">
+            <h2 className="gadget-display text-2xl font-semibold tracking-[-0.02em]">Specifications</h2>
+            <dl className="mt-5 divide-y divide-[var(--g-line)] overflow-hidden rounded-xl border border-[var(--g-line)]">
               {specs.map((s) => (
-                <div key={s.label} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
-                  <dt className="font-bold">{s.label}</dt>
-                  <dd className="text-zinc-600">{s.value}</dd>
+                <div key={s.label} className="grid grid-cols-2 gap-4 bg-[var(--g-cream)]/40 px-4 py-3 text-sm">
+                  <dt className="font-semibold text-[var(--g-charcoal)]">{s.label}</dt>
+                  <dd className="text-[var(--g-taupe)]">{s.value}</dd>
                 </div>
               ))}
             </dl>
@@ -99,32 +109,39 @@ export default async function Product2Page({ params }: { params: { slug: string 
         ) : null}
 
         {product.inTheBox?.length ? (
-          <section className="mt-12">
-            <h2 className="text-xl font-black uppercase tracking-tight">In the box</h2>
-            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm">
+          <section className="mt-8 rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)] p-6 sm:p-8">
+            <h2 className="gadget-display text-2xl font-semibold tracking-[-0.02em]">In the box</h2>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
               {product.inTheBox.map((item) => (
-                <li key={item}>{item}</li>
+                <li key={item} className="flex items-center gap-2 text-sm text-[var(--g-charcoal)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--g-forest)]" aria-hidden />
+                  {item}
+                </li>
               ))}
             </ul>
           </section>
         ) : null}
 
         {relatedProducts.length ? (
-          <section className="mt-12 pb-8">
-            <h2 className="text-xl font-black uppercase tracking-tight">Also shop</h2>
-            <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <section className="mt-14 pb-4">
+            <div className="mb-6 flex items-end justify-between gap-3">
+              <h2 className="gadget-display text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+                You may also like
+              </h2>
+              <Link
+                href={products2Href(product.category)}
+                className="text-sm font-medium text-[var(--g-sage)] hover:text-[var(--g-forest)]"
+              >
+                View all
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
               {relatedProducts.map((p) => (
                 <GadgetProductCard key={p._id} product={p} />
               ))}
             </div>
           </section>
         ) : null}
-
-        <p className="mt-8 text-xs text-zinc-500">
-          <Link href={`/product/${product.slug}`} className="underline">
-            View current product page
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import dynamic from "next/dynamic";
 import { headers } from "next/headers";
+import { Suspense } from "react";
 
 import { AppChrome } from "@/components/layout/app-chrome";
 import { DemoBanner } from "@/components/demo/demo-banner";
@@ -50,6 +51,16 @@ const CompareBarWrapper = dynamic(
 );
 
 const SITE_URL = publicSiteUrl();
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F5F1E8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1F3626" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -190,19 +201,21 @@ export default async function RootLayout({
           />
         )}
       </head>
-      <body className="flex min-h-screen flex-col bg-background font-sans antialiased">
-        <AppChrome
-          settings={settings}
-          shopTypes={shopTypes}
-          urgencyTicker={<UrgencyTicker announcement={config.announcement} />}
-          cartDrawer={<CartDrawer />}
-          reviewReminder={<ReviewReminderPopup />}
-          cartEffects={<CartEffects />}
-          compareBar={<CompareBarWrapper />}
-          demoBanner={<DemoBanner />}
-        >
-          {children}
-        </AppChrome>
+      <body className="flex min-h-dvh flex-col bg-background font-sans antialiased">
+        <Suspense fallback={<div className="flex min-h-dvh flex-col">{children}</div>}>
+          <AppChrome
+            settings={settings}
+            shopTypes={shopTypes}
+            urgencyTicker={<UrgencyTicker announcement={config.announcement} />}
+            cartDrawer={<CartDrawer />}
+            reviewReminder={<ReviewReminderPopup />}
+            cartEffects={<CartEffects />}
+            compareBar={<CompareBarWrapper />}
+            demoBanner={<DemoBanner />}
+          >
+            {children}
+          </AppChrome>
+        </Suspense>
       </body>
     </html>
   );
