@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
-import { Separator } from "@/components/ui/separator";
+import {
+  GadgetSupportCard,
+  GadgetSupportLayout,
+} from "@/components/gadget/gadget-support-layout";
 import { getSettings } from "@/lib/sanity/settings";
 import {
   normalizeSettings,
@@ -8,9 +13,9 @@ import {
   warrantyLabel,
 } from "@/lib/site-config";
 
-export const metadata = {
-  title: "Warranty & Returns",
-  description: "VoltGear warranty and return policy details.",
+export const metadata: Metadata = {
+  title: "Warranty Policy",
+  description: "VoltGear warranty coverage and how to claim.",
 };
 
 export default async function WarrantyPage() {
@@ -19,128 +24,108 @@ export default async function WarrantyPage() {
   const email = config.supportEmail;
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 lg:px-8">
-      <h1 className="text-3xl font-bold tracking-tight">Warranty &amp; Returns</h1>
-      <p className="mt-3 text-muted-foreground">
-        Every VoltGear product comes with our commitment to quality. Here&apos;s what&apos;s covered.
-      </p>
-
-      <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {config.warrantyMonths ? (
-          <div className="rounded-xl border bg-card p-5">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-            <h2 className="mt-3 font-semibold">{warrantyLabel(config.warrantyMonths)}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+    <GadgetSupportLayout
+      eyebrow="Care"
+      title="Warranty policy"
+      description="Every VoltGear product is backed by our commitment to quality. Here’s what’s covered and how to claim."
+      related={[
+        { href: "/shipping-returns#returns", label: "Exchange & refunds" },
+        { href: "/contact", label: "Register a complaint" },
+        { href: "/track", label: "Track order" },
+      ]}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <GadgetSupportCard
+          icon={<ShieldCheck className="h-6 w-6" aria-hidden />}
+          title={
+            config.warrantyMonths
+              ? warrantyLabel(config.warrantyMonths)
+              : "Warranty coverage"
+          }
+        >
+          {config.warrantyMonths ? (
+            <p>
               Coverage on manufacturing defects and hardware failures for{" "}
               {config.warrantyMonths} months from the date of purchase.
             </p>
-          </div>
-        ) : (
-          <div className="rounded-xl border bg-card p-5">
-            <ShieldCheck className="h-8 w-8 text-primary" />
-            <h2 className="mt-3 font-semibold">Warranty Coverage</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Warranty terms are currently being finalized. Contact us with your order number
-              and we&apos;ll take care of any issues.
-            </p>
-          </div>
-        )}
-        {config.returnWindowDays ? (
-          <div className="rounded-xl border bg-card p-5">
-            <CheckCircle2 className="h-8 w-8 text-primary" />
-            <h2 className="mt-3 font-semibold">{returnsLabel(config.returnWindowDays)}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Changed your mind? Return unused products within {config.returnWindowDays} days
-              for a full refund.
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-xl border bg-card p-5">
-            <CheckCircle2 className="h-8 w-8 text-primary" />
-            <h2 className="mt-3 font-semibold">Returns</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Return terms are currently being finalized. Contact us with your order number
-              and we&apos;ll help you out.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <Separator className="my-8" />
-
-      <h2 className="text-lg font-semibold">How to Claim Warranty</h2>
-      <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
-        <li className="flex gap-3">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
-          {email ? (
-            <span>
-              Contact us at{" "}
-              <a href={`mailto:${email}`} className="font-medium text-primary hover:underline">
-                {email}
-              </a>{" "}
-              with your order number.
-            </span>
           ) : (
-            <span>
-              Contact us via our{" "}
-              <a href="/contact" className="font-medium text-primary hover:underline">
-                contact page
-              </a>{" "}
-              with your order number.
-            </span>
+            <p>
+              Warranty terms are being finalized. Contact us with your order number and
+              we&apos;ll take care of any issues.
+            </p>
           )}
-        </li>
-        <li className="flex gap-3">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
-          <span>Describe the issue and attach photos/videos if possible.</span>
-        </li>
-        <li className="flex gap-3">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
-          <span>We&apos;ll review your case and arrange a replacement or repair.</span>
-        </li>
-      </ol>
-
-      {config.returnWindowDays && (
-        <>
-          <Separator className="my-8" />
-
-          <h2 className="text-lg font-semibold">Return Policy</h2>
-          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <li>• Products must be in original packaging and unused condition.</li>
-            <li>• Gift-wrapped orders receive a full refund including the wrapping fee.</li>
-          </ul>
-        </>
-      )}
-
-      <div className="mt-8 rounded-xl bg-muted/40 p-5">
-        <div className="flex items-center gap-2 font-medium">
-          <Mail className="h-4 w-4 text-primary" />
-          Need help?
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {email ? (
-            <>
-              Email us at{" "}
-              <a href={`mailto:${email}`} className="text-primary hover:underline">
-                {email}
-              </a>{" "}
-              or visit our{" "}
-              <a href="/contact" className="text-primary hover:underline">
-                contact page
-              </a>
+        </GadgetSupportCard>
+        <GadgetSupportCard
+          icon={<CheckCircle2 className="h-6 w-6" aria-hidden />}
+          title={
+            config.returnWindowDays
+              ? returnsLabel(config.returnWindowDays)
+              : "Returns"
+          }
+        >
+          {config.returnWindowDays ? (
+            <p>
+              Changed your mind? Return unused products within {config.returnWindowDays}{" "}
+              days — see{" "}
+              <Link href="/shipping-returns#returns" className="font-semibold text-[var(--g-forest)] hover:underline">
+                exchange &amp; refunds
+              </Link>
               .
-            </>
+            </p>
           ) : (
-            <>
-              Visit our{" "}
-              <a href="/contact" className="text-primary hover:underline">
-                contact page
-              </a>{" "}
-              and we&apos;ll get back to you.
-            </>
+            <p>
+              Return terms are being finalized. Contact us with your order number and
+              we&apos;ll help.
+            </p>
           )}
-        </p>
+        </GadgetSupportCard>
       </div>
-    </div>
+
+      <div className="mt-6 space-y-4">
+        <GadgetSupportCard title="How to claim warranty">
+          <ol className="list-decimal space-y-3 pl-4">
+            <li>
+              {email ? (
+                <>
+                  Email{" "}
+                  <a href={`mailto:${email}`} className="font-semibold text-[var(--g-forest)] hover:underline">
+                    {email}
+                  </a>{" "}
+                  or use our{" "}
+                  <Link href="/contact" className="font-semibold text-[var(--g-forest)] hover:underline">
+                    contact page
+                  </Link>{" "}
+                  with your order number.
+                </>
+              ) : (
+                <>
+                  Use our{" "}
+                  <Link href="/contact" className="font-semibold text-[var(--g-forest)] hover:underline">
+                    contact page
+                  </Link>{" "}
+                  with your order number.
+                </>
+              )}
+            </li>
+            <li>Describe the issue and attach photos or a short video if you can.</li>
+            <li>We&apos;ll review and arrange repair or replacement when covered.</li>
+          </ol>
+        </GadgetSupportCard>
+
+        <div className="rounded-2xl bg-[var(--g-forest)] p-5 text-[var(--g-white)] sm:p-6">
+          <div className="flex items-center gap-2 font-semibold">
+            <Mail className="h-4 w-4 text-[var(--g-sage)]" aria-hidden />
+            Need help?
+          </div>
+          <p className="mt-2 text-sm text-white/80">
+            WhatsApp or call via{" "}
+            <Link href="/contact" className="font-semibold text-[var(--g-cream)] underline-offset-2 hover:underline">
+              Contact us
+            </Link>{" "}
+            — we usually reply the same day.
+          </p>
+        </div>
+      </div>
+    </GadgetSupportLayout>
   );
 }

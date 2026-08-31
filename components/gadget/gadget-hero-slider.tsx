@@ -3,139 +3,212 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 
 import { resolveSlideCta } from "@/lib/db/hero-slide-rules";
+import type { GadgetCreativeBanner } from "@/lib/gadget-creatives";
 import { product2Href } from "@/lib/gadget-preview";
 import type { HeroSlide } from "@/lib/types";
-import { formatPrice } from "@/lib/utils";
 
-const INTERVAL_MS = 5000;
+const INTERVAL_MS = 5500;
+const FADE_MS = 700;
 
-export function GadgetHeroSlider({ slides }: { slides: HeroSlide[] }) {
+export type GadgetHeroBanner = {
+  id: string;
+  title: string;
+  imageUrl: string;
+  href: string;
+  ctaDisabled?: boolean;
+};
+
+function fromAdminSlides(slides: HeroSlide[]): GadgetHeroBanner[] {
+  return slides.map((slide) => {
+    const cta = resolveSlideCta(slide.product.stockStatus);
+    return {
+      id: slide.id,
+      title: slide.title || "Campaign",
+      imageUrl: slide.imageUrl,
+      href: product2Href(slide.product.slug),
+      ctaDisabled: cta.disabled,
+    };
+  });
+}
+
+export function GadgetHeroSlider({
+  slides = [],
+  fallbackBanners = [],
+}: {
+  slides?: HeroSlide[];
+  fallbackBanners?: GadgetCreativeBanner[];
+}) {
+  const banners: GadgetHeroBanner[] =
+    slides.length > 0
+      ? fromAdminSlides(slides)
+      : fallbackBanners.map((b) => ({
+          id: b.id,
+          title: b.title,
+          imageUrl: b.imageUrl,
+          href: b.href,
+        }));
+
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    if (slides.length <= 1 || paused) return;
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const onChange = () => setReduceMotion(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (banners.length <= 1 || paused || reduceMotion) return;
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
+      setIndex((i) => (i + 1) % banners.length);
     }, INTERVAL_MS);
     return () => window.clearInterval(id);
-  }, [slides.length, paused]);
+  }, [banners.length, paused, reduceMotion]);
 
-  if (slides.length === 0) {
+  if (banners.length === 0) {
     return (
-      <div className="border-b border-[#eaeaea] bg-white px-4 py-16 text-center lg:px-8">
-        <p className="text-sm text-[#666666]">
-          No published hero slides yet. Add slides in Admin → Hero.
-        </p>
+      <div className="bg-[var(--g-cream)] px-4 py-10 lg:px-8">
+        <div className="rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)] px-4 py-16 text-center">
+          <p className="text-sm text-[var(--g-taupe)]">
+            No published hero slides yet. Add a full campaign banner image in Admin → Hero.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const slide = slides[index] ?? slides[0];
-  const cta = resolveSlideCta(slide.product.stockStatus);
-  const href = product2Href(slide.product.slug);
-  const priceNow = formatPrice(slide.product.price);
-  const priceWas = slide.product.compareAtPrice
-    ? formatPrice(slide.product.compareAtPrice)
-    : null;
+  const active = banners[index] ?? banners[0];
 
-  function go(delta: number) {
-    setIndex((i) => (i + delta + slides.length) % slides.length);
+  function go(i: number) {
+    setIndex(i);
   }
-
-  const copy = (
-    <div className="flex flex-col justify-center gap-3 px-6 py-10 lg:px-10 lg:py-14">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#0f766e]">Featured</p>
-      <h1 className="text-3xl font-bold tracking-[-0.04em] text-[#171717] lg:text-4xl">{slide.title}</h1>
-      {slide.subtitle ? <p className="max-w-md text-sm text-[#666666]">{slide.subtitle}</p> : null}
-      <p className="flex flex-wrap items-baseline gap-2 text-lg font-bold text-[#171717]">
-        <span>{priceNow}</span>
-        {priceWas ? <span className="text-sm font-medium text-[#999] line-through">{priceWas}</span> : null}
-      </p>
-      {cta.disabled ? (
-        <span className="inline-flex min-h-11 w-fit items-center rounded-lg bg-[#eaeaea] px-5 text-sm font-semibold text-[#666666]">
-          {cta.label}
-        </span>
-      ) : (
-        <Link
-          href={href}
-          className="inline-flex min-h-11 w-fit items-center rounded-lg bg-[#171717] px-5 text-sm font-semibold text-white hover:bg-black"
-        >
-          {cta.label}
-        </Link>
-      )}
-    </div>
-  );
-
-  const art = (
-    <div className="relative flex min-h-[220px] items-center justify-center bg-[#fafafa] lg:min-h-full">
-      <div className="relative h-48 w-48 lg:h-64 lg:w-64">
-        <Image
-          src={slide.imageUrl}
-          alt={slide.title}
-          fill
-          priority
-          className="object-contain"
-          sizes="(max-width: 768px) 50vw, 30vw"
-        />
-      </div>
-    </div>
-  );
 
   return (
     <section
-      className="border-b border-[#eaeaea] bg-white"
+      className="bg-[var(--g-cream)] px-3 pt-3 pb-2 sm:px-4 sm:pt-4 lg:px-8"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       aria-roledescription="carousel"
-      aria-label="Featured products"
+      aria-label="Campaign banners"
     >
-      <div className="grid md:hidden">
-        {art}
-        {copy}
-      </div>
-      <div className="hidden md:grid md:grid-cols-2 md:min-h-[380px]">
-        {copy}
-        <div className="border-l border-[#eaeaea]">{art}</div>
-      </div>
+      <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] border border-[var(--g-line)] bg-[var(--g-forest)] shadow-[0_20px_50px_rgba(31,54,38,0.18)]">
+        <div className="relative aspect-[16/9] w-full sm:aspect-[21/9] lg:aspect-[2.4/1] lg:min-h-[320px]">
+          {banners.map((banner, i) => {
+            const isActive = i === index;
+            return (
+              <div
+                key={banner.id}
+                className="absolute inset-0"
+                style={{
+                  opacity: isActive ? 1 : 0,
+                  transform: reduceMotion
+                    ? undefined
+                    : isActive
+                      ? "scale(1)"
+                      : "scale(1.03)",
+                  transition: reduceMotion
+                    ? "opacity 1ms"
+                    : `opacity ${FADE_MS}ms cubic-bezier(0.22, 1, 0.36, 1), transform ${FADE_MS + 200}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+                  zIndex: isActive ? 1 : 0,
+                  pointerEvents: isActive ? "auto" : "none",
+                }}
+                aria-hidden={!isActive}
+              >
+                <Image
+                  src={banner.imageUrl}
+                  alt={banner.title || "Campaign"}
+                  fill
+                  priority={i === 0}
+                  className="object-cover object-center"
+                  sizes="100vw"
+                />
+              </div>
+            );
+          })}
 
-      <div className="flex items-center justify-center gap-3 border-t border-[#eaeaea] px-4 py-3">
-        <button
-          type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#eaeaea] text-[#171717]"
-          aria-label="Previous slide"
-          onClick={() => go(-1)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <div className="flex gap-2">
-          {slides.map((s, i) => (
-            <button
-              key={s.id}
-              type="button"
-              aria-label={`Go to slide ${i + 1}`}
-              aria-current={i === index}
-              className={`h-2 w-2 rounded-full ${i === index ? "bg-[#171717]" : "bg-[#ddd]"}`}
-              onClick={() => setIndex(i)}
-            />
-          ))}
+          <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+
+          {active.ctaDisabled ? (
+            <div className="absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-3 p-4 sm:p-5 lg:p-6">
+              <Dots banners={banners} index={index} onSelect={go} />
+              <span className="inline-flex min-h-11 items-center rounded-full bg-[var(--g-cream)]/95 px-5 text-sm font-bold uppercase tracking-wide text-[var(--g-taupe)]">
+                Out of stock
+              </span>
+            </div>
+          ) : (
+            <>
+              <Link
+                href={active.href}
+                className="absolute inset-0 z-[2]"
+                aria-label={active.title ? `Shop ${active.title}` : "Shop now"}
+              >
+                <span className="sr-only">Shop now</span>
+              </Link>
+
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] flex items-end justify-between gap-3 p-4 sm:p-5 lg:p-6">
+                <div className="pointer-events-auto max-w-[min(100%,28rem)]">
+                  {active.title ? (
+                    <p className="gadget-display mb-3 hidden text-left text-lg font-semibold leading-tight tracking-[-0.02em] text-[var(--g-white)] drop-shadow-sm sm:block sm:text-xl lg:text-2xl">
+                      {active.title}
+                    </p>
+                  ) : null}
+                  <Dots banners={banners} index={index} onSelect={go} />
+                </div>
+                <Link
+                  href={active.href}
+                  className="gadget-btn-primary pointer-events-auto inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-4 text-xs font-bold uppercase tracking-wide sm:px-5 sm:text-sm"
+                >
+                  <ShoppingCart className="h-4 w-4" aria-hidden />
+                  <span className="sm:hidden">Shop</span>
+                  <span className="hidden sm:inline">Shop now</span>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
-        <button
-          type="button"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#eaeaea] text-[#171717]"
-          aria-label="Next slide"
-          aria-controls={undefined}
-          onClick={() => go(1)}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
       </div>
     </section>
+  );
+}
+
+function Dots({
+  banners,
+  index,
+  onSelect,
+}: {
+  banners: GadgetHeroBanner[];
+  index: number;
+  onSelect: (i: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {banners.map((s, i) => (
+        <button
+          key={s.id}
+          type="button"
+          aria-label={`Go to slide ${i + 1}`}
+          aria-current={i === index}
+          className={`flex h-11 items-center justify-center px-1 ${
+            i === index ? "" : ""
+          }`}
+          onClick={() => onSelect(i)}
+        >
+          <span
+            className={`block h-2.5 rounded-full transition-all duration-300 ease-out ${
+              i === index
+                ? "w-6 bg-[var(--g-cream)]"
+                : "w-2.5 bg-white/55 hover:bg-white/90"
+            }`}
+            aria-hidden
+          />
+        </button>
+      ))}
+    </div>
   );
 }

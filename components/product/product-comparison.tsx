@@ -8,6 +8,9 @@ import { X, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/product/star-rating";
+import { gadgetFontClass } from "@/components/gadget/gadget-fonts";
+import { useGadgetPreview } from "@/components/gadget/use-gadget-preview";
+import { product2Href, products2Href } from "@/lib/gadget-preview";
 import { fetchStoreProducts } from "@/lib/store-client";
 import { imageUrl } from "@/lib/sanity/image";
 import type { Product } from "@/lib/types";
@@ -150,6 +153,10 @@ export function CompareButton({ slug }: { slug: string }) {
 export function ComparePage() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [compareSlugs, setCompareSlugs] = useState<string[]>([]);
+  const gadget = useGadgetPreview();
+  const shopHref = gadget ? products2Href() : "/products";
+  const productHref = (slug: string) =>
+    gadget ? product2Href(slug) : `/product/${slug}`;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -166,15 +173,41 @@ export function ComparePage() {
 
   if (products.length < 2) {
     return (
-      <div className="container mx-auto px-4 py-12 text-center lg:px-8">
-        <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h1 className="mt-4 text-2xl font-bold">Compare Products</h1>
-        <p className="mt-2 text-muted-foreground">
+      <div
+        className={cn(
+          "container mx-auto px-4 py-12 text-center lg:px-8",
+          gadget && `gadget-theme ${gadgetFontClass} bg-[var(--g-cream)] text-[var(--g-charcoal)]`
+        )}
+      >
+        <BarChart3
+          className={cn(
+            "mx-auto h-12 w-12",
+            gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground"
+          )}
+        />
+        <h1
+          className={cn(
+            "mt-4 text-2xl font-bold",
+            gadget && "gadget-display font-semibold tracking-[-0.03em]"
+          )}
+        >
+          Compare products
+        </h1>
+        <p className={cn("mt-2", gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground")}>
           Select at least 2 products from their cards using the comparison button.
         </p>
-        <Button asChild className="mt-6">
-          <Link href="/products">Browse Products</Link>
-        </Button>
+        {gadget ? (
+          <Link
+            href={shopHref}
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--g-forest)] px-6 text-sm font-semibold text-[var(--g-white)]"
+          >
+            Browse products
+          </Link>
+        ) : (
+          <Button asChild className="mt-6">
+            <Link href={shopHref}>Browse Products</Link>
+          </Button>
+        )}
       </div>
     );
   }
@@ -184,21 +217,62 @@ export function ComparePage() {
   );
 
   return (
-    <div className="container mx-auto px-4 py-12 lg:px-8">
-      <h1 className="mb-8 text-2xl font-bold">Compare Products</h1>
-      <div className="overflow-x-auto">
+    <div
+      className={cn(
+        "container mx-auto px-4 py-12 lg:px-8",
+        gadget && `gadget-theme ${gadgetFontClass} bg-[var(--g-cream)] text-[var(--g-charcoal)]`
+      )}
+    >
+      <h1
+        className={cn(
+          "mb-8 text-2xl font-bold",
+          gadget && "gadget-display font-semibold tracking-[-0.03em] sm:text-3xl"
+        )}
+      >
+        Compare products
+      </h1>
+      <div
+        className={cn(
+          "overflow-x-auto",
+          gadget && "rounded-2xl border border-[var(--g-line)] bg-[var(--g-white)]"
+        )}
+      >
         <table className="w-full min-w-[600px] border-collapse">
           <thead>
             <tr>
-              <th className="w-40 p-3 text-left text-sm font-medium text-muted-foreground">Feature</th>
+              <th
+                className={cn(
+                  "w-40 p-3 text-left text-sm font-medium",
+                  gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground"
+                )}
+              >
+                Feature
+              </th>
               {products.map((p) => (
                 <th key={p._id} className="p-3 text-center">
-                  <div className="mx-auto relative mb-3 h-24 w-24 overflow-hidden rounded-lg bg-muted">
+                  <div
+                    className={cn(
+                      "relative mx-auto mb-3 h-24 w-24 overflow-hidden rounded-lg",
+                      gadget ? "bg-[var(--g-cream-deep)]" : "bg-muted"
+                    )}
+                  >
                     {p.images?.[0] && (
-                      <Image src={imageUrl(p.images[0], { w: 240 })} alt={p.name} fill sizes="96px" className="object-cover" />
+                      <Image
+                        src={imageUrl(p.images[0], { w: 240 })}
+                        alt={p.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover"
+                      />
                     )}
                   </div>
-                  <Link href={`/product/${p.slug}`} className="line-clamp-2 text-sm font-semibold hover:text-primary">
+                  <Link
+                    href={productHref(p.slug)}
+                    className={cn(
+                      "line-clamp-2 text-sm font-semibold",
+                      gadget ? "hover:text-[var(--g-forest)]" : "hover:text-primary"
+                    )}
+                  >
                     {p.name}
                   </Link>
                   <p className="mt-1 text-sm font-bold">{formatPrice(p.price)}</p>

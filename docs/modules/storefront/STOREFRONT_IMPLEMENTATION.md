@@ -12,8 +12,9 @@ You, opening `/home2` and `/product2/[slug]`. Shoppers on `/` keep the current c
 |---|---|
 | `/` | Current homepage, navbar, footer |
 | `/product/[slug]` | Current product page |
-| `/home2` | **T-16 redesign:** Biometic light chrome, Ronin-style product hero slides (admin-managed), trust strip, shop-by-type, bestsellers, proof. Product links go to `/product2/{slug}`. Category / all-products links go to live `/products` |
-| `/product2/[slug]` | Gadget product page (visual language still older zinc/yellow until T-17) |
+| `/home2` | **T-16 redesign:** Biometic cream/forest chrome. Product links → `/product2/{slug}`. Catalog → `/products2` |
+| `/product2/[slug]` | Conversion PDP: Buy Now, COD/warranty trust, sticky mobile CTA, related products |
+| `/products2` · `/products2/[category]` | Preview catalog with category chips, sort, Best-Seller style cards |
 
 Wrong slug → the same generic 404 as live. A guest opening a demo-only product still 404s (`fetchProductBySlug` + demo cookie).
 

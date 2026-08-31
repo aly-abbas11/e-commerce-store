@@ -1,14 +1,126 @@
 export function isGadgetPreviewPath(pathname: string): boolean {
   return (
+    pathname === "/" ||
     pathname === "/home2" ||
     pathname.startsWith("/home2/") ||
     pathname === "/product2" ||
-    pathname.startsWith("/product2/")
+    pathname.startsWith("/product2/") ||
+    pathname === "/products2" ||
+    pathname.startsWith("/products2/")
   );
+}
+
+export const GADGET_SESSION_KEY = "vg-gadget-preview";
+
+/** Checkout entry that keeps cream/forest chrome after leaving /product2. */
+export function checkoutHref(fromGadget: boolean): string {
+  return fromGadget ? "/checkout?from=gadget" : "/checkout";
+}
+
+export function isCheckoutPath(pathname: string): boolean {
+  return pathname === "/checkout" || pathname.startsWith("/checkout/");
+}
+
+/**
+ * Shared storefront routes that keep cream/forest chrome while a preview
+ * session is active (nav links from gadget chrome: cart, search, support).
+ */
+export function isGadgetContinuityPath(pathname: string): boolean {
+  return (
+    pathname === "/cart" ||
+    pathname.startsWith("/cart/") ||
+    pathname === "/search" ||
+    pathname.startsWith("/search/") ||
+    pathname === "/compare" ||
+    pathname.startsWith("/compare/") ||
+    pathname === "/track" ||
+    pathname.startsWith("/track/") ||
+    pathname === "/warranty" ||
+    pathname.startsWith("/warranty/") ||
+    pathname === "/blog" ||
+    pathname.startsWith("/blog/") ||
+    pathname === "/bulk-order" ||
+    pathname.startsWith("/bulk-order/") ||
+    pathname === "/contact" ||
+    pathname.startsWith("/contact/") ||
+    pathname === "/faq" ||
+    pathname.startsWith("/faq/") ||
+    pathname === "/shipping-returns" ||
+    pathname.startsWith("/shipping-returns/") ||
+    pathname === "/privacy-policy" ||
+    pathname.startsWith("/privacy-policy/") ||
+    pathname === "/terms-of-service" ||
+    pathname.startsWith("/terms-of-service/") ||
+    pathname === "/about" ||
+    pathname.startsWith("/about/")
+  );
+}
+
+/**
+ * Client chrome helper: preview routes always; checkout / continuity routes
+ * when `?from=gadget` or an active preview session (set on /home2|/product2|/products2).
+ */
+export function shouldUseGadgetChrome(
+  pathname: string,
+  opts?: { search?: string; sessionActive?: boolean }
+): boolean {
+  if (isGadgetPreviewPath(pathname)) return true;
+  const params = new URLSearchParams(opts?.search ?? "");
+  const fromGadget = params.get("from") === "gadget";
+  const session = Boolean(opts?.sessionActive) || fromGadget;
+  if (isCheckoutPath(pathname)) {
+    if (fromGadget) return true;
+    return Boolean(opts?.sessionActive);
+  }
+  if (isGadgetContinuityPath(pathname)) return session;
+  return false;
+}
+
+export function syncGadgetPreviewSession(pathname: string, search = ""): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (isGadgetPreviewPath(pathname)) {
+      sessionStorage.setItem(GADGET_SESSION_KEY, "1");
+      return;
+    }
+    if (isCheckoutPath(pathname) && new URLSearchParams(search).get("from") === "gadget") {
+      sessionStorage.setItem(GADGET_SESSION_KEY, "1");
+      return;
+    }
+    const liveProduct = pathname.startsWith("/product/") && !pathname.startsWith("/product2");
+    const liveCatalog =
+      pathname === "/products" ||
+      (pathname.startsWith("/products/") && !pathname.startsWith("/products2"));
+    if (liveProduct || liveCatalog) {
+      sessionStorage.removeItem(GADGET_SESSION_KEY);
+    }
+  } catch {
+    /* private mode / blocked storage */
+  }
+}
+
+export function readGadgetPreviewSession(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(GADGET_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function product2Href(slug: string): string {
   return `/product2/${slug}`;
+}
+
+export function products2Href(categorySlug?: string): string {
+  if (categorySlug) return `/products2/${categorySlug}`;
+  return "/products2";
+}
+
+export function gadgetShopTypeLinks(
+  types: { name: string; slug: string }[]
+): { label: string; href: string }[] {
+  return types.map((t) => ({ label: t.name, href: products2Href(t.slug) }));
 }
 
 export type GadgetVideoKind = "none" | "file" | "instagram" | "tiktok";

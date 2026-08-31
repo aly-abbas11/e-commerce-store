@@ -1,7 +1,49 @@
+import Image from "next/image";
 import Link from "next/link";
+import { Mail, Phone } from "lucide-react";
 
-import { FALLBACK_SHOP_TYPES, shopTypeLinks, type ShopType } from "@/lib/categories";
+import { GadgetFooterNewsletter } from "@/components/gadget/gadget-footer-newsletter";
+import { getSocialIcon } from "@/components/icons/social-icons";
+import { FALLBACK_SHOP_TYPES, type ShopType } from "@/lib/categories";
+import { gadgetShopTypeLinks, products2Href } from "@/lib/gadget-preview";
+import { imageUrl } from "@/lib/sanity/image";
 import type { SiteSettings } from "@/lib/types";
+
+const COMPANY_LINKS = [
+  { href: "/about", label: "About Us" },
+  { href: "/contact", label: "Contact Us" },
+  { href: "/blog", label: "Blogs" },
+  { href: "/faq", label: "Customer Care" },
+  { href: "/privacy-policy", label: "Privacy Policy" },
+  { href: "/terms-of-service", label: "Terms and Conditions" },
+  { href: "/bulk-order", label: "Corporate Orders" },
+  { href: "/", label: "Official Brand Outlet" },
+];
+
+const CARE_LINKS = [
+  { href: "/contact", label: "Register a Complaint" },
+  { href: "/track", label: "Track Your Order" },
+  { href: "/faq#payments", label: "Modes Of Payments" },
+  { href: "/warranty", label: "Warranty Policy" },
+  { href: "/shipping-returns#returns", label: "Exchange and Refund Policy" },
+  { href: "/shipping-returns#shipping", label: "Shipping Policy" },
+];
+
+function splitTwo<T>(items: T[]): [T[], T[]] {
+  const mid = Math.ceil(items.length / 2);
+  return [items.slice(0, mid), items.slice(mid)];
+}
+
+function FooterLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="block py-1.5 text-[13px] text-white/70 transition hover:text-[var(--g-white)]"
+    >
+      {label}
+    </Link>
+  );
+}
 
 export function GadgetFooter({
   settings,
@@ -11,60 +53,162 @@ export function GadgetFooter({
   shopTypes?: ShopType[];
 }) {
   const brandName = settings?.brandName || "VoltGear";
-  const links = shopTypeLinks(shopTypes);
+  const logoUrl = settings?.logo ? imageUrl(settings.logo, { w: 200 }) : undefined;
+  const shopLinks = [
+    { href: products2Href(), label: "All Products" },
+    ...gadgetShopTypeLinks(shopTypes),
+  ];
+  const [shopA, shopB] = splitTwo(shopLinks);
+  const [companyA, companyB] = splitTwo(COMPANY_LINKS);
+  const phone = settings?.phone;
+  const email = settings?.email;
+  const socials = (settings?.socialLinks ?? []).filter(
+    (s) => s.platform && s.url && s.url.startsWith("http")
+  );
 
   return (
-    <footer className="bg-[#171717] text-[#aaaaaa]">
-      <div className="grid gap-8 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:px-8">
-        <div>
-          <p className="text-lg font-bold tracking-[-0.03em] text-white">{brandName}</p>
-          <p className="mt-3 text-sm">Cool, useful tech — curated for how you actually shop.</p>
+    <footer className="bg-[var(--g-cream)] pt-6 sm:px-3 sm:pb-3 sm:pt-8">
+      <div className="overflow-hidden rounded-t-[2.25rem] bg-[var(--g-forest)] text-[var(--g-white)] sm:rounded-[2.25rem]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1.15fr_1fr_0.85fr_1.1fr] lg:gap-8 lg:py-14 xl:gap-12">
+          {/* Shop */}
+          <div>
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--g-white)]">
+              Shop
+            </h2>
+            <div className="mt-4 grid grid-cols-2 gap-x-4">
+              <ul>
+                {shopA.map((l) => (
+                  <li key={l.href}>
+                    <FooterLink href={l.href} label={l.label} />
+                  </li>
+                ))}
+              </ul>
+              <ul>
+                {shopB.map((l) => (
+                  <li key={l.href}>
+                    <FooterLink href={l.href} label={l.label} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--g-white)]">
+              Company
+            </h2>
+            <div className="mt-4 grid grid-cols-2 gap-x-4">
+              <ul>
+                {companyA.map((l) => (
+                  <li key={l.href}>
+                    <FooterLink href={l.href} label={l.label} />
+                  </li>
+                ))}
+              </ul>
+              <ul>
+                {companyB.map((l) => (
+                  <li key={l.href}>
+                    <FooterLink href={l.href} label={l.label} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Care */}
+          <div>
+            <h2 className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--g-white)]">
+              Care
+            </h2>
+            <ul className="mt-4">
+              {CARE_LINKS.map((l) => (
+                <li key={l.href + l.label}>
+                  <FooterLink href={l.href} label={l.label} />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Brand + contact + newsletter */}
+          <div className="flex flex-col">
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt={brandName}
+                width={140}
+                height={40}
+                className="h-9 w-auto object-contain object-left brightness-0 invert"
+              />
+            ) : (
+              <p className="gadget-display text-2xl font-semibold tracking-[-0.02em] text-[var(--g-cream)]">
+                {brandName}
+              </p>
+            )}
+
+            {socials.length ? (
+              <div className="mt-5 flex flex-wrap gap-3">
+                {socials.map((social) => {
+                  if (!social.platform || !social.url) return null;
+                  const Icon = getSocialIcon(social.platform);
+                  return (
+                    <a
+                      key={social.platform}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.platform}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-white/80 transition hover:border-white hover:text-[var(--g-white)]"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-2.5">
+              <p className="text-sm text-white/75">We’re here to help.</p>
+              {phone ? (
+                <a
+                  href={`tel:${phone.replace(/\s+/g, "")}`}
+                  className="flex items-center gap-2 text-sm text-white/85 transition hover:text-[var(--g-white)]"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-[var(--g-sage)]" aria-hidden />
+                  <span>
+                    Call Us: <span className="font-medium text-[var(--g-white)]">{phone}</span>
+                  </span>
+                </a>
+              ) : null}
+              {email ? (
+                <a
+                  href={`mailto:${email}`}
+                  className="flex items-center gap-2 text-sm text-white/85 transition hover:text-[var(--g-white)]"
+                >
+                  <Mail className="h-4 w-4 shrink-0 text-[var(--g-sage)]" aria-hidden />
+                  <span>
+                    Email Us: <span className="font-medium text-[var(--g-white)]">{email}</span>
+                  </span>
+                </a>
+              ) : null}
+            </div>
+
+            <div className="mt-6">
+              <GadgetFooterNewsletter />
+            </div>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Shop</h2>
-          <ul className="mt-3 space-y-1">
-            {links.map((link) => (
-              <li key={link.href}>
-                <Link href={link.href} className="flex min-h-11 items-center text-sm hover:text-white">
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+
+        <div className="border-t border-white/10 px-5 py-4 sm:px-8">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 text-xs text-white/50">
+            <p>
+              © {new Date().getFullYear()} {brandName}. All rights reserved.
+            </p>
+            <Link href="/products2" className="min-h-10 inline-flex items-center transition hover:text-[var(--g-white)]">
+              Shop all products
+            </Link>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Help</h2>
-          <ul className="mt-3 space-y-1 text-sm">
-            <li>
-              <Link href="/track" className="flex min-h-11 items-center hover:text-white">
-                Track order
-              </Link>
-            </li>
-            <li>
-              <Link href="/warranty" className="flex min-h-11 items-center hover:text-white">
-                Warranty &amp; returns
-              </Link>
-            </li>
-            <li>
-              <Link href="/contact" className="flex min-h-11 items-center hover:text-white">
-                Contact
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#0f766e]">Contact</h2>
-          <p className="mt-3 text-sm">{settings?.phone || "Cash on delivery available."}</p>
-          {settings?.email ? <p className="mt-2 text-sm">{settings.email}</p> : null}
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-4 text-xs lg:px-8">
-        <p>
-          © {new Date().getFullYear()} {brandName}
-        </p>
-        <Link href="/" className="min-h-11 inline-flex items-center hover:text-white">
-          View current shop
-        </Link>
       </div>
     </footer>
   );

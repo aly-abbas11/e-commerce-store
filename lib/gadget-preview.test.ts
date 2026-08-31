@@ -2,17 +2,22 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  checkoutHref,
+  isGadgetContinuityPath,
   isGadgetPreviewPath,
   product2Href,
+  shouldUseGadgetChrome,
   videoEmbedSrc,
   videoKind,
 } from "./gadget-preview";
 
 describe("isGadgetPreviewPath", () => {
-  it("treats home2 and product2 as preview, not the live shop", () => {
+  it("treats live home and catalog preview routes as gadget chrome", () => {
+    assert.equal(isGadgetPreviewPath("/"), true);
     assert.equal(isGadgetPreviewPath("/home2"), true);
     assert.equal(isGadgetPreviewPath("/product2/pad"), true);
-    assert.equal(isGadgetPreviewPath("/"), false);
+    assert.equal(isGadgetPreviewPath("/products2"), true);
+    assert.equal(isGadgetPreviewPath("/products2/earbuds"), true);
     assert.equal(isGadgetPreviewPath("/product/pad"), false);
     assert.equal(isGadgetPreviewPath("/products"), false);
   });
@@ -23,6 +28,39 @@ describe("product2Href", () => {
     assert.equal(product2Href("wireless-15w-pad"), "/product2/wireless-15w-pad");
   });
 });
+
+describe("isGadgetContinuityPath", () => {
+  it("covers cart, search, compare, and support pages", () => {
+    assert.equal(isGadgetContinuityPath("/cart"), true);
+    assert.equal(isGadgetContinuityPath("/search"), true);
+    assert.equal(isGadgetContinuityPath("/compare"), true);
+    assert.equal(isGadgetContinuityPath("/track"), true);
+    assert.equal(isGadgetContinuityPath("/warranty"), true);
+    assert.equal(isGadgetContinuityPath("/blog/tips"), true);
+    assert.equal(isGadgetContinuityPath("/contact"), true);
+    assert.equal(isGadgetContinuityPath("/faq"), true);
+    assert.equal(isGadgetContinuityPath("/shipping-returns"), true);
+    assert.equal(isGadgetContinuityPath("/products"), false);
+  });
+});
+
+describe("shouldUseGadgetChrome", () => {
+  it("keeps preview routes, checkout, and session continuity pages", () => {
+    assert.equal(shouldUseGadgetChrome("/"), true);
+    assert.equal(shouldUseGadgetChrome("/home2"), true);
+    assert.equal(shouldUseGadgetChrome("/checkout"), false);
+    assert.equal(shouldUseGadgetChrome("/checkout", { search: "from=gadget" }), true);
+    assert.equal(shouldUseGadgetChrome("/checkout", { sessionActive: true }), true);
+    assert.equal(shouldUseGadgetChrome("/cart"), false);
+    assert.equal(shouldUseGadgetChrome("/cart", { sessionActive: true }), true);
+    assert.equal(shouldUseGadgetChrome("/search", { sessionActive: true }), true);
+    assert.equal(shouldUseGadgetChrome("/blog", { sessionActive: true }), true);
+    assert.equal(shouldUseGadgetChrome("/products", { sessionActive: true }), false);
+    assert.equal(checkoutHref(true), "/checkout?from=gadget");
+    assert.equal(checkoutHref(false), "/checkout");
+  });
+});
+
 
 describe("videoKind", () => {
   it("classifies Cloudinary/mp4, Instagram, TikTok, and empty", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 
 import { MediaField } from "@/components/admin/media-field";
@@ -44,6 +44,10 @@ export function HeroSlidesForm({
     subtitle: "",
   });
 
+  useEffect(() => {
+    setSlides(initialSlides);
+  }, [initialSlides]);
+
   const publishedCount = useMemo(
     () => slides.filter((s) => s.status === "published").length,
     [slides]
@@ -64,18 +68,38 @@ export function HeroSlidesForm({
   }
 
   async function createSlide() {
+    const imageUrl = draft.imageUrl.trim();
+    const productId = draft.productId.trim();
+    if (!imageUrl || !productId) {
+      setError("Product and slide image are required.");
+      return;
+    }
     await run(async () => {
-      await adminFetch("/api/admin/hero/slides", {
+      const json = await adminFetch("/api/admin/hero/slides", {
         method: "POST",
         body: JSON.stringify({
           doc: {
-            productId: draft.productId,
-            imageUrl: draft.imageUrl,
+            productId,
+            imageUrl,
             title: draft.title,
             subtitle: draft.subtitle,
           },
         }),
       });
+      const product = products.find((p) => p.id === productId);
+      const created = json.slide as SlideRow | undefined;
+      if (created?.id) {
+        setSlides((prev) => [
+          ...prev,
+          {
+            ...created,
+            image_url: created.image_url || imageUrl,
+            products: product
+              ? { id: product.id, name: product.name }
+              : null,
+          },
+        ]);
+      }
       setDraft((d) => ({ ...d, imageUrl: "", title: "", subtitle: "" }));
     });
   }
@@ -96,6 +120,40 @@ export function HeroSlidesForm({
           },
         }),
       });
+      setSlides((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                status: action === "publish" ? "published" : action === "unpublish" ? "draft" : s.status,
+              }
+            : s
+        )
+      );
+    });
+  }
+
+  async function updateSlideImage(id: string, urls: string[]) {
+    const imageUrl = urls[urls.length - 1] ?? "";
+    const row = slides.find((s) => s.id === id);
+    if (!row || !imageUrl) return;
+    const next = { ...row, image_url: imageUrl };
+    setSlides((prev) => prev.map((s) => (s.id === id ? next : s)));
+    await run(async () => {
+      await adminFetch(`/api/admin/hero/slides/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "save",
+          doc: {
+            productId: next.product_id,
+            imageUrl,
+            title: next.title ?? "",
+            subtitle: next.subtitle ?? "",
+            sortOrder: next.sort_order,
+            isDemo: next.is_demo,
+          },
+        }),
+      });
     });
   }
 
@@ -103,6 +161,7 @@ export function HeroSlidesForm({
     if (!confirm("Delete this hero slide?")) return;
     await run(async () => {
       await adminFetch(`/api/admin/hero/slides/${id}`, { method: "DELETE" });
+      setSlides((prev) => prev.filter((s) => s.id !== id));
     });
   }
 
@@ -128,7 +187,7 @@ export function HeroSlidesForm({
       <div>
         <h1 className="text-2xl font-semibold">Home2 hero slides</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Product campaign slides for <code>/home2</code>. Published: {publishedCount}/8.
+          Product campaign slides for the live homepage. Published: {publishedCount}/8.
         </p>
       </div>
 
@@ -166,8 +225,12 @@ export function HeroSlidesForm({
         <MediaField
           label="Slide image"
           urls={draft.imageUrl ? [draft.imageUrl] : []}
-          onChange={(urls) => setDraft((d) => ({ ...d, imageUrl: urls[urls.length - 1] ?? "" }))}
+          onChange={(urls) => setDraft((d) => ({ ...d, imageUrl: (urls[urls.length - 1] ?? "").trim() }))}
+          hint="Upload a full campaign banner (like a Ronin promo slide). Wide images work best — the art fills the hero."
         />
+        {draft.imageUrl ? (
+          <p className="truncate text-xs text-muted-foreground">Ready: {draft.imageUrl}</p>
+        ) : null}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label>Title override</Label>
@@ -195,66 +258,74 @@ export function HeroSlidesForm({
           <p className="text-sm text-muted-foreground">No slides yet. Add at least one.</p>
         )}
         {slides.map((slide, index) => (
-          <div key={slide.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={slide.image_url || ""}
-              alt=""
-              className="h-24 w-24 rounded-md object-cover bg-muted"
-            />
-            <div className="min-w-0 flex-1 space-y-2">
-              <p className="font-medium">
-                {slide.title || slide.products?.name || "Untitled"}{" "}
-                <span className="text-xs font-normal uppercase text-muted-foreground">
-                  {slide.status}
-                </span>
-              </p>
-              <p className="text-sm text-muted-foreground">{slide.subtitle}</p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy || index === 0}
-                  onClick={() => move(slide.id, -1)}
-                >
-                  <ArrowUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busy || index === slides.length - 1}
-                  onClick={() => move(slide.id, 1)}
-                >
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-                {slide.status === "published" ? (
+          <div key={slide.id} className="flex flex-col gap-3 rounded-lg border p-4">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={slide.image_url || ""}
+                alt=""
+                className="h-24 w-24 rounded-md object-cover bg-muted"
+              />
+              <div className="min-w-0 flex-1 space-y-2">
+                <p className="font-medium">
+                  {slide.title || slide.products?.name || "Untitled"}{" "}
+                  <span className="text-xs font-normal uppercase text-muted-foreground">
+                    {slide.status}
+                  </span>
+                </p>
+                <p className="truncate text-xs text-muted-foreground">{slide.image_url || "No image URL"}</p>
+                <p className="text-sm text-muted-foreground">{slide.subtitle}</p>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={busy}
-                    onClick={() => patchSlide(slide.id, "unpublish", slide)}
+                    disabled={busy || index === 0}
+                    onClick={() => move(slide.id, -1)}
                   >
-                    Unpublish
+                    <ArrowUp className="h-4 w-4" />
                   </Button>
-                ) : (
                   <Button
                     size="sm"
-                    disabled={busy}
-                    onClick={() => patchSlide(slide.id, "publish", slide)}
+                    variant="outline"
+                    disabled={busy || index === slides.length - 1}
+                    onClick={() => move(slide.id, 1)}
                   >
-                    Publish
+                    <ArrowDown className="h-4 w-4" />
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={busy}
-                  onClick={() => removeSlide(slide.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                  {slide.status === "published" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => patchSlide(slide.id, "unpublish", slide)}
+                    >
+                      Unpublish
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => patchSlide(slide.id, "publish", slide)}
+                    >
+                      Publish
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={busy}
+                    onClick={() => removeSlide(slide.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+            <MediaField
+              label="Replace image"
+              urls={slide.image_url ? [slide.image_url] : []}
+              onChange={(urls) => updateSlideImage(slide.id, urls)}
+            />
           </div>
         ))}
       </div>

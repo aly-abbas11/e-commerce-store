@@ -453,10 +453,25 @@ export type HeroSlideDoc = {
 export async function listAdminHeroSlides() {
   const { data, error } = await db()
     .from("hero_slides")
-    .select("*, products ( id, name, slug, stock_status )")
+    .select("*")
     .order("sort_order", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const productIds = Array.from(
+    new Set(rows.map((r) => String(r.product_id ?? "")).filter(Boolean))
+  );
+  const { data: products } = await db()
+    .from("products")
+    .select("id, name, slug, stock_status")
+    .in("id", productIds);
+  const byId = new Map((products ?? []).map((p) => [String(p.id), p]));
+
+  return rows.map((row) => ({
+    ...row,
+    products: byId.get(String(row.product_id)) ?? null,
+  }));
 }
 
 export async function getHomePublishBlockers() {
@@ -513,13 +528,13 @@ export async function createAdminHeroSlide(doc: HeroSlideDoc) {
       is_demo: Boolean(doc.isDemo),
       updated_at: new Date().toISOString(),
     })
-    .select("id")
+    .select("*")
     .single();
   if (error) return { ok: false as const, error: error.message, status: 500 };
   void count;
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
-  return { ok: true as const, id: data.id as string };
+  return { ok: true as const, id: data.id as string, slide: data };
 }
 
 export async function updateAdminHeroSlide(id: string, doc: HeroSlideDoc) {
@@ -538,7 +553,7 @@ export async function updateAdminHeroSlide(id: string, doc: HeroSlideDoc) {
     })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message, status: 500 };
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
   return { ok: true as const };
 }
@@ -575,7 +590,7 @@ export async function publishAdminHeroSlide(id: string, doc?: HeroSlideDoc) {
     .update({ status: "published", updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message, status: 500 };
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
   return { ok: true as const };
 }
@@ -586,7 +601,7 @@ export async function unpublishAdminHeroSlide(id: string) {
     .update({ status: "draft", updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) return { ok: false as const, error: error.message, status: 500 };
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
   return { ok: true as const };
 }
@@ -594,7 +609,7 @@ export async function unpublishAdminHeroSlide(id: string) {
 export async function deleteAdminHeroSlide(id: string) {
   const { error } = await db().from("hero_slides").delete().eq("id", id);
   if (error) return { ok: false as const, error: error.message, status: 500 };
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
   return { ok: true as const };
 }
@@ -607,7 +622,7 @@ export async function reorderAdminHeroSlides(orderedIds: string[]) {
       .eq("id", orderedIds[i]);
     if (error) return { ok: false as const, error: error.message, status: 500 };
   }
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/admin/hero");
   return { ok: true as const };
 }
@@ -873,7 +888,7 @@ export async function purgeDemoData(): Promise<DemoPurgeResult> {
 
 function revalidateShopTypePaths(slug?: string) {
   revalidatePath("/");
-  revalidatePath("/home2");
+  revalidatePath("/");
   revalidatePath("/products");
   revalidatePath("/search");
   revalidatePath("/sitemap.xml");
