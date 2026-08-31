@@ -594,6 +594,22 @@ export async function updateOrderStatusRow(
   return getOrderByPublicId(orderId);
 }
 
+export async function deleteOrderRow(orderId: string): Promise<boolean> {
+  const current = await getOrderByPublicId(orderId);
+  if (!current) return false;
+
+  // Manual cleanup to ensure no orphaned rows regardless of FK constraint policies
+  await db().from("order_status_history").delete().eq("order_id", current._id);
+  await db().from("order_items").delete().eq("order_id", current._id);
+  
+  const { error } = await db().from("orders").delete().eq("id", current._id);
+  if (error) {
+    console.error("[orders] delete failed:", error);
+    return false;
+  }
+  return true;
+}
+
 export async function enqueueEmailEventRow(
   kind: EmailEventKind,
   email: string,

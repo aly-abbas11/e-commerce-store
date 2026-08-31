@@ -246,9 +246,9 @@ export function Navbar({
           <Menu className="h-5 w-5 text-foreground" />
         </button>
 
-        <div className="mx-auto">{Brand}</div>
+        {Brand}
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <button
             onClick={() => setMobileSearchOpen((v) => !v)}
             aria-label="Toggle search"

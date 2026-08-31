@@ -10,6 +10,7 @@ import {
   recentWinbackExists as recentWinbackExistsRow,
   cancelOrderRestoreInventoryRow,
   updateOrderStatusRow,
+  deleteOrderRow,
 } from "@/lib/db/store";
 import { ORDER_STATUS_VALUES } from "@/lib/db/order-rules";
 import type {
@@ -66,6 +67,10 @@ export async function cancelOrder(
   note: string = "Cancelled by user"
 ): Promise<{ ok: boolean; error?: string }> {
   return cancelOrderRestoreInventoryRow(orderId, note);
+}
+
+export async function deleteOrder(orderId: string): Promise<boolean> {
+  return deleteOrderRow(orderId);
 }
 
 export async function enqueueEmailEvent(

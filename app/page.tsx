@@ -159,11 +159,11 @@ export default async function HomePage() {
       {/* Trust / service facts */}
       <TrustBar />
 
-      {/* Figma: Popular Categories */}
-      <FigmaPopularCategories shopTypes={shopTypes} products={products} />
-
       {/* Figma: Best Sellers slider */}
       <BestSellersSlider products={products.filter((p) => p.stockStatus !== "out-of-stock")} />
+
+      {/* Figma: Popular Categories */}
+      <FigmaPopularCategories shopTypes={shopTypes} products={products} />
 
       {/* Why Choose Us Features row */}
       <div className="w-full bg-secondary/20">

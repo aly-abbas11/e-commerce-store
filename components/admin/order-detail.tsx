@@ -70,6 +70,28 @@ export function OrderDetail({ order }: { order: Order }) {
     }
   }
 
+  async function handleDelete() {
+    if (!window.confirm("Are you sure you want to permanently delete this order? This action cannot be undone.")) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await adminFetch(`/api/orders/${encodeURIComponent(order.orderId)}`, {
+        method: "DELETE",
+      });
+      router.push("/admin/orders");
+      router.refresh();
+    } catch (err) {
+      if (err instanceof AdminAuthError) {
+        router.replace("/admin/login");
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not delete the order.");
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -210,6 +232,22 @@ export function OrderDetail({ order }: { order: Order }) {
           {saving ? "Updating…" : "Update"}
         </Button>
       </form>
+
+      <section className="rounded-lg border border-destructive/20 p-4">
+        <h2 className="text-sm font-semibold text-destructive">Danger Zone</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Permanently delete this order. This action cannot be undone.
+        </p>
+        <Button
+          type="button"
+          variant="destructive"
+          className="mt-4"
+          disabled={saving}
+          onClick={handleDelete}
+        >
+          Delete Order
+        </Button>
+      </section>
     </div>
   );
 }
