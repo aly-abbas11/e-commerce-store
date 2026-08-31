@@ -278,5 +278,4 @@ export interface HeroSlide {
 
 ## Approval
 
-- [ ] User approved this implementation plan
-- Date / note: …
+- [x] User approved this implementation plan (2026-09-01, subagent-driven)

@@ -12,16 +12,26 @@ You, opening `/home2` and `/product2/[slug]`. Shoppers on `/` keep the current c
 |---|---|
 | `/` | Current homepage, navbar, footer |
 | `/product/[slug]` | Current product page |
-| `/home2` | Gadget homepage: dark hero, category tiles, featured grid, testimonials. Product links go to `/product2/{slug}`. Category / all-products links go to live `/products` |
-| `/product2/[slug]` | Gadget product page: gallery + buy box, video if set, features/specs/in-the-box, related cards on `/product2/...` |
+| `/home2` | **T-16 redesign:** Biometic light chrome, Ronin-style product hero slides (admin-managed), trust strip, shop-by-type, bestsellers, proof. Product links go to `/product2/{slug}`. Category / all-products links go to live `/products` |
+| `/product2/[slug]` | Gadget product page (visual language still older zinc/yellow until T-17) |
 
 Wrong slug → the same generic 404 as live. A guest opening a demo-only product still 404s (`fetchProductBySlug` + demo cookie).
 
+## Homepage sections (`/home2`)
+
+1. Hero slides from `hero_slides` (published, max 8) — autoplay, pause on hover, desktop split / mobile stack
+2. Trust: COD · free shipping threshold · returns/warranty · curated
+3. Shop by type — tile only if ≥1 in-stock product with image
+4. Bestsellers — featured → order qty → product_view counts (`pickBestsellers`)
+5. Proof — published testimonials
+
+Admin: `/admin/hero` manages slides (live singleton kept under “Live home hero”). Migration: `supabase/migrations/20260901010000_hero_slides.sql` — **push before using slides in prod/local DB**.
+
 ## Chrome
 
-Root `app/layout.tsx` already branches on `/admin` via `x-pathname`. Preview paths use `isGadgetPreviewPath`: gadget navbar + footer, demo banner if the demo cookie is on, existing `CartProvider` / drawer / cart effects. Urgency ticker, trust bar, review popup, and compare bar stay off on preview so the whole screen is the new look.
+Root `app/layout.tsx` branches on `/admin` via `x-pathname`. Preview paths use `isGadgetPreviewPath`: gadget navbar + footer, demo banner if the demo cookie is on, existing `CartProvider` / drawer / cart effects. Urgency ticker, trust bar, review popup, and compare bar stay off on preview.
 
-Logo on preview goes to `/home2`. Footer “View current shop” goes to `/`.
+Nav (T-16): Logo · shop types · Search · Track · Cart.
 
 ## Cart and video
 
@@ -38,12 +48,15 @@ Page metadata is `noindex, nofollow`. `robots.ts` disallows `/home2` and `/produ
 | Path | Role |
 |---|---|
 | `lib/gadget-preview.ts` | Path helpers + video kind/embed (unit-tested) |
+| `lib/db/hero-slide-rules.ts` | Publish / CTA helpers |
+| `lib/db/bestsellers-rules.ts` | Ranking helper |
 | `app/home2/page.tsx` | Preview homepage |
 | `app/product2/[slug]/page.tsx` | Preview product page |
-| `components/gadget/*` | Navbar, footer, hero, cards, buy box, video |
+| `components/gadget/*` | Navbar, footer, hero slider, cards, buy box, video |
+| `app/admin/hero/page.tsx` | Slide CRUD + legacy live hero |
 | `app/layout.tsx` | Chrome swap |
 | `app/robots.ts` | Disallow preview paths |
 
 ## Out of this module
 
-Replacing `/` with the gadget look, restyling catalog/search/checkout/blog/admin, Vercel (T-08), Clarity (T-05), schema or env changes.
+Replacing `/` with the gadget look, restyling catalog/search/checkout/blog/admin beyond hero slides, T-17 product2 redesign, T-18 catalog chrome.

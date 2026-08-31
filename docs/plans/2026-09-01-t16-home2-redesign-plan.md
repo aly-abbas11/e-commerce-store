@@ -68,5 +68,5 @@ Same as design spec §9 plus `npm test` and `tsc --noEmit`.
 None.
 
 ## 18. Approval
-- [ ] User approved this plan
-- Date / note: …
+- [x] User approved this plan
+- Date / note: 2026-09-01 — approved; execution = subagent-driven
