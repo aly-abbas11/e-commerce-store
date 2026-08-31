@@ -1,8 +1,9 @@
 # T-16 — `/home2` discovery storefront redesign (phase 1)
 
-**Status:** Design approved in chat 2026-09-01 · awaiting written-spec review  
+**Status:** Written spec approved 2026-09-01  
 **Task:** T-16  
-**Surface:** Gadget preview `/home2` (+ gadget nav/footer). Live `/` unchanged.
+**Surface:** Gadget preview `/home2` (+ gadget nav/footer). Live `/` unchanged.  
+**Plans:** `docs/superpowers/plans/2026-09-01-t16-home2-redesign.md` · `docs/plans/2026-09-01-t16-home2-redesign-plan.md`
 
 ## 1. Problem / goal
 
@@ -183,8 +184,19 @@ Not a warehouse-scope feature. Public shop + admin auth only. No per-module visi
 
 None that block phase 1 behavior.
 
-## 11. Approval
+## 11. Phase breakdown
+
+| Phase | Deliverable | Acceptance |
+|-------|-------------|------------|
+| P1 | Hero slide rules + bestsellers rules (tests green) | `npm test` includes new rule files |
+| P2 | `hero_slides` migration + store fetches | Admin can persist slides after push |
+| P3 | Admin slide CRUD + publish gates | Blockers show for 0 slides / 0 testimonials |
+| P4 | Gadget slider + Biometic chrome + `/home2` assembly | Visual + behavior match spec §4–7 |
+| P5 | Verify + storefront module note | Spec §9 checklist |
+
+## 12. Approval
 
 - [x] Architecture / data / visual wireframe approved in chat (2026-09-01)  
-- [ ] User approved this written spec file  
-- [ ] Implementation plan next (writing-plans) after spec OK  
+- [x] User approved this written spec file (2026-09-01)  
+- [ ] User approved implementation plan  
+
