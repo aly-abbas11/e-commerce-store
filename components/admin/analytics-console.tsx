@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AnalyticsFunnelPanel } from "@/components/admin/analytics-funnel";
 import { adminFetch, AdminAuthError } from "@/components/admin/admin-fetch";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -622,57 +623,28 @@ export function AnalyticsConsole() {
             </div>
           </TabsContent>
 
-          <TabsContent value="funnel" className="space-y-6">
+          <TabsContent value="funnel" className="space-y-8">
             <RetentionBanner show={bundle.retentionNotice} />
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Shop conversion — session cohort</h2>
-              {bundle.shopFunnel == null ? (
-                <p className="text-sm text-muted-foreground">Not available</p>
-              ) : (
-                <ol className="space-y-2">
-                  {bundle.shopFunnel.map((step, i) => (
-                    <li
-                      key={step.key}
-                      className="flex min-h-11 items-center justify-between rounded-lg border px-4 py-3"
-                    >
-                      <span>
-                        {i + 1}. {step.label}
-                      </span>
-                      <span className="tabular-nums">
-                        {step.count}
-                        {step.conversionFromPrevious != null
-                          ? ` · ${formatRate(step.conversionFromPrevious)} of previous`
-                          : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">COD / fulfillment — order cohort</h2>
-              <ol className="space-y-2">
-                {bundle.funnel.map((step, i) => (
-                  <li key={step.key}>
-                    <button
-                      type="button"
-                      className="flex w-full min-h-11 items-center justify-between rounded-lg border px-4 py-3 text-left hover:bg-accent"
-                      onClick={() => void openDrill(step.label, step.orderIds)}
-                    >
-                      <span>
-                        {i + 1}. {step.label}
-                      </span>
-                      <span className="tabular-nums">
-                        {step.count}
-                        {step.conversionFromPrevious != null && i > 0
-                          ? ` · ${formatRate(step.conversionFromPrevious)} of previous`
-                          : ""}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </div>
+            <AnalyticsFunnelPanel
+              title="Shop conversion"
+              description="Sessions that started in this date range — how many reached each shopping step."
+              steps={bundle.shopFunnel}
+              empty={
+                <p>
+                  Shop funnel not available for this range (traffic retention or
+                  no session data).
+                </p>
+              }
+            />
+            <AnalyticsFunnelPanel
+              title="COD / fulfillment"
+              description="Orders placed in this range — how many ever reached each status. Click a step to list those orders."
+              steps={bundle.funnel}
+              onStepClick={(step) => {
+                const full = bundle.funnel.find((s) => s.key === step.key);
+                if (full) void openDrill(full.label, full.orderIds);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="insights" className="space-y-4">

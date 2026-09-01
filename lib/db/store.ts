@@ -511,6 +511,8 @@ export async function createOrderRow(input: {
   subtotal: number;
   shipping: number;
   total: number;
+  discount?: number;
+  promoCode?: string | null;
   isDemo?: boolean;
 }): Promise<string | null> {
   const row: Record<string, unknown> = {
@@ -523,6 +525,12 @@ export async function createOrderRow(input: {
     status: "new",
     is_demo: Boolean(input.isDemo),
   };
+  if (input.discount != null && input.discount > 0) {
+    row.discount = input.discount;
+  }
+  if (input.promoCode) {
+    row.promo_code = input.promoCode;
+  }
   let { data, error } = await db().from("orders").insert(row).select("id").single();
   if (isMissingIsDemoColumn(error)) {
     demoColumnMissing = true;

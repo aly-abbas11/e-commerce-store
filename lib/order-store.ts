@@ -27,6 +27,8 @@ export interface NewOrderInput {
   subtotal: number;
   shipping: number;
   total: number;
+  discount?: number;
+  promoCode?: string | null;
   isDemo?: boolean;
 }
 

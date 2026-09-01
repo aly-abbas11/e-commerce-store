@@ -1,4 +1,5 @@
 export const DASHBOARD_TIMEZONE = "Asia/Karachi";
+export const SHIPPED_STALE_DAYS = 3;
 
 type SnapshotOrder = {
   orderId: string;
@@ -7,7 +8,7 @@ type SnapshotOrder = {
   statusUpdatedAt?: string | null;
   total?: number | null;
   isDemo?: boolean;
-  customer?: { name?: string };
+  customer?: { name?: string; phone?: string };
 };
 
 type SnapshotProduct = {
@@ -23,8 +24,16 @@ type SnapshotReview = { status?: string | null };
 export type DashboardPendingOrder = {
   orderId: string;
   customerName: string;
+  phone: string;
   status: string;
   total: number;
+};
+
+export type DashboardShippedStaleOrder = {
+  orderId: string;
+  customerName: string;
+  phone: string;
+  daysShipped: number;
 };
 
 export type DashboardStockProduct = {
@@ -42,6 +51,7 @@ export type DashboardSnapshot = {
   lowStockCount: number;
   pendingOrders: DashboardPendingOrder[];
   shippedWaitingCount: number;
+  shippedStaleOrders: DashboardShippedStaleOrder[];
   lowStockProducts: DashboardStockProduct[];
   pendingReviewCount: number;
   draftProductCount: number;
@@ -63,6 +73,38 @@ function isOnKarachiDay(iso: string | undefined | null, now: Date): boolean {
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return false;
   return karachiYmd(new Date(t)) === karachiYmd(now);
+}
+
+/** Whole Karachi calendar days from `iso` date to `now` (0 = same day). */
+export function karachiCalendarDaysSince(
+  iso: string | undefined | null,
+  now: Date
+): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  const from = karachiYmd(new Date(t));
+  const to = karachiYmd(now);
+  const fromMs = Date.parse(`${from}T12:00:00+05:00`);
+  const toMs = Date.parse(`${to}T12:00:00+05:00`);
+  if (Number.isNaN(fromMs) || Number.isNaN(toMs)) return null;
+  return Math.floor((toMs - fromMs) / 86_400_000);
+}
+
+export function isShippedStale(
+  order: {
+    status?: string | null;
+    statusUpdatedAt?: string | null;
+    createdAt?: string;
+  },
+  now = new Date(),
+  staleDays = SHIPPED_STALE_DAYS
+): boolean {
+  if ((order.status ?? "") !== "shipped") return false;
+  const since = order.statusUpdatedAt || order.createdAt;
+  const days = karachiCalendarDaysSince(since, now);
+  if (days == null) return false;
+  return days >= staleDays;
 }
 
 export function orderMatchesStatusFilter(
@@ -109,6 +151,14 @@ export function buildDashboardSnapshot(
   );
   const drafts = input.products.filter((p) => p.status !== "published");
 
+  const shippedStale = live
+    .filter((o) => isShippedStale(o, now))
+    .sort((a, b) => {
+      const aSince = a.statusUpdatedAt || a.createdAt;
+      const bSince = b.statusUpdatedAt || b.createdAt;
+      return Date.parse(aSince) - Date.parse(bSince);
+    });
+
   return {
     todayOrderCount: todayLive.length,
     todayRevenue,
@@ -123,10 +173,20 @@ export function buildDashboardSnapshot(
     pendingOrders: pending.slice(0, 8).map((o) => ({
       orderId: o.orderId,
       customerName: o.customer?.name ?? "",
+      phone: o.customer?.phone ?? "",
       status: o.status ?? "new",
       total: typeof o.total === "number" ? o.total : 0,
     })),
     shippedWaitingCount: live.filter((o) => o.status === "shipped").length,
+    shippedStaleOrders: shippedStale.slice(0, 8).map((o) => {
+      const since = o.statusUpdatedAt || o.createdAt;
+      return {
+        orderId: o.orderId,
+        customerName: o.customer?.name ?? "",
+        phone: o.customer?.phone ?? "",
+        daysShipped: karachiCalendarDaysSince(since, now) ?? 0,
+      };
+    }),
     lowStockProducts: attention.slice(0, 8).map((p) => ({
       id: p._id,
       name: p.name,

@@ -11,6 +11,7 @@ import { isAdminLoginPath } from "@/lib/storefront-layout-rules";
 import { cn } from "@/lib/utils";
 
 import { adminFetch } from "./admin-fetch";
+import { AdminCommandPalette } from "./admin-command-palette";
 
 type NavLink = { href: string; label: string; exact?: boolean };
 type NavGroup = { label?: string; items: NavLink[] };
@@ -50,7 +51,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     label: "Marketing",
-    items: [{ href: "/admin/broadcast", label: "Messaging" }],
+    items: [
+      { href: "/admin/broadcast", label: "Messaging" },
+      { href: "/admin/discounts", label: "Discounts" },
+    ],
   },
   {
     items: [
@@ -123,10 +127,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+        <p className="mt-6 px-3 text-[0.65rem] text-[var(--g-taupe)]">
+          Search · Ctrl/⌘ K
+        </p>
         <Button
           variant="ghost"
           size="sm"
-          className="admin-sign-out mt-8 w-full justify-start hover:bg-transparent"
+          className="admin-sign-out mt-2 w-full justify-start hover:bg-transparent"
           onClick={logout}
         >
           <LogOut className="mr-2 h-4 w-4" />
@@ -147,6 +154,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex-1 p-4 lg:p-8">{children}</div>
       </div>
+      <AdminCommandPalette />
     </div>
   );
 }

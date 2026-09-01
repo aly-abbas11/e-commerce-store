@@ -6,9 +6,9 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-**Admin platform program** — core slices landed locally + migrations pushed  
-Remaining polish: collection → home rails, DB email templates, deploy/verify live  
-Master plan: `docs/plans/2026-09-01-admin-platform-master-plan.md`  
+**Admin ops upgrades (T-27…T-31)** — implemented locally; push migrations + commit  
+Spec: `docs/superpowers/specs/2026-09-01-admin-ops-upgrades-design.md`  
+Plan: `docs/superpowers/plans/2026-09-01-admin-ops-upgrades.md`  
 
 ## Program
 
@@ -34,6 +34,11 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-24 | Products admin grouped by category | ✅ Done | T-09 | Category sections + filters in `/admin/products`. |
 | T-25 | Marketing email — single, bulk, templates | ✅ Done | T-04 | Messaging → Email tab; batch Resend + permission confirm. |
 | T-26 | Customers light CRM | ✅ Done | T-03 | `/admin/customers` from live orders. |
+| T-27 | Home COD follow-up | ✅ Done | T-13 | WhatsApp/Call on pending; shipped stale ≥3d Karachi. |
+| T-28 | Customer profile depth | ✅ Done | T-26, T-22 | `/admin/customers/[key]` orders + inbox. |
+| T-29 | Saved email templates | ✅ Done | T-25 | DB templates for Messaging compose. |
+| T-30 | Admin Cmd+K search | ✅ Done | T-21 | Jump to order / product / customer. |
+| T-31 | Promo / discount codes | ✅ Done | T-03 | percent/fixed/free_shipping + checkout apply. |
 | T-11 | Event theme + color suggestions | ⚪ Planned | T-09 | Owner sets a shop look for an event; suggested palettes. Spawned from T-09 intake. |
 | T-12 | Easier layout for the rest of admin | 🟡 In Progress | T-09 | T-12a Biometic theme shipped. Deeper ease-of-use continues via T-21. Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`. |
 | T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |

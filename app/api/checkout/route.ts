@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 
 import { sendOrderConfirmationEmail } from "@/lib/email";
 import { createOrder, enqueueEmailEvent, nextPublicOrderId } from "@/lib/order-store";
-import { resolveCheckout, CHECKOUT_PRICE_CHANGED_ERROR } from "@/lib/checkout-server";
+import { resolveCheckout, CHECKOUT_PRICE_CHANGED_ERROR, GIFT_WRAP_FEE } from "@/lib/checkout-server";
 import { isDemoRequest } from "@/lib/demo";
 import { attachOrderAttribution } from "@/lib/db/analytics-checkout";
 import { orderIsDemo } from "@/lib/db/demo-rules";
+import { applyPromoToTotals, normalizePromoCode } from "@/lib/db/promo-rules";
+import {
+  countPriorOrdersForEmail,
+  getPromoByCode,
+  incrementPromoUsage,
+} from "@/lib/db/promo-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +30,7 @@ interface CheckoutBody {
   customer?: CheckoutCustomer;
   payment?: { method?: string };
   giftWrap?: boolean;
+  promoCode?: string;
   // Present only for backwards-compatible clients; never trusted.
   subtotal?: number;
   shipping?: number;
@@ -93,6 +100,44 @@ export async function POST(request: Request) {
 
     const { lines, subtotal, shipping, total } = resolution.checkout;
 
+    let finalShipping = shipping;
+    let finalTotal = total;
+    let discount = 0;
+    let appliedPromo: string | null = null;
+
+    const promoRaw = normalizePromoCode(body.promoCode);
+    if (promoRaw) {
+      try {
+        const promo = await getPromoByCode(promoRaw);
+        if (!promo) {
+          return NextResponse.json(
+            { error: "That promo code is not valid." },
+            { status: 400 }
+          );
+        }
+        const prior = await countPriorOrdersForEmail(customer.email);
+        const applied = applyPromoToTotals(promo, {
+          subtotal,
+          shipping,
+          giftWrapFee: giftWrap === true ? GIFT_WRAP_FEE : 0,
+          isFirstOrder: prior === 0,
+        });
+        if (!applied.ok) {
+          return NextResponse.json({ error: applied.error }, { status: 400 });
+        }
+        finalShipping = applied.shipping;
+        finalTotal = applied.total;
+        discount = applied.discount;
+        appliedPromo = applied.code;
+      } catch (error) {
+        console.error("[checkout] promo", error);
+        return NextResponse.json(
+          { error: "Could not apply promo code. Try again without it." },
+          { status: 503 }
+        );
+      }
+    }
+
     const baseOrder = {
       customer: {
         name: customer.name,
@@ -105,8 +150,10 @@ export async function POST(request: Request) {
       items: lines,
       payment: "cod" as const,
       subtotal,
-      shipping,
-      total,
+      shipping: finalShipping,
+      total: finalTotal,
+      discount,
+      promoCode: appliedPromo,
       isDemo: orderIsDemo(demoSession, false),
     };
 
@@ -122,6 +169,14 @@ export async function POST(request: Request) {
         { error: "We couldn't store your order. Please try again." },
         { status: 500 }
       );
+    }
+
+    if (appliedPromo) {
+      try {
+        await incrementPromoUsage(appliedPromo);
+      } catch {
+        console.error("[checkout] promo usage increment failed");
+      }
     }
 
     try {
@@ -154,7 +209,16 @@ export async function POST(request: Request) {
       5 * 24 * 60 * 60 * 1000
     );
 
-    return NextResponse.json({ ok: true, orderId, subtotal, shipping, total, lines });
+    return NextResponse.json({
+      ok: true,
+      orderId,
+      subtotal,
+      shipping: finalShipping,
+      total: finalTotal,
+      discount,
+      promoCode: appliedPromo,
+      lines,
+    });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json(

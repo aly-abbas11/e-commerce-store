@@ -17,8 +17,8 @@ export default async function AdminCustomersPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Customers</h1>
       <p className="text-sm text-muted-foreground">
-        Built from live orders (demo orders hidden). Open the latest order for
-        full details.
+        Built from live orders (demo orders hidden). Open a customer for orders
+        and inbox history.
       </p>
       {customers.length === 0 ? (
         <p className="text-sm text-muted-foreground">No customers yet.</p>
@@ -37,12 +37,22 @@ export default async function AdminCustomersPage() {
             <tbody>
               {customers.map((c) => (
                 <tr key={c.key} className="border-b last:border-0">
-                  <td className="px-3 py-2 font-medium">{c.name}</td>
+                  <td className="px-3 py-2 font-medium">
+                    <Link
+                      href={`/admin/customers/${encodeURIComponent(c.key)}`}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="px-3 py-2">
                     {c.email ? (
-                      <a className="underline" href={`mailto:${c.email}`}>
+                      <Link
+                        href={`/admin/customers/${encodeURIComponent(c.key)}`}
+                        className="underline-offset-2 hover:underline"
+                      >
                         {c.email}
-                      </a>
+                      </Link>
                     ) : (
                       "—"
                     )}

@@ -105,6 +105,7 @@ export default function CheckoutPage() {
   const [placedTotal, setPlacedTotal] = useState<number | null>(null);
   const [customer, setCustomer] = useState<Record<string, string>>({});
   const [giftWrap, setGiftWrap] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
   const [priceChanged, setPriceChanged] = useState<
     | {
         items: PriceMismatch[];
@@ -157,6 +158,7 @@ export default function CheckoutPage() {
           total,
           giftWrap,
           giftWrapFee: giftWrap ? GIFT_WRAP_FEE : 0,
+          ...(promoCode.trim() ? { promoCode: promoCode.trim() } : {}),
         }),
       });
       const data = await res.json();
@@ -690,6 +692,22 @@ export default function CheckoutPage() {
                     </span>
                   </span>
                 </label>
+              </div>
+
+              <div className="mt-4 space-y-1">
+                <label className="block text-sm font-medium" htmlFor="promo-code">
+                  Promo code
+                </label>
+                <Input
+                  id="promo-code"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder="Optional"
+                  autoComplete="off"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Applied when you place the order (server-verified).
+                </p>
               </div>
 
                {/* Price-change notice (only after a 409, cleared on cart/step change) */}

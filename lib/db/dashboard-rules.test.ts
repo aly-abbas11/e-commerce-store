@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 
 import {
   buildDashboardSnapshot,
+  isShippedStale,
   orderMatchesStatusFilter,
   productMatchesStockAttention,
+  SHIPPED_STALE_DAYS,
 } from "./dashboard-rules";
 
 const now = new Date("2026-08-27T12:00:00+05:00");
@@ -149,5 +151,97 @@ describe("productMatchesStockAttention", () => {
     assert.equal(productMatchesStockAttention("low-stock"), true);
     assert.equal(productMatchesStockAttention("out-of-stock"), true);
     assert.equal(productMatchesStockAttention("in-stock"), false);
+  });
+});
+
+describe("SHIPPED_STALE_DAYS", () => {
+  it("is 3", () => {
+    assert.equal(SHIPPED_STALE_DAYS, 3);
+  });
+});
+
+describe("isShippedStale", () => {
+  it("is false when not shipped", () => {
+    assert.equal(
+      isShippedStale(
+        { status: "processing", statusUpdatedAt: "2026-08-20T10:00:00+05:00" },
+        now
+      ),
+      false
+    );
+  });
+
+  it("is false when shipped less than 3 Karachi days ago", () => {
+    assert.equal(
+      isShippedStale(
+        {
+          status: "shipped",
+          statusUpdatedAt: "2026-08-25T10:00:00+05:00",
+          createdAt: "2026-08-01T10:00:00+05:00",
+        },
+        now
+      ),
+      false
+    );
+  });
+
+  it("is true when shipped 3+ Karachi days ago (uses statusUpdatedAt)", () => {
+    assert.equal(
+      isShippedStale(
+        {
+          status: "shipped",
+          statusUpdatedAt: "2026-08-24T10:00:00+05:00",
+          createdAt: "2026-08-27T08:00:00+05:00",
+        },
+        now
+      ),
+      true
+    );
+  });
+
+  it("falls back to createdAt when statusUpdatedAt missing", () => {
+    assert.equal(
+      isShippedStale(
+        { status: "shipped", createdAt: "2026-08-20T10:00:00+05:00" },
+        now
+      ),
+      true
+    );
+  });
+});
+
+describe("buildDashboardSnapshot COD follow-up", () => {
+  it("includes phone on pending orders and lists stale shipped", () => {
+    const snap = buildDashboardSnapshot(
+      {
+        orders: [
+          order({
+            orderId: "N",
+            status: "new",
+            customer: { name: "Ali", phone: "03001234567" },
+          }),
+          order({
+            orderId: "FRESH",
+            status: "shipped",
+            statusUpdatedAt: "2026-08-26T10:00:00+05:00",
+          }),
+          order({
+            orderId: "STALE",
+            status: "shipped",
+            statusUpdatedAt: "2026-08-20T10:00:00+05:00",
+            customer: { name: "Sara", phone: "03007654321" },
+          }),
+        ],
+        products: [],
+        reviews: [],
+      },
+      now
+    );
+    assert.equal(snap.pendingOrders[0]?.phone, "03001234567");
+    assert.equal(snap.shippedWaitingCount, 2);
+    assert.equal(snap.shippedStaleOrders.length, 1);
+    assert.equal(snap.shippedStaleOrders[0]?.orderId, "STALE");
+    assert.equal(snap.shippedStaleOrders[0]?.phone, "03007654321");
+    assert.ok((snap.shippedStaleOrders[0]?.daysShipped ?? 0) >= 3);
   });
 });

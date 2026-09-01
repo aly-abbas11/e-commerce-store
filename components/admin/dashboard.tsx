@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { telHref, whatsappHref } from "@/lib/contact-links";
 import type { DashboardSnapshot } from "@/lib/db/dashboard-rules";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,61 @@ function Row({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
+function ContactActions({ phone }: { phone: string }) {
+  const wa = whatsappHref(phone);
+  const tel = telHref(phone);
+  if (!wa && !tel) return null;
+  return (
+    <span className="flex shrink-0 items-center gap-2 text-xs font-medium">
+      {wa ? (
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--g-forest)] underline-offset-2 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          WhatsApp
+        </a>
+      ) : null}
+      {tel ? (
+        <a
+          href={tel}
+          className="text-[var(--g-forest)] underline-offset-2 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Call
+        </a>
+      ) : null}
+    </span>
+  );
+}
+
+function OrderFollowUpRow({
+  href,
+  phone,
+  children,
+}: {
+  href: string;
+  phone: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-11 items-center justify-between gap-3 border-b px-3 py-2 text-sm last:border-0 hover:bg-muted/30">
+      <Link
+        href={href}
+        className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {children}
+      </Link>
+      <ContactActions phone={phone} />
+      <Link href={href} className="shrink-0 text-muted-foreground" aria-hidden>
+        <ChevronRight className="h-4 w-4" />
+      </Link>
+    </div>
+  );
+}
+
 export function Dashboard({
   snapshot,
   error,
@@ -68,12 +124,20 @@ export function Dashboard({
     );
   }
 
-  const needsYou: { href: string; key: string; body: ReactNode }[] = [];
+  const needsYou: {
+    key: string;
+    kind: "order" | "link";
+    href: string;
+    phone?: string;
+    body: ReactNode;
+  }[] = [];
 
   for (const o of snapshot.pendingOrders) {
     needsYou.push({
       key: `order-${o.orderId}`,
+      kind: "order",
       href: `/admin/orders/${encodeURIComponent(o.orderId)}`,
+      phone: o.phone,
       body: (
         <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <span className="font-medium">{o.orderId}</span>
@@ -85,9 +149,48 @@ export function Dashboard({
     });
   }
 
-  if (snapshot.shippedWaitingCount > 0) {
+  for (const o of snapshot.shippedStaleOrders) {
+    needsYou.push({
+      key: `stale-${o.orderId}`,
+      kind: "order",
+      href: `/admin/orders/${encodeURIComponent(o.orderId)}`,
+      phone: o.phone,
+      body: (
+        <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+          <span className="font-medium">{o.orderId}</span>
+          <span>{o.customerName || "—"}</span>
+          <span className="text-muted-foreground">
+            Shipped {o.daysShipped}d — confirm delivery
+          </span>
+        </span>
+      ),
+    });
+  }
+
+  if (
+    snapshot.shippedWaitingCount > 0 &&
+    snapshot.shippedStaleOrders.length < snapshot.shippedWaitingCount
+  ) {
     needsYou.push({
       key: "shipped",
+      kind: "link",
+      href: "/admin/orders?status=shipped",
+      body: (
+        <span>
+          {snapshot.shippedWaitingCount} shipped total
+          {snapshot.shippedStaleOrders.length > 0
+            ? ` (${snapshot.shippedStaleOrders.length} overdue)`
+            : ""}
+        </span>
+      ),
+    });
+  } else if (
+    snapshot.shippedWaitingCount > 0 &&
+    snapshot.shippedStaleOrders.length === 0
+  ) {
+    needsYou.push({
+      key: "shipped",
+      kind: "link",
       href: "/admin/orders?status=shipped",
       body: (
         <span>
@@ -100,6 +203,7 @@ export function Dashboard({
   for (const p of snapshot.lowStockProducts) {
     needsYou.push({
       key: `stock-${p.id}`,
+      kind: "link",
       href: `/admin/products/${p.id}`,
       body: (
         <span className="flex flex-wrap items-baseline gap-x-3">
@@ -115,6 +219,7 @@ export function Dashboard({
   if (snapshot.pendingReviewCount > 0) {
     needsYou.push({
       key: "reviews",
+      kind: "link",
       href: "/admin/reviews",
       body: <span>{snapshot.pendingReviewCount} reviews waiting</span>,
     });
@@ -127,6 +232,7 @@ export function Dashboard({
         : "/admin/products";
     needsYou.push({
       key: "drafts",
+      kind: "link",
       href,
       body: (
         <span>
@@ -172,11 +278,21 @@ export function Dashboard({
         <section>
           <h2 className="mb-3 text-lg font-semibold">Needs you</h2>
           <div className={cn("overflow-hidden rounded-lg border")}>
-            {needsYou.map((row) => (
-              <Row key={row.key} href={row.href}>
-                {row.body}
-              </Row>
-            ))}
+            {needsYou.map((row) =>
+              row.kind === "order" ? (
+                <OrderFollowUpRow
+                  key={row.key}
+                  href={row.href}
+                  phone={row.phone ?? ""}
+                >
+                  {row.body}
+                </OrderFollowUpRow>
+              ) : (
+                <Row key={row.key} href={row.href}>
+                  {row.body}
+                </Row>
+              )
+            )}
           </div>
         </section>
       ) : null}

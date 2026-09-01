@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { adminFetch } from "@/components/admin/admin-fetch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const TEMPLATES: { id: string; label: string; subject: string; text: string }[] = [
+const BUILTIN: { id: string; label: string; subject: string; text: string }[] = [
   {
     id: "blank",
     label: "Blank",
@@ -27,20 +27,86 @@ const TEMPLATES: { id: string; label: string; subject: string; text: string }[] 
   },
 ];
 
+type SavedTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  bodyText: string;
+};
+
 export function EmailCompose() {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [text, setText] = useState("");
+  const [templateName, setTemplateName] = useState("");
+  const [saved, setSaved] = useState<SavedTemplate[]>([]);
   const [confirmPermission, setConfirmPermission] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function applyTemplate(id: string) {
-    const t = TEMPLATES.find((x) => x.id === id);
+  async function loadTemplates() {
+    try {
+      const data = (await adminFetch("/api/admin/email-templates")) as {
+        templates?: SavedTemplate[];
+      };
+      setSaved(data.templates ?? []);
+    } catch {
+      setSaved([]);
+    }
+  }
+
+  useEffect(() => {
+    void loadTemplates();
+  }, []);
+
+  function applyBuiltin(id: string) {
+    const t = BUILTIN.find((x) => x.id === id);
     if (!t) return;
     setSubject(t.subject);
     setText(t.text);
+    setTemplateName(t.label === "Blank" ? "" : t.label);
+  }
+
+  function applySaved(t: SavedTemplate) {
+    setSubject(t.subject);
+    setText(t.bodyText);
+    setTemplateName(t.name);
+  }
+
+  async function saveTemplate() {
+    setBusy(true);
+    setError(null);
+    setResult(null);
+    try {
+      await adminFetch("/api/admin/email-templates", {
+        method: "POST",
+        body: JSON.stringify({
+          name: templateName || subject || "Untitled",
+          subject,
+          bodyText: text,
+        }),
+      });
+      setResult("Template saved.");
+      await loadTemplates();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeTemplate(id: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      await adminFetch(`/api/admin/email-templates/${id}`, { method: "DELETE" });
+      await loadTemplates();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function send() {
@@ -80,19 +146,39 @@ export function EmailCompose() {
       <h2 className="text-lg font-semibold">Email</h2>
       <p className="text-sm text-muted-foreground">
         Send from your domain mail (Resend / FROM_EMAIL). One address, or several
-        separated by commas.
+        separated by commas. Save templates to reuse promo copy.
       </p>
       <div className="flex flex-wrap gap-2">
-        {TEMPLATES.map((t) => (
+        {BUILTIN.map((t) => (
           <Button
             key={t.id}
             type="button"
             size="sm"
             variant="outline"
-            onClick={() => applyTemplate(t.id)}
+            onClick={() => applyBuiltin(t.id)}
           >
             {t.label}
           </Button>
+        ))}
+        {saved.map((t) => (
+          <span key={t.id} className="inline-flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => applySaved(t)}
+            >
+              {t.name}
+            </Button>
+            <button
+              type="button"
+              className="text-xs text-muted-foreground hover:text-destructive"
+              aria-label={`Delete ${t.name}`}
+              onClick={() => void removeTemplate(t.id)}
+            >
+              ×
+            </button>
+          </span>
         ))}
       </div>
       <label className="block space-y-1 text-sm">
@@ -101,6 +187,14 @@ export function EmailCompose() {
           placeholder="customer@email.com or many, comma-separated"
           value={to}
           onChange={(e) => setTo(e.target.value)}
+        />
+      </label>
+      <label className="block space-y-1 text-sm">
+        <span className="font-medium">Template name (when saving)</span>
+        <Input
+          placeholder="e.g. Ramadan promo"
+          value={templateName}
+          onChange={(e) => setTemplateName(e.target.value)}
         />
       </label>
       <label className="block space-y-1 text-sm">
@@ -131,13 +225,23 @@ export function EmailCompose() {
       {result ? (
         <p className="text-sm text-[var(--g-forest)]">{result}</p>
       ) : null}
-      <Button
-        type="button"
-        disabled={busy || !to.trim() || !subject.trim() || !text.trim()}
-        onClick={send}
-      >
-        {busy ? "Sending…" : "Send email"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy || !subject.trim() || !text.trim()}
+          onClick={() => void saveTemplate()}
+        >
+          Save template
+        </Button>
+        <Button
+          type="button"
+          disabled={busy || !to.trim() || !subject.trim() || !text.trim()}
+          onClick={() => void send()}
+        >
+          {busy ? "Working…" : "Send email"}
+        </Button>
+      </div>
     </div>
   );
 }
