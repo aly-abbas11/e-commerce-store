@@ -48,7 +48,7 @@ export function buildCustomerRowsFromOrders(
     }
   }
 
-  return [...map.values()].sort((a, b) =>
+  return Array.from(map.values()).sort((a, b) =>
     b.lastOrderAt.localeCompare(a.lastOrderAt)
   );
 }

@@ -31,7 +31,7 @@ export function groupProductsByCategory<T extends { category: string }>(
     });
   }
 
-  for (const [slug, list] of bySlug) {
+  for (const [slug, list] of Array.from(bySlug.entries())) {
     if (seen.has(slug)) continue;
     groups.push({
       slug,
