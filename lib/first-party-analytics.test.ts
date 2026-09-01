@@ -11,10 +11,15 @@ import {
 } from "./first-party-analytics";
 
 describe("shouldCollectPath", () => {
-  it("skips admin, gadget preview, and allows live shop paths", () => {
+  it("skips admin and legacy /home2 preview, allows live Biometic shop", () => {
     assert.equal(shouldCollectPath("/home2"), false);
     assert.equal(shouldCollectPath("/admin/analytics"), false);
+    assert.equal(shouldCollectPath("/"), true);
     assert.equal(shouldCollectPath("/product/pad"), true);
+    assert.equal(shouldCollectPath("/product2/pad"), true);
+    assert.equal(shouldCollectPath("/products2"), true);
+    assert.equal(shouldCollectPath("/products2/earbuds"), true);
+    assert.equal(shouldCollectPath("/checkout"), true);
   });
 });
 
@@ -29,7 +34,9 @@ describe("pageTypeFromPath", () => {
     assert.equal(pageTypeFromPath("/search"), "search");
     assert.equal(pageTypeFromPath("/blog/hello"), "content");
     assert.equal(pageTypeFromPath("/warranty"), "content");
-    assert.equal(pageTypeFromPath("/product2/pad"), "other");
+    assert.equal(pageTypeFromPath("/product2/pad"), "product");
+    assert.equal(pageTypeFromPath("/products2"), "catalog");
+    assert.equal(pageTypeFromPath("/products2/chargers"), "catalog");
     assert.equal(pageTypeFromPath("/track"), "other");
   });
 });

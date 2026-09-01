@@ -74,6 +74,7 @@ export function AppChrome({
       <WishlistProvider>
         {gadget ? (
           <div className={`gadget-theme flex min-h-dvh flex-col overflow-x-clip ${gadgetFontClass}`}>
+            <FirstPartyTracker />
             {demoBanner}
             <GadgetNavbar settings={settings} shopTypes={shopTypes} />
             <main className="min-w-0 flex-1 bg-[var(--g-cream)]">{children}</main>

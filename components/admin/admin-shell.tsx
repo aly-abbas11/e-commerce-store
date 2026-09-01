@@ -46,14 +46,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-dvh bg-[var(--g-cream)]">
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-56 border-r bg-card p-4 md:static md:block",
+          "admin-sidebar fixed inset-y-0 left-0 z-40 w-56 border-r p-4 md:static md:block",
           !open && "max-md:hidden"
         )}
       >
-        <p className="mb-6 text-sm font-semibold tracking-tight">Store admin</p>
+        <p className="admin-sidebar-brand mb-6 text-sm font-semibold tracking-tight">
+          Store admin
+        </p>
         <nav className="space-y-1" aria-label="Admin">
           {NAV.map((item) => {
             const active = item.exact
@@ -65,10 +67,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "block rounded-md px-3 py-2 text-sm",
-                  active
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  "admin-nav-link block rounded-md px-3 py-2 text-sm transition-colors",
+                  active && "admin-nav-link-active"
                 )}
               >
                 {item.label}
@@ -76,13 +76,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <Button variant="ghost" size="sm" className="mt-8 w-full justify-start" onClick={logout}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="admin-sign-out mt-8 w-full justify-start hover:bg-transparent"
+          onClick={logout}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </Button>
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-2 border-b px-4 py-3 md:hidden">
+      <div className="admin-main flex min-w-0 flex-1 flex-col">
+        <header className="admin-mobile-bar flex items-center gap-2 border-b px-4 py-3 md:hidden">
           <Button
             variant="outline"
             size="icon"

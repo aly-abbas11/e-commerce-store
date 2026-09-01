@@ -6,7 +6,9 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-Parked: **T-15** — First-party traffic · 🟡 In Progress · **T-16** — Homepage redesign closeout
+**T-15** — First-party traffic analytics · 🟡 In Progress (live Biometic path fix)  
+**T-12a** — Admin Biometic theme · ✅ merged into this branch (forest/cream)  
+Next: **T-10** — Homepage sections CRUD  
 
 ## Program
 
@@ -25,23 +27,20 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-07 | Storefront UI (gadget preview) | ✅ Done | T-01 | Keep both: live `/` and gadget `/home2` + `/product2/[slug]`. Do not switch `/`. Spec: `docs/superpowers/specs/2026-08-26-t07-gadget-storefront-preview-design.md`. Docs: `docs/modules/storefront/`. Verified 2026-08-26. |
 | T-08 | Vercel deploy wiring | ✅ Done | T-01, T-06 | Live at https://voltgear-coral.vercel.app. Same Supabase. Spec: `docs/superpowers/specs/2026-08-26-t08-vercel-deploy-design.md`. Docs: `docs/modules/deploy/`. Verified 2026-08-26. |
 | T-09 | Easy admin: product form + shop types | ✅ Done | T-02 | Short product form, shop types CRUD, required Category from that list. Verified local + live 2026-08-27. Plan: `docs/plans/2026-08-27-t09-category-assignment-plan.md`. |
-| T-10 | Homepage sections CRUD | ⚪ Planned | T-09 | Add / reorder / remove blocks on the live home. Spawned from T-09 intake. |
+| T-10 | Homepage sections CRUD | ⚪ Planned | T-09 | Add / reorder / remove blocks on the live home. Spawned from T-09 intake. PR #3 pending merge. |
 | T-11 | Event theme + color suggestions | ⚪ Planned | T-09 | Owner sets a shop look for an event; suggested palettes. Spawned from T-09 intake. |
-| T-12 | Easier layout for the rest of admin | ⚪ Planned | T-09 | Orders, settings, and other admin pages after Products + Shop types feel easy. |
-| T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
+| T-12 | Easier layout for the rest of admin | 🟡 In Progress | T-09 | T-12a Biometic theme shipped in branch with T-15. Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`. Deeper ease-of-use polish still open. | T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
 | T-14 | Commerce intelligence & delivered-revenue analytics | ✅ Done | T-03, T-13 | COD analytics: delivered revenue is the primary KPI. `/admin/analytics` live 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t14-commerce-intelligence-design.md`. Docs: `docs/modules/analytics/`. |
-| T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Schema pushed 2026-08-28. Live tracker on https://voltgear-coral.vercel.app. Open the shop once, then `/admin/analytics` → Traffic. No Clarity/GA. Do not rebuild T-14 money reports. Parked while T-16 is active. |
-| T-16 | Homepage redesign (discovery-driven VoltGear home) | 🟡 In Progress | T-07 | Phase 1: `/home2` Biometic + Ronin-style hero slides. Spec: `docs/superpowers/specs/2026-09-01-t16-home2-redesign-design.md`. Live `/` unchanged. |
+| T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Resume: count live Biometic `/`, `/products2`, `/product2` (was excluding gadget paths). Spec: `docs/superpowers/specs/2026-08-27-t15-first-party-traffic-design.md`. |
+| T-16 | Homepage redesign (discovery-driven VoltGear home) | 🟡 In Progress | T-07 | Biometic live on `/`. Spec: `docs/superpowers/specs/2026-09-01-t16-home2-redesign-design.md`. |
 | T-17 | `/product2` redesign (match T-16 language) | ⚪ Planned | T-16 | Guided buy / Biometic chrome. Spawned from T-16 impact analysis. |
 | T-18 | Gadget catalog entry chrome | ⚪ Planned | T-16 | Preview catalog/nav entry points matching T-16. Spawned from T-16 impact analysis. |
-| T-19 | Gadget craft system: motion, type, copy, icons | ✅ Done | T-16 | Craft tokens + home reveals + buy trust microcopy + glyphs. Plans/UI approved 2026-09-01. Preview only. |
+| T-19 | Gadget craft system: motion, type, copy, icons | ✅ Done | T-16 | Craft tokens + home reveals + buy trust microcopy + glyphs. |
 | T-20 | Shopper self-cancel on Track (24h, new/processing) | ✅ Done | T-03, T-04 | Cancel from `/track` within 24h while new/processing; same cancelled email. Spec: `docs/superpowers/specs/2026-09-01-t20-shopper-self-cancel-design.md`. Shipped 2026-09-01. |
 
 ## Suggested build order
 
-T-01 → T-02 and T-03 (can overlap after T-01) → T-04 → T-06 → T-07 → T-08 → T-05.
-
-UI (T-07) can start after the product data shape from T-01 is agreed. Deploy (T-08) waits until staging proves the path.
+T-15 (live path tracking) → T-10 → rest of T-12.
 
 ## T-01 decisions (so far)
 
