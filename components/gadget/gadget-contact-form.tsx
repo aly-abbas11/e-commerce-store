@@ -9,6 +9,7 @@ export function GadgetContactForm({
   heading?: string;
 }) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [kind, setKind] = useState<"contact" | "complaint">("contact");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +21,7 @@ export function GadgetContactForm({
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, kind }),
       });
       if (!res.ok) throw new Error("Failed");
       form.reset();
@@ -43,6 +44,33 @@ export function GadgetContactForm({
         Prefer email? Leave your details and we&apos;ll get back to you.
       </p>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div className="space-y-1.5">
+          <span className={label}>Type</span>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Message type">
+            <button
+              type="button"
+              onClick={() => setKind("contact")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                kind === "contact"
+                  ? "bg-[var(--g-forest)] text-white"
+                  : "border border-[var(--g-line)] bg-white text-[var(--g-charcoal)]"
+              }`}
+            >
+              Contact
+            </button>
+            <button
+              type="button"
+              onClick={() => setKind("complaint")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                kind === "complaint"
+                  ? "bg-[var(--g-forest)] text-white"
+                  : "border border-[var(--g-line)] bg-white text-[var(--g-charcoal)]"
+              }`}
+            >
+              Complaint
+            </button>
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <label htmlFor="g-contact-name" className={label}>

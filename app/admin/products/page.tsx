@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { ProductList } from "@/components/admin/product-list";
-import { listAdminProducts } from "@/lib/db/admin-store";
+import { listAdminProducts, listAdminShopTypes } from "@/lib/db/admin-store";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -15,6 +15,15 @@ export default async function AdminProductsPage({
 }: {
   searchParams: { stock?: string };
 }) {
-  const products = await listAdminProducts();
-  return <ProductList products={products} stockFilter={searchParams.stock} />;
+  const [products, shopTypes] = await Promise.all([
+    listAdminProducts(),
+    listAdminShopTypes().catch(() => []),
+  ]);
+  return (
+    <ProductList
+      products={products}
+      shopTypes={shopTypes}
+      stockFilter={searchParams.stock}
+    />
+  );
 }

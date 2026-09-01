@@ -188,3 +188,44 @@ export async function sendWinbackEmail(
 ): Promise<boolean> {
   return deliver({ to, ...emailTemplates.winback(payload) });
 }
+
+/** Admin marketing send — one or many recipients (batched). */
+export async function sendMarketingEmail(input: {
+  recipients: string[];
+  subject: string;
+  text: string;
+  html?: string;
+}): Promise<{
+  sent: number;
+  failed: { email: string }[];
+}> {
+  const html =
+    input.html?.trim() ||
+    shell({
+      title: input.subject,
+      body: `<p style="white-space:pre-wrap">${input.text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")}</p>`,
+    });
+
+  const failed: { email: string }[] = [];
+  let sent = 0;
+  const batchSize = 10;
+  for (let i = 0; i < input.recipients.length; i += batchSize) {
+    const batch = input.recipients.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map(async (to) => {
+        const ok = await deliver({
+          to,
+          subject: input.subject,
+          text: input.text,
+          html,
+        });
+        if (ok) sent += 1;
+        else failed.push({ email: to });
+      })
+    );
+  }
+  return { sent, failed };
+}

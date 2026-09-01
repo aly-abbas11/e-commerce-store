@@ -1,40 +1,38 @@
 import { NextResponse } from "next/server";
 
+import { createContactSubmission } from "@/lib/db/inbox-store";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, email, subject, message } = body as {
-      name?: string;
-      email?: string;
-      subject?: string;
-      message?: string;
-    };
+    const body = await request.json().catch(() => null);
+    const result = await createContactSubmission({
+      name: body?.name,
+      email: body?.email,
+      subject: body?.subject,
+      message: body?.message,
+      kind: body?.kind,
+      isDemo: Boolean(body?.isDemo),
+    });
 
-    if (!name || !email || !message) {
-      return NextResponse.json(
-        { error: "Name, email and message are required." },
-        { status: 400 }
-      );
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
     const webhookUrl = process.env.SLACK_WEBHOOK_URL || process.env.WEBHOOK_URL;
-
     if (webhookUrl) {
       await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: `New contact message\nName: ${name}\nEmail: ${email}\nSubject: ${subject ?? "-"}\nMessage: ${message}`,
+          text: `New inbox message (${body?.kind === "complaint" ? "complaint" : "contact"})\nName: ${body?.name}\nEmail: ${body?.email}\nSubject: ${body?.subject ?? "-"}\nMessage: ${body?.message}`,
         }),
-      });
+      }).catch(() => null);
     }
 
-    console.info("Contact form submission:", { name, email, subject, message });
-
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, id: result.id }, { status: 201 });
   } catch (error) {
     console.error("Contact form error:", error);
     return NextResponse.json({ error: "Failed to process message." }, { status: 500 });

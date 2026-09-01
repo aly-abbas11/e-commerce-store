@@ -6,13 +6,13 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-**T-15** — First-party traffic analytics · 🟡 In Progress (live Biometic path fix)  
-**T-12a** — Admin Biometic theme · ✅ merged into this branch (forest/cream)  
-Next: **T-10** — Homepage sections CRUD  
+**Admin platform program** — core slices landed locally + migrations pushed  
+Remaining polish: collection → home rails, DB email templates, deploy/verify live  
+Master plan: `docs/plans/2026-09-01-admin-platform-master-plan.md`  
 
 ## Program
 
-Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel logs, staging, black-and-white storefront with product videos, Vercel deploy.
+Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel logs, staging, black-and-white storefront with product videos, Vercel deploy. Admin platform program adds Shopify-parity gaps (inbox, collections, marketing email, category-grouped products, nav IA).
 
 ## Tasks
 
@@ -27,11 +27,18 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-07 | Storefront UI (gadget preview) | ✅ Done | T-01 | Keep both: live `/` and gadget `/home2` + `/product2/[slug]`. Do not switch `/`. Spec: `docs/superpowers/specs/2026-08-26-t07-gadget-storefront-preview-design.md`. Docs: `docs/modules/storefront/`. Verified 2026-08-26. |
 | T-08 | Vercel deploy wiring | ✅ Done | T-01, T-06 | Live at https://voltgear-coral.vercel.app. Same Supabase. Spec: `docs/superpowers/specs/2026-08-26-t08-vercel-deploy-design.md`. Docs: `docs/modules/deploy/`. Verified 2026-08-26. |
 | T-09 | Easy admin: product form + shop types | ✅ Done | T-02 | Short product form, shop types CRUD, required Category from that list. Verified local + live 2026-08-27. Plan: `docs/plans/2026-08-27-t09-category-assignment-plan.md`. |
-| T-10 | Homepage sections CRUD | ⚪ Planned | T-09 | Add / reorder / remove blocks on the live home. Spawned from T-09 intake. PR #3 pending merge. |
+| T-10 | Homepage sections CRUD | ✅ Done | T-09 | Home layout on main; `home_sections` on remote. Spec: `docs/superpowers/specs/2026-09-01-t10-homepage-sections-design.md`. |
+| T-21 | Admin IA — Shopify-style nav groups | ✅ Done | T-12a | Grouped sidebar + Inbox + Collections + Home layout. |
+| T-22 | Inbox — contact + complaints | ✅ Done | — | `contact_submissions` pushed. `/admin/inbox` + kind on contact form. |
+| T-23 | Collections CRUD + home placement | ✅ Done | T-10 | CRUD + auto rules + home_slot (bestsellers/featured/offers). Reorder rails via Home layout. |
+| T-24 | Products admin grouped by category | ✅ Done | T-09 | Category sections + filters in `/admin/products`. |
+| T-25 | Marketing email — single, bulk, templates | ✅ Done | T-04 | Messaging → Email tab; batch Resend + permission confirm. |
+| T-26 | Customers light CRM | ✅ Done | T-03 | `/admin/customers` from live orders. |
 | T-11 | Event theme + color suggestions | ⚪ Planned | T-09 | Owner sets a shop look for an event; suggested palettes. Spawned from T-09 intake. |
-| T-12 | Easier layout for the rest of admin | 🟡 In Progress | T-09 | T-12a Biometic theme shipped in branch with T-15. Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`. Deeper ease-of-use polish still open. | T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
+| T-12 | Easier layout for the rest of admin | 🟡 In Progress | T-09 | T-12a Biometic theme shipped. Deeper ease-of-use continues via T-21. Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`. |
+| T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
 | T-14 | Commerce intelligence & delivered-revenue analytics | ✅ Done | T-03, T-13 | COD analytics: delivered revenue is the primary KPI. `/admin/analytics` live 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t14-commerce-intelligence-design.md`. Docs: `docs/modules/analytics/`. |
-| T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Resume: count live Biometic `/`, `/products2`, `/product2` (was excluding gadget paths). Spec: `docs/superpowers/specs/2026-08-27-t15-first-party-traffic-design.md`. |
+| T-15 | First-party traffic, funnel tracking & conversion insights | ✅ Done | T-14 | Live Biometic paths counted. Spec: `docs/superpowers/specs/2026-08-27-t15-first-party-traffic-design.md`. Merged PR #5 2026-09-01. |
 | T-16 | Homepage redesign (discovery-driven VoltGear home) | 🟡 In Progress | T-07 | Biometic live on `/`. Spec: `docs/superpowers/specs/2026-09-01-t16-home2-redesign-design.md`. |
 | T-17 | `/product2` redesign (match T-16 language) | ⚪ Planned | T-16 | Guided buy / Biometic chrome. Spawned from T-16 impact analysis. |
 | T-18 | Gadget catalog entry chrome | ⚪ Planned | T-16 | Preview catalog/nav entry points matching T-16. Spawned from T-16 impact analysis. |
@@ -40,7 +47,7 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 
 ## Suggested build order
 
-T-15 (live path tracking) → T-10 → rest of T-12.
+Remaining: collection→home rails, optional DB email templates, deploy/verify live. Master plan: `docs/plans/2026-09-01-admin-platform-master-plan.md`.
 
 ## T-01 decisions (so far)
 

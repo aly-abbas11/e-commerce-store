@@ -12,19 +12,59 @@ import { cn } from "@/lib/utils";
 
 import { adminFetch } from "./admin-fetch";
 
-const NAV = [
-  { href: "/admin", label: "Home", exact: true },
-  { href: "/admin/analytics", label: "Analytics" },
-  { href: "/admin/orders", label: "Orders" },
-  { href: "/admin/products", label: "Products" },
-  { href: "/admin/categories", label: "Shop types" },
-  { href: "/admin/pages", label: "Pages" },
-  { href: "/admin/hero", label: "Hero" },
-  { href: "/admin/settings", label: "Settings" },
-  { href: "/admin/testimonials", label: "Testimonials" },
-  { href: "/admin/reviews", label: "Reviews" },
-  { href: "/admin/broadcast", label: "Messaging" },
+type NavLink = { href: string; label: string; exact?: boolean };
+type NavGroup = { label?: string; items: NavLink[] };
+
+/** Shopify-style groups — only links that already exist (no empty stubs). */
+const NAV_GROUPS: NavGroup[] = [
+  {
+    items: [
+      { href: "/admin", label: "Home", exact: true },
+      { href: "/admin/orders", label: "Orders" },
+    ],
+  },
+  {
+    label: "Catalog",
+    items: [
+      { href: "/admin/products", label: "Products" },
+      { href: "/admin/categories", label: "Shop types" },
+      { href: "/admin/collections", label: "Collections" },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/admin/pages", label: "Pages" },
+      { href: "/admin/hero", label: "Hero" },
+      { href: "/admin/home", label: "Home layout" },
+      { href: "/admin/testimonials", label: "Testimonials" },
+    ],
+  },
+  {
+    label: "Customers",
+    items: [
+      { href: "/admin/inbox", label: "Inbox" },
+      { href: "/admin/customers", label: "Customers" },
+      { href: "/admin/reviews", label: "Reviews" },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [{ href: "/admin/broadcast", label: "Messaging" }],
+  },
+  {
+    items: [
+      { href: "/admin/analytics", label: "Analytics" },
+      { href: "/admin/settings", label: "Settings" },
+    ],
+  },
 ];
+
+function linkActive(pathname: string, item: NavLink) {
+  return item.exact
+    ? pathname === item.href
+    : pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "";
@@ -49,32 +89,39 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-dvh bg-[var(--g-cream)]">
       <aside
         className={cn(
-          "admin-sidebar fixed inset-y-0 left-0 z-40 w-56 border-r p-4 md:static md:block",
+          "admin-sidebar fixed inset-y-0 left-0 z-40 w-56 overflow-y-auto border-r p-4 md:static md:block",
           !open && "max-md:hidden"
         )}
       >
         <p className="admin-sidebar-brand mb-6 text-sm font-semibold tracking-tight">
           Store admin
         </p>
-        <nav className="space-y-1" aria-label="Admin">
-          {NAV.map((item) => {
-            const active = item.exact
-              ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "admin-nav-link block rounded-md px-3 py-2 text-sm transition-colors",
-                  active && "admin-nav-link-active"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="space-y-4" aria-label="Admin">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.label ?? `g-${gi}`} className="space-y-1">
+              {group.label ? (
+                <p className="px-3 pb-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[var(--g-taupe)]">
+                  {group.label}
+                </p>
+              ) : null}
+              {group.items.map((item) => {
+                const active = linkActive(pathname, item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "admin-nav-link block rounded-md px-3 py-2 text-sm transition-colors",
+                      active && "admin-nav-link-active"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         <Button
           variant="ghost"
