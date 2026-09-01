@@ -258,7 +258,7 @@ export async function deleteAdminCollection(id: string) {
 async function replaceCollectionProducts(collectionId: string, productIds: string[]) {
   await db().from("collection_products").delete().eq("collection_id", collectionId);
   const rows = productIds
-    .map((pid, i) => pid.trim())
+    .map((pid) => pid.trim())
     .filter(Boolean)
     .map((product_id, sort_order) => ({
       collection_id: collectionId,
