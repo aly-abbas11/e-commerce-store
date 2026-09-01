@@ -63,7 +63,6 @@ function ContactActions({ phone }: { phone: string }) {
           target="_blank"
           rel="noopener noreferrer"
           className="text-[var(--g-forest)] underline-offset-2 hover:underline"
-          onClick={(e) => e.stopPropagation()}
         >
           WhatsApp
         </a>
@@ -72,7 +71,6 @@ function ContactActions({ phone }: { phone: string }) {
         <a
           href={tel}
           className="text-[var(--g-forest)] underline-offset-2 hover:underline"
-          onClick={(e) => e.stopPropagation()}
         >
           Call
         </a>
