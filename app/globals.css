@@ -105,8 +105,9 @@
   }
 }
 
-/* Gadget craft system — motion + type tokens (T-19) */
-.gadget-theme {
+/* Shared Biometic tokens — storefront (.gadget-theme) + admin (.admin-theme) */
+.gadget-theme,
+.admin-theme {
   --g-cream: #f5f1e8;
   --g-cream-deep: #efeae0;
   --g-forest: #1f3626;
@@ -120,11 +121,10 @@
   --g-dur-fast: 180ms;
   --g-dur-med: 320ms;
   --g-dur-reveal: 700ms;
-  /* Main bar: h-14 mobile, h-16 sm+; + utility bar on lg */
   --g-header-offset: 3.5rem;
   --g-safe-bottom: env(safe-area-inset-bottom, 0px);
   --g-safe-top: env(safe-area-inset-top, 0px);
-  /* Remap shadcn tokens so shared checkout/cart UI inherits the preview look */
+  /* Remap shadcn tokens so shared UI inherits Biometic */
   --background: 40 33% 94%;
   --foreground: 0 0% 10%;
   --card: 0 0% 100%;
@@ -144,6 +144,10 @@
   --border: 40 12% 82%;
   --input: 40 12% 82%;
   --ring: 140 27% 17%;
+}
+
+/* Gadget craft system — motion + type tokens (T-19) */
+.gadget-theme {
   color: var(--g-charcoal);
   font-family: var(--font-gadget-sans), system-ui, sans-serif;
   background: var(--g-cream);
@@ -476,4 +480,72 @@
 }
 
 /* Biometic cream / forest theme for gadget preview storefront — color block above */
+
+/* T-12a — Admin Biometic shell */
+.admin-theme {
+  color: var(--g-charcoal);
+  font-family: var(--font-gadget-sans), system-ui, sans-serif;
+  background: var(--g-cream);
+  min-height: 100dvh;
+}
+
+.admin-theme h1,
+.admin-theme h2,
+.admin-theme h3 {
+  font-family: var(--font-gadget-display), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.02em;
+}
+
+.admin-theme .admin-sidebar {
+  background: var(--g-forest);
+  border-color: color-mix(in srgb, var(--g-sage) 20%, var(--g-forest));
+  color: var(--g-cream);
+}
+
+.admin-theme .admin-sidebar-brand {
+  font-family: var(--font-gadget-display), Georgia, serif;
+  color: var(--g-cream);
+}
+
+.admin-theme .admin-nav-link {
+  color: color-mix(in srgb, var(--g-cream) 72%, var(--g-taupe));
+}
+
+.admin-theme .admin-nav-link:hover {
+  background: var(--g-forest-mid);
+  color: var(--g-cream);
+}
+
+.admin-theme .admin-nav-link-active {
+  background: var(--g-forest-mid);
+  color: var(--g-cream);
+  box-shadow: inset 3px 0 0 var(--g-sage);
+}
+
+.admin-theme .admin-sign-out {
+  color: color-mix(in srgb, var(--g-cream) 65%, var(--g-taupe));
+}
+
+.admin-theme .admin-sign-out:hover {
+  background: var(--g-forest-mid);
+  color: var(--g-cream);
+}
+
+.admin-theme .admin-main {
+  background: var(--g-cream);
+}
+
+.admin-theme .admin-mobile-bar {
+  background: var(--g-cream);
+  border-color: var(--g-line);
+  color: var(--g-charcoal);
+}
+
+.admin-theme .admin-login-page {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in srgb, var(--g-sage) 22%, transparent), transparent),
+    var(--g-cream);
+}
+
 

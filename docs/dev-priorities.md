@@ -6,7 +6,9 @@ Single tracker for this store. Status lives here only.
 
 ## Active task
 
-Parked: **T-15** — First-party traffic · 🟡 In Progress · **T-16** — Homepage redesign closeout
+**T-12a** — Admin Biometic theme · 🟡 In Progress  
+Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`  
+Then: rest of **T-12** (easier layout) → **T-15**
 
 ## Program
 
@@ -27,7 +29,7 @@ Custom self-hosted commerce: Supabase + custom admin, tracking, emails, funnel l
 | T-09 | Easy admin: product form + shop types | ✅ Done | T-02 | Short product form, shop types CRUD, required Category from that list. Verified local + live 2026-08-27. Plan: `docs/plans/2026-08-27-t09-category-assignment-plan.md`. |
 | T-10 | Homepage sections CRUD | ⚪ Planned | T-09 | Add / reorder / remove blocks on the live home. Spawned from T-09 intake. |
 | T-11 | Event theme + color suggestions | ⚪ Planned | T-09 | Owner sets a shop look for an event; suggested palettes. Spawned from T-09 intake. |
-| T-12 | Easier layout for the rest of admin | ⚪ Planned | T-09 | Orders, settings, and other admin pages after Products + Shop types feel easy. |
+| T-12 | Easier layout for the rest of admin | 🟡 In Progress | T-09 | T-12a: Biometic theme (forest sidebar / cream main / fonts). Spec: `docs/superpowers/specs/2026-09-01-t12a-admin-biometic-theme-design.md`. Deeper ease-of-use polish still open. |
 | T-13 | Admin business overview (dashboard) | ✅ Done | T-03 | Home at `/admin`: today’s orders/money, pending (New+Processing), delivered/cancelled today, low stock, Needs you. Live on Vercel 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t13-admin-business-overview-design.md`. |
 | T-14 | Commerce intelligence & delivered-revenue analytics | ✅ Done | T-03, T-13 | COD analytics: delivered revenue is the primary KPI. `/admin/analytics` live 2026-08-27. Spec: `docs/superpowers/specs/2026-08-27-t14-commerce-intelligence-design.md`. Docs: `docs/modules/analytics/`. |
 | T-15 | First-party traffic, funnel tracking & conversion insights | 🟡 In Progress | T-14 | Schema pushed 2026-08-28. Live tracker on https://voltgear-coral.vercel.app. Open the shop once, then `/admin/analytics` → Traffic. No Clarity/GA. Do not rebuild T-14 money reports. Parked while T-16 is active. |
