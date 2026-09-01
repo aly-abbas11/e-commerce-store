@@ -6,11 +6,13 @@ import { Check } from "lucide-react";
 import { GadgetBuyBox } from "@/components/gadget/gadget-buy-box";
 import { GadgetProductCard } from "@/components/gadget/gadget-product-card";
 import { GadgetVideo } from "@/components/gadget/gadget-video";
+import { ProductViewTracker } from "@/components/product/product-view-tracker";
 import { applyGadgetStudioImages, applyGadgetStudioImagesList } from "@/lib/gadget-product-images";
 import { products2Href } from "@/lib/gadget-preview";
 import { fetchAllProducts, fetchProductBySlug, fetchSiteSettings } from "@/lib/db/store";
 import { isDemoSession } from "@/lib/demo";
 import { normalizeSettings } from "@/lib/site-config";
+import { imageUrl } from "@/lib/sanity/image";
 import type { Product } from "@/lib/types";
 
 export const revalidate = 60;
@@ -58,6 +60,18 @@ export default async function Product2Page({ params }: { params: { slug: string 
 
   return (
     <div className="gadget-scroll-pad-cta bg-[var(--g-cream)] text-[var(--g-charcoal)] lg:pb-10">
+      <ProductViewTracker
+        slug={product.slug}
+        name={product.name}
+        price={product.price}
+        image={
+          product.images?.[0]
+            ? imageUrl(product.images[0], { w: 128 })
+            : undefined
+        }
+        category={product.category}
+        productId={product._id}
+      />
       <div className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-10">
         <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 text-xs text-[var(--g-taupe)]">
           <Link href="/" className="hover:text-[var(--g-forest)]">

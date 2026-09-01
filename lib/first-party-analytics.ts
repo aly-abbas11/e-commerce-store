@@ -1,5 +1,4 @@
 import { sanitizeReferrer } from "./db/analytics-ingest-rules";
-import { isGadgetPreviewPath } from "./gadget-preview";
 
 const ATTRIBUTION_PARAMS = [
   "utm_source",
@@ -52,7 +51,8 @@ export function shouldCollectPath(pathname: string): boolean {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     return false;
   }
-  if (isGadgetPreviewPath(pathname)) {
+  // Legacy preview-only home; live Biometic is `/` + `/products2` + `/product2`.
+  if (pathname === "/home2" || pathname.startsWith("/home2/")) {
     return false;
   }
   return true;
@@ -68,8 +68,22 @@ function normalizePathname(pathname: string): string {
 export function pageTypeFromPath(pathname: string): string {
   const path = normalizePathname(pathname);
   if (path === "/") return "home";
-  if (path === "/products" || path.startsWith("/products/")) return "catalog";
-  if (path === "/product" || path.startsWith("/product/")) return "product";
+  if (
+    path === "/products2" ||
+    path.startsWith("/products2/") ||
+    path === "/products" ||
+    path.startsWith("/products/")
+  ) {
+    return "catalog";
+  }
+  if (
+    path === "/product2" ||
+    path.startsWith("/product2/") ||
+    path === "/product" ||
+    path.startsWith("/product/")
+  ) {
+    return "product";
+  }
   if (path === "/cart" || path.startsWith("/cart/")) return "cart";
   if (path === "/checkout" || path.startsWith("/checkout/")) return "checkout";
   if (path === "/search" || path.startsWith("/search/")) return "search";
