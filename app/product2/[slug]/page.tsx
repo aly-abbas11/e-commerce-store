@@ -24,8 +24,41 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const product = await fetchProductBySlug(params.slug, isDemoSession()).catch(() => null);
   if (!product) return { robots: { index: false, follow: false } };
+  
+  const title = `${product.name} — Buy in Pakistan | Accessories Hub`;
+  const description =
+    product.shortDescription ||
+    `Buy ${product.name} at the best price in Pakistan with fast nationwide shipping & official warranty.`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltgear.pk";
+  const url = `${siteUrl}/product2/${product.slug}`;
+  const firstImg = product.images?.[0] ? imageUrl(product.images[0], { w: 800 }) : undefined;
+
   return {
-    title: product.name,
+    title,
+    description,
+    keywords: [
+      product.name,
+      `${product.name} price in Pakistan`,
+      `${product.category} in Pakistan`,
+      "buy online Pakistan",
+      "Accessories Hub",
+    ],
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url,
+      images: firstImg ? [{ url: firstImg, alt: product.name }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: firstImg ? [firstImg] : undefined,
+    },
+    alternates: {
+      canonical: url,
+    },
   };
 }
 
@@ -58,8 +91,61 @@ export default async function Product2Page({ params }: { params: { slug: string 
   const specs = (product.specifications ?? []).filter((s) => s?.label?.trim() && s?.value?.trim());
   const features = (product.features ?? []).filter(Boolean);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltgear.pk";
+  const productImg = product.images?.[0] ? imageUrl(product.images[0], { w: 800 }) : undefined;
+
+  const prodDesc = product.shortDescription || `Buy ${product.name} in Pakistan at best price.`;
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: prodDesc,
+    image: productImg ? [productImg] : [],
+    category: product.category,
+    offers: {
+      "@type": "Offer",
+      price: product.price,
+      priceCurrency: "PKR",
+      availability: product.stockStatus !== "out-of-stock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: "Accessories Hub",
+      },
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: product.category,
+        item: `${siteUrl}${products2Href(product.category)}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: product.name,
+        item: `${siteUrl}/product2/${product.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className="gadget-scroll-pad-cta bg-[var(--g-cream)] text-[var(--g-charcoal)] lg:pb-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify([productJsonLd, breadcrumbJsonLd]) }}
+      />
       <ProductViewTracker
         slug={product.slug}
         name={product.name}

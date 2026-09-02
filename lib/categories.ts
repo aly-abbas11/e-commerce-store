@@ -34,6 +34,24 @@ export const FALLBACK_SHOP_TYPES: ShopType[] = [
     description: "Immersive sound with all-day comfort.",
     sortOrder: 4,
   },
+  {
+    name: "Ring Lights & Studio",
+    slug: "ring-light",
+    description: "Professional lighting for creators, streaming and studio photography.",
+    sortOrder: 5,
+  },
+  {
+    name: "Selfie Sticks & Tripods",
+    slug: "selfie-stick",
+    description: "Portable wireless bluetooth selfie sticks, extendable tripods & gimbals.",
+    sortOrder: 6,
+  },
+  {
+    name: "Microphones & Audio",
+    slug: "microphones",
+    description: "Wireless lavalier microphones, studio noise-canceling mic systems & lapels.",
+    sortOrder: 7,
+  },
 ];
 
 export function shopTypeLinks(types: ShopType[]): { label: string; href: string }[] {

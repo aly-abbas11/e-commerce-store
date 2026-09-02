@@ -54,7 +54,7 @@ export function GadgetNavbar({
   const [shopOpen, setShopOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const links = gadgetShopTypeLinks(shopTypes);
-  const brandName = settings?.brandName || "VoltGear";
+  const brandName = settings?.brandName || "Accessories Hub";
   const logoUrl = settings?.logo ? imageUrl(settings.logo, { w: 256 }) : undefined;
   const phone = settings?.phone;
 
@@ -85,7 +85,7 @@ export function GadgetNavbar({
               onClick={() => setOpen(false)}
             />
             <div
-              className="fixed inset-x-0 bottom-0 z-[100] flex max-h-[min(85dvh,40rem)] flex-col overflow-y-auto overscroll-contain rounded-t-2xl border-t border-[var(--g-line)] bg-[var(--g-cream)] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(31,54,38,0.18)]"
+              className="fixed inset-y-0 right-0 z-[100] flex w-full max-w-sm flex-col overflow-y-auto overscroll-contain bg-[var(--g-cream)] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 shadow-[-16px_0_40px_rgba(31,54,38,0.15)] border-l border-[var(--g-line)]"
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
@@ -244,7 +244,7 @@ export function GadgetNavbar({
       </div>
 
       {/* Main bar */}
-      <div className="border-b border-[var(--g-line)] bg-[var(--g-cream)]/80 backdrop-blur-xl">
+      <div className="border-b border-[var(--g-line)] bg-[var(--g-cream)]/90 backdrop-blur-xl">
         <div className="flex h-14 items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-4 lg:gap-5 lg:px-8">
           <Link
             href="/"
@@ -290,25 +290,28 @@ export function GadgetNavbar({
                 />
               </button>
               {shopOpen ? (
-                <div className="gadget-glass absolute left-0 top-full z-50 w-60 overflow-hidden rounded-2xl py-2 shadow-[0_20px_50px_rgba(31,54,38,0.14)]">
+                <div className="absolute left-0 top-full z-50 w-64 overflow-hidden rounded-2xl border border-[var(--g-card-border)] bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.12)]">
                   <Link
                     href={products2Href()}
-                    className="block px-4 py-2.5 text-sm font-semibold text-[var(--g-charcoal)] transition hover:bg-[var(--g-cream)]/80"
+                    className="flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-[var(--g-forest)] transition hover:bg-[var(--g-cream)]"
                     onClick={() => setShopOpen(false)}
                   >
-                    All products
+                    <span>All Products</span>
+                    <span className="text-[10px] text-[var(--g-taupe)]">Browse All →</span>
                   </Link>
-                  <div className="my-1 border-t border-[var(--g-line)]" />
-                  {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="block px-4 py-2.5 text-sm text-[var(--g-taupe)] transition hover:bg-[var(--g-cream)]/80 hover:text-[var(--g-charcoal)]"
-                      onClick={() => setShopOpen(false)}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  <div className="my-1.5 border-t border-[var(--g-line)]" />
+                  <div className="max-h-[320px] overflow-y-auto pr-0.5">
+                    {links.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="block rounded-lg px-3.5 py-2 text-xs font-semibold text-[var(--g-charcoal)] transition hover:bg-[var(--g-cream)] hover:text-[var(--g-forest)]"
+                        onClick={() => setShopOpen(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ) : null}
             </div>

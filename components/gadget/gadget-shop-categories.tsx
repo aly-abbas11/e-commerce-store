@@ -89,8 +89,7 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
   function scrollByDir(dir: -1 | 1) {
     const el = scrollerRef.current;
     if (!el) return;
-    const card = el.querySelector<HTMLElement>("[data-cat-slide]");
-    const step = card ? card.offsetWidth * 3 + 48 : el.clientWidth * 0.7;
+    const step = el.clientWidth * 0.65;
     el.scrollBy({ left: dir * step, behavior: "smooth" });
   }
 
@@ -98,88 +97,98 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
 
   return (
     <section
-      className="bg-[var(--g-cream)] px-4 py-8 sm:py-10 lg:px-8"
+      className="bg-[var(--g-cream)] px-4 py-8 sm:py-12 lg:px-8"
       aria-labelledby="shop-categories-heading"
     >
       <div className="mx-auto max-w-6xl">
-        <div className="mb-6 flex items-end justify-between gap-3 sm:mb-8">
-          <h2
-            id="shop-categories-heading"
-            className="text-xl font-bold tracking-tight text-[var(--g-charcoal)] sm:text-2xl"
-          >
-            Shop by{" "}
-            <span className="relative inline-block">
-              Categories
-              <span
-                className="absolute -bottom-1 left-0 h-[3px] w-[55%] rounded-full bg-[var(--g-forest)]"
-                aria-hidden
-              />
-            </span>
-          </h2>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Previous categories"
-              disabled={!canPrev}
-              onClick={() => scrollByDir(-1)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)] text-[var(--g-charcoal)] transition hover:border-[var(--g-forest)] hover:text-[var(--g-forest)] disabled:opacity-30"
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
+          <div>
+            <h2
+              id="shop-categories-heading"
+              className="text-2xl font-bold tracking-tight text-[var(--g-charcoal)] sm:text-3xl"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              aria-label="Next categories"
-              disabled={!canNext}
-              onClick={() => scrollByDir(1)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)] text-[var(--g-charcoal)] transition hover:border-[var(--g-forest)] hover:text-[var(--g-forest)] disabled:opacity-30"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+              Shop by{" "}
+              <span className="relative inline-block text-[var(--g-charcoal)]">
+                Categories
+                <span
+                  className="absolute -bottom-1 left-0 h-[2.5px] w-full rounded-full bg-[var(--g-amber)]"
+                  aria-hidden
+                />
+              </span>
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-3">
             <Link
               href="/products2"
-              className="ml-1 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--g-sage)] transition hover:text-[var(--g-forest)]"
+              className="group inline-flex items-center gap-1.5 text-xs font-bold text-[#2a4633] transition hover:text-[var(--g-amber-text)] sm:text-sm"
             >
-              View All
-              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current">
-                <ArrowRight className="h-3 w-3" aria-hidden />
+              <span>View All</span>
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current text-[11px] transition group-hover:translate-x-0.5">
+                →
               </span>
             </Link>
+
+            {/* Scroll buttons for desktop */}
+            <div className="hidden items-center gap-1 sm:flex">
+              <button
+                type="button"
+                onClick={() => scrollByDir(-1)}
+                disabled={!canPrev}
+                aria-label="Previous categories"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => scrollByDir(1)}
+                disabled={!canNext}
+                aria-label="Next categories"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
+        {/* Circular Avatar Category Row */}
         <div
           ref={scrollerRef}
-          className="overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          style={{ scrollSnapType: "x proximity" }}
+          className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none sm:gap-6 lg:gap-8"
         >
-          <ul className="flex w-max gap-5 pb-1 sm:gap-6">
-            {slides.map((tile) => (
-              <li key={tile.key} data-cat-slide className="w-[6.5rem] shrink-0 snap-start sm:w-[7rem]">
-                <Link
-                  href={tile.href}
-                  className="group flex flex-col items-center gap-2.5 text-center"
-                >
-                  <span className="relative flex h-[6rem] w-[6rem] items-center justify-center overflow-hidden rounded-full bg-[var(--g-cream-deep)] text-[var(--g-forest)] ring-1 ring-[var(--g-line)] transition duration-300 group-hover:-translate-y-0.5 group-hover:ring-[var(--g-sage)] group-hover:shadow-[0_10px_24px_rgba(31,54,38,0.12)] sm:h-[6.5rem] sm:w-[6.5rem]">
-                    {tile.image ? (
-                      <Image
-                        src={tile.image}
-                        alt=""
-                        fill
-                        quality={90}
-                        sizes="104px"
-                        className="object-contain p-3.5 transition duration-500 group-hover:scale-105"
-                      />
-                    ) : tile.glyph ? (
-                      <CategoryGlyph name={tile.glyph} className="h-12 w-12 sm:h-14 sm:w-14" />
-                    ) : null}
-                  </span>
-                  <span className="line-clamp-2 min-h-[2.4em] text-[12px] font-semibold leading-snug text-[var(--g-charcoal)] sm:text-[13px]">
-                    {tile.label}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {slides.map((tile) => (
+            <Link
+              key={tile.key}
+              href={tile.href}
+              className="group flex flex-col items-center gap-2.5 shrink-0 text-center transition focus:outline-none"
+            >
+              {/* Circle Avatar Stage */}
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[#eaefe8] p-3 transition duration-300 group-hover:scale-105 group-hover:bg-[#e1e9de] group-hover:shadow-md sm:h-24 sm:w-24 sm:p-4">
+                {tile.image ? (
+                  <Image
+                    src={tile.image}
+                    alt={tile.label}
+                    fill
+                    quality={92}
+                    sizes="96px"
+                    className="object-contain p-2 transition duration-300 group-hover:scale-110"
+                  />
+                ) : tile.glyph ? (
+                  <CategoryGlyph name={tile.glyph} className="h-10 w-10 text-[var(--g-forest)] sm:h-12 sm:w-12" />
+                ) : (
+                  <CategoryGlyph name="watch" className="h-10 w-10 text-[var(--g-forest)] sm:h-12 sm:w-12" />
+                )}
+              </div>
+
+              {/* Label */}
+              <span className="w-20 text-xs font-bold leading-snug text-[var(--g-charcoal)] transition duration-300 group-hover:text-[var(--g-forest)] sm:w-24 sm:text-[13px]">
+                {tile.label}
+              </span>
+            </Link>
+          ))}
         </div>
       </div>
     </section>

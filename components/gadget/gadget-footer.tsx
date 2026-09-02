@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Mail, Phone } from "lucide-react";
+import { Banknote, Mail, Phone, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 
 import { GadgetFooterNewsletter } from "@/components/gadget/gadget-footer-newsletter";
 import { getSocialIcon } from "@/components/icons/social-icons";
@@ -69,6 +69,40 @@ export function GadgetFooter({
   return (
     <footer className="bg-[var(--g-cream)] pt-6 sm:px-3 sm:pb-3 sm:pt-8">
       <div className="overflow-hidden rounded-t-[2.25rem] bg-[var(--g-forest)] text-[var(--g-white)] sm:rounded-[2.25rem]">
+        {/* Pre-footer Trust Row */}
+        <div className="border-b border-white/10 px-5 py-6 sm:px-8">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 text-center sm:grid-cols-4 sm:gap-6">
+            <div className="flex flex-col items-center gap-1.5 p-2">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white shadow-sm">
+                <Truck className="h-5 w-5 stroke-[1.6]" />
+              </span>
+              <p className="text-xs font-bold text-white">Free Shipping</p>
+              <p className="text-[11px] text-white/60">On orders over Rs. 3,000</p>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 p-2">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white shadow-sm">
+                <Banknote className="h-5 w-5 stroke-[1.6]" />
+              </span>
+              <p className="text-xs font-bold text-white">Cash on Delivery</p>
+              <p className="text-[11px] text-white/60">Pay at your doorstep</p>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 p-2">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white shadow-sm">
+                <ShieldCheck className="h-5 w-5 stroke-[1.6]" />
+              </span>
+              <p className="text-xs font-bold text-white">1-Year Warranty</p>
+              <p className="text-[11px] text-white/60">100% genuine replacement</p>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 p-2">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white shadow-sm">
+                <RotateCcw className="h-5 w-5 stroke-[1.6]" />
+              </span>
+              <p className="text-xs font-bold text-white">Easy Returns</p>
+              <p className="text-[11px] text-white/60">7-day hassle-free policy</p>
+            </div>
+          </div>
+        </div>
+
         <div className="mx-auto grid max-w-6xl gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1.15fr_1fr_0.85fr_1.1fr] lg:gap-8 lg:py-14 xl:gap-12">
           {/* Shop */}
           <div>

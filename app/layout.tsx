@@ -65,21 +65,36 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "VoltGear — Premium Electronics Accessories",
-    template: "%s | VoltGear",
+    default: "Accessories Hub — Best Smartwatches, Earbuds, Tripods & Chargers in Pakistan",
+    template: "%s | Accessories Hub Pakistan",
   },
   description:
-    "Shop smartwatches, power banks, chargers and earbuds. Premium electronics accessories with fast shipping.",
+    "Buy authentic tripods in Pakistan, wireless earbuds, smartwatches, power banks, microphones & fast chargers at Accessories Hub. Guaranteed quality with fast nationwide delivery.",
+  keywords: [
+    "tripods in Pakistan",
+    "best earbuds in Pakistan",
+    "smartwatches in Pakistan",
+    "power banks Pakistan",
+    "fast chargers Pakistan",
+    "wireless microphones Pakistan",
+    "ring lights Pakistan",
+    "Accessories Hub",
+    "VoltGear",
+  ],
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "VoltGear",
+    siteName: "Accessories Hub",
+    title: "Accessories Hub — Best Smartwatches, Earbuds, Tripods & Chargers in Pakistan",
+    description:
+      "Buy authentic tripods in Pakistan, wireless earbuds, smartwatches, power banks & fast chargers with nationwide fast delivery.",
+    url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "VoltGear — Premium Electronics Accessories",
+    title: "Accessories Hub — Best Electronics Accessories in Pakistan",
     description:
-      "Shop smartwatches, power banks, chargers and earbuds. Premium electronics accessories with fast shipping.",
+      "Buy authentic tripods in Pakistan, wireless earbuds, smartwatches, power banks & fast chargers.",
   },
   robots: {
     index: true,
@@ -92,7 +107,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "/",
+    canonical: SITE_URL,
   },
 };
 
@@ -170,6 +185,8 @@ export default async function RootLayout({
       className={cn(theme === "dark" && "dark", heading.variable, body.variable)}
     >
       <head>
+        <link rel="preconnect" href="https://scripts.clarity.ms" />
+        <link rel="preconnect" href="https://www.clarity.ms" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -195,8 +212,9 @@ export default async function RootLayout({
         )}
         {loadClarity && (
           <script
+            type="text/javascript"
             dangerouslySetInnerHTML={{
-              __html: `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","${CLARITY_ID}");`,
+              __html: `window.addEventListener('load',function(){(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","${CLARITY_ID}");});`,
             }}
           />
         )}

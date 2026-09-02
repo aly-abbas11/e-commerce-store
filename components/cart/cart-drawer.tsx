@@ -139,21 +139,24 @@ function FreeShippingBar({
 
   if (gadget) {
     return (
-      <div className="rounded-xl bg-[var(--g-cream-deep)] p-4">
-        {remaining > 0 ? (
-          <p className="text-xs text-[var(--g-taupe)]">
-            You&rsquo;re{" "}
-            <span className="font-semibold text-[var(--g-charcoal)]">{formatPrice(remaining)}</span> away
-            from <span className="font-semibold text-[var(--g-forest)]">free shipping</span>
-          </p>
-        ) : (
-          <p className="text-xs font-semibold text-[var(--g-forest)]">
-            Free shipping unlocked
-          </p>
-        )}
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--g-line)]">
+      <div className="rounded-xl border border-[var(--g-line)] bg-[var(--g-white)] p-2.5">
+        <div className="flex items-center justify-between text-[11px]">
+          {remaining > 0 ? (
+            <p className="text-[var(--g-taupe)]">
+              <span className="font-semibold text-[var(--g-charcoal)]">{formatPrice(remaining)}</span> away from <span className="font-semibold text-[var(--g-forest)]">free shipping</span>
+            </p>
+          ) : (
+            <p className="font-semibold text-[var(--g-forest)]">
+              Free shipping unlocked
+            </p>
+          )}
+          <span className="font-semibold tabular-nums text-[10px] text-[var(--g-taupe)]">
+            {Math.round(progress)}%
+          </span>
+        </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--g-cream-deep)]">
           <div
-            className="h-full rounded-full bg-[var(--g-forest)] transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--g-sage)] to-[var(--g-forest)] transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -229,7 +232,7 @@ export function CartDrawer() {
             </SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto py-4">
+          <div className="gadget-custom-scroll flex-1 overflow-y-auto py-4 pr-1">
             {items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
                 <div
@@ -293,95 +296,90 @@ export function CartDrawer() {
                           )}
                         />
                       )}
-                      <div className="flex flex-1 flex-col">
+                      <div className="flex flex-1 flex-col justify-between">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-semibold leading-tight">
-                            {item.name}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold leading-snug text-[var(--g-charcoal)] truncate">
+                              {item.name}
+                            </p>
                             {item.variantName ? (
-                              <span
-                                className={cn(
-                                  "block text-xs font-normal",
-                                  gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground"
-                                )}
-                              >
+                              <span className="block text-[11px] font-normal text-[var(--g-taupe)] truncate">
                                 {item.variantName}
                               </span>
                             ) : null}
-                          </p>
+                          </div>
                           <button
                             type="button"
                             onClick={() => requestRemove(cartLineKey(item))}
                             className={cn(
-                              "flex h-11 w-11 items-center justify-center transition-colors",
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors",
                               gadget
-                                ? "text-[var(--g-taupe)] hover:text-[var(--g-forest)]"
+                                ? "text-[var(--g-taupe)] hover:bg-[var(--g-cream-deep)] hover:text-red-600"
                                 : "text-muted-foreground hover:text-destructive"
                             )}
                             aria-label={`Remove ${item.name}${item.variantName ? ` ${item.variantName}` : ""}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <p
-                          className={cn(
-                            "mt-1 text-sm font-medium",
-                            gadget ? "text-[var(--g-charcoal)]" : "text-muted-foreground"
-                          )}
-                        >
-                          {formatPrice(item.price)}
-                        </p>
-                        <div className="mt-2 flex items-center gap-2">
-                          {gadget ? (
-                            <>
-                              <button
-                                type="button"
-                                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)]"
-                                onClick={() =>
-                                  updateQuantity(cartLineKey(item), item.quantity - 1)
-                                }
-                                aria-label="Decrease quantity"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </button>
-                              <span className="w-6 text-center text-sm font-semibold tabular-nums">
-                                {item.quantity}
-                              </span>
-                              <button
-                                type="button"
-                                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)]"
-                                onClick={() =>
-                                  updateQuantity(cartLineKey(item), item.quantity + 1)
-                                }
-                                aria-label="Increase quantity"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-11 w-11"
-                                onClick={() =>
-                                  updateQuantity(cartLineKey(item), item.quantity - 1)
-                                }
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="w-6 text-center text-sm">{item.quantity}</span>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-11 w-11"
-                                onClick={() =>
-                                  updateQuantity(cartLineKey(item), item.quantity + 1)
-                                }
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
+
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1">
+                            {gadget ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)] text-[var(--g-charcoal)] transition active:scale-95"
+                                  onClick={() =>
+                                    updateQuantity(cartLineKey(item), item.quantity - 1)
+                                  }
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="w-5 text-center text-xs font-semibold tabular-nums text-[var(--g-charcoal)]">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)] text-[var(--g-charcoal)] transition active:scale-95"
+                                  onClick={() =>
+                                    updateQuantity(cartLineKey(item), item.quantity + 1)
+                                  }
+                                  aria-label="Increase quantity"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    updateQuantity(cartLineKey(item), item.quantity - 1)
+                                  }
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="w-5 text-center text-xs">{item.quantity}</span>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() =>
+                                    updateQuantity(cartLineKey(item), item.quantity + 1)
+                                  }
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                          <p className="text-xs font-bold tabular-nums text-[var(--g-charcoal)]">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
                         </div>
                       </div>
                     </li>
@@ -395,78 +393,87 @@ export function CartDrawer() {
           {items.length > 0 ? (
             <>
               <Separator className={gadget ? "bg-[var(--g-line)]" : undefined} />
-              <div className="space-y-4 pt-4">
+              <div className="space-y-3 pt-3">
                 <FreeShippingBar
                   subtotal={subtotal}
                   threshold={config.freeShippingThreshold}
                   gadget={gadget}
                 />
-                {gadget && config.codEnabled ? (
-                  <p className="flex items-center gap-2 text-xs text-[var(--g-taupe)]">
-                    <Banknote className="h-3.5 w-3.5 text-[var(--g-forest)]" aria-hidden />
-                    Cash on delivery available at checkout
-                  </p>
-                ) : null}
-                <div>
-                  <label
-                    htmlFor="order-note"
-                    className={cn(
-                      "mb-1 block text-xs font-medium",
-                      gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground"
-                    )}
+
+                <div className="flex items-center justify-between gap-2">
+                  {gadget && config.codEnabled ? (
+                    <p className="flex items-center gap-1.5 text-[11px] text-[var(--g-taupe)]">
+                      <Banknote className="h-3.5 w-3.5 text-[var(--g-forest)]" aria-hidden />
+                      COD at checkout
+                    </p>
+                  ) : <span />}
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("order-note-container");
+                      if (el) el.classList.toggle("hidden");
+                    }}
+                    className="text-[11px] font-medium text-[var(--g-forest)] hover:underline"
                   >
-                    Order notes (optional)
-                  </label>
-                  <textarea
+                    + Add note
+                  </button>
+                </div>
+
+                <div id="order-note-container" className="hidden">
+                  <input
                     id="order-note"
+                    type="text"
                     value={orderNote}
                     onChange={(e) => setOrderNote(e.target.value)}
-                    placeholder="Special instructions for your order..."
-                    rows={2}
+                    placeholder="Special instructions..."
                     className={cn(
-                      "w-full rounded-xl border px-3 py-2 text-sm outline-none",
+                      "w-full rounded-lg border px-3 py-1.5 text-xs outline-none",
                       gadget
                         ? "border-[var(--g-line)] bg-[var(--g-white)] placeholder:text-[var(--g-taupe)] focus:border-[var(--g-forest)]"
                         : "bg-muted/50 placeholder:text-muted-foreground focus:border-primary focus:bg-background"
                     )}
                   />
                 </div>
-                <div className="flex items-center justify-between">
+
+                <div className="flex items-center justify-between pt-1">
                   <span
                     className={cn(
-                      "text-sm",
+                      "text-xs font-medium",
                       gadget ? "text-[var(--g-taupe)]" : "text-muted-foreground"
                     )}
                   >
                     Subtotal
                   </span>
-                  <span className="text-lg font-bold tabular-nums">{formatPrice(subtotal)}</span>
+                  <span className="gadget-display text-base font-bold tabular-nums text-[var(--g-charcoal)]">{formatPrice(subtotal)}</span>
                 </div>
                 {gadget ? (
-                  <>
+                  <div className="space-y-2">
                     <Link
                       href={checkoutHref(gadget)}
                       onClick={closeCart}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--g-forest)] text-sm font-bold text-[var(--g-white)] shadow-[0_8px_20px_rgba(31,54,38,0.22)] transition hover:bg-[var(--g-forest-mid)]"
+                      className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--g-forest)] text-xs font-bold text-[var(--g-white)] shadow-[0_6px_16px_rgba(31,54,38,0.2)] transition hover:bg-[var(--g-forest-mid)] active:scale-[0.99]"
                     >
-                      Proceed to checkout
-                      <ArrowRight className="h-4 w-4" />
+                      Checkout
+                      <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
-                    <Link
-                      href={shopHref}
-                      onClick={closeCart}
-                      className="inline-flex h-11 w-full items-center justify-center rounded-full border border-[var(--g-line)] bg-[var(--g-white)] text-sm font-semibold text-[var(--g-charcoal)]"
-                    >
-                      Continue shopping
-                    </Link>
-                    <button
-                      type="button"
-                      className="w-full py-2 text-sm text-[var(--g-taupe)] hover:text-[var(--g-charcoal)]"
-                      onClick={clearCart}
-                    >
-                      Clear cart
-                    </button>
-                  </>
+                    <div className="flex items-center justify-between px-1 text-xs">
+                      <Link
+                        href={shopHref}
+                        onClick={closeCart}
+                        className="text-[11px] font-medium text-[var(--g-taupe)] transition hover:text-[var(--g-charcoal)] hover:underline"
+                      >
+                        Continue shopping
+                      </Link>
+                      <button
+                        type="button"
+                        className="text-[11px] font-medium text-[var(--g-taupe)] transition hover:text-red-600 hover:underline"
+                        onClick={clearCart}
+                      >
+                        Clear cart
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <Button className="w-full" size="lg" asChild>

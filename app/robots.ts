@@ -1,17 +1,16 @@
 import type { MetadataRoute } from "next";
 
-import { publicSiteUrl } from "@/lib/deploy-rules";
-
 export default function robots(): MetadataRoute.Robots {
-  const base = publicSiteUrl();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltgear.pk";
+
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/checkout", "/search", "/api/", "/studio", "/admin", "/demo"],
+        disallow: ["/admin/", "/api/admin/", "/checkout/success"],
       },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
   };
 }

@@ -207,26 +207,66 @@ export async function fetchCatalogFromDb(f: {
 
 export const fetchShopTypes = unstable_cache(
   async (): Promise<ShopType[]> => {
+    let dbTypes: ShopType[] = [];
     const { data, error } = await db()
       .from("categories")
       .select("id, name, slug, description, image_url, sort_order")
       .order("sort_order", { ascending: true });
-    if (error) {
-      if (error.code === "42P01" || /does not exist/i.test(error.message)) {
-        return FALLBACK_SHOP_TYPES;
-      }
-      throw error;
+
+    if (!error && data && data.length > 0) {
+      dbTypes = data.map((row) => ({
+        id: String(row.id),
+        name: String(row.name),
+        slug: String(row.slug),
+        description: String(row.description ?? ""),
+        imageUrl: row.image_url ? String(row.image_url) : undefined,
+        sortOrder: Number(row.sort_order ?? 0),
+      }));
     }
-    return (data ?? []).map((row) => ({
-      id: String(row.id),
-      name: String(row.name),
-      slug: String(row.slug),
-      description: String(row.description ?? ""),
-      imageUrl: row.image_url ? String(row.image_url) : undefined,
-      sortOrder: Number(row.sort_order ?? 0),
-    }));
+
+    // Also fetch distinct product categories from the published products table
+    const { data: prodData } = await db()
+      .from("products")
+      .select("category")
+      .eq("status", LIVE);
+
+    const productCategories = Array.from(
+      new Set((prodData ?? []).map((p) => String(p.category || "").trim()))
+    ).filter(Boolean);
+
+    // Merge database categories, fallback categories, and product categories dynamically
+    const mergedMap = new Map<string, ShopType>();
+
+    // 1. Populate with fallbacks
+    for (const fb of FALLBACK_SHOP_TYPES) {
+      mergedMap.set(fb.slug, fb);
+    }
+
+    // 2. Override with DB categories if available
+    for (const dt of dbTypes) {
+      mergedMap.set(dt.slug, dt);
+    }
+
+    // 3. Ensure any distinct category present on products is included
+    for (let i = 0; i < productCategories.length; i++) {
+      const catSlug = productCategories[i];
+      if (!mergedMap.has(catSlug)) {
+        const formattedName = catSlug
+          .split("-")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        mergedMap.set(catSlug, {
+          slug: catSlug,
+          name: formattedName,
+          description: `Shop curated ${formattedName.toLowerCase()} accessories.`,
+          sortOrder: 10 + i,
+        });
+      }
+    }
+
+    return Array.from(mergedMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
   },
-  ["shop-types"],
+  ["shop-types-v2"],
   { revalidate: 60 }
 );
 

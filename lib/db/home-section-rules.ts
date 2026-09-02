@@ -1,10 +1,10 @@
 export const HOME_SECTION_IDS = [
   "trust",
+  "categories",
   "bestsellers",
   "featured",
   "offers",
   "lifestyle",
-  "categories",
   "reviews",
   "blog",
 ] as const;
