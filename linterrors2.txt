@@ -1,0 +1,454 @@
+﻿
+> e-commerce-store@0.1.0 lint
+> next lint
+
+node.exe : 
+At line:1 char:1
++ & "C:\Program Files\
+nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (:String) [   
+ ], RemoteExceptio    
+n
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+./app/checkout/page.ts
+x
+10:3  Error: 
+'CheckCircle2' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+19:3  Error: 'Trash2' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+33:10  Error: 'Badge' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+37:10  Error: 
+'Separator' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+90:19  Error: 
+'setPayment' is 
+assigned a value but 
+never used.  @typescri
+pt-eslint/no-unused-va
+rs
+95:20  Error: 
+'setGiftWrap' is 
+assigned a value but 
+never used.  @typescri
+pt-eslint/no-unused-va
+rs
+1137:77  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./app/contact/page.tsx
+102:19  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+353:77  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./app/faq/page.tsx
+6:3  Error: 
+'ClipboardList' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+8:3  Error: 
+'CreditCard' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+10:3  Error: 'MapPin' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+11:3  Error: 
+'Briefcase' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+12:3  Error: 'User' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+13:3  Error: 'Plus' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+14:3  Error: 'Minus' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+15:3  Error: 
+'MessageCircle' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+17:3  Error: 'Clock4' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+46:19  Error: `'` can 
+be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+52:118  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+52:134  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+52:153  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+102:88  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+164:85  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./app/page.tsx
+4:8  Error: 'dynamic' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+9:10  Error: 
+'MobileCategoryStrip' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+15:10  Error: 
+'CompatibilityBanner' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+84:10  Error: 
+'FeaturedProducts' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+221:9  Error: 
+'merchandise' is 
+assigned a value but 
+never used.  @typescri
+pt-eslint/no-unused-va
+rs
+225:9  Error: 
+'categoryCards' is 
+assigned a value but 
+never used.  @typescri
+pt-eslint/no-unused-va
+rs
+
+./app/product/[slug]/p
+age.tsx
+274:90  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./app/warranty/page.ts
+x
+3:10  Error: 
+'Separator' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+49:101  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+71:99  Error: `'` can 
+be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./app/wishlist/wishlis
+t-client.tsx
+11:3  Error: 'Share2' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+124:24  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./components/admin/med
+ia-field.tsx
+75:15  Warning: Using 
+`<img>` could result 
+in slower LCP and 
+higher bandwidth. 
+Consider using 
+`<Image />` from 
+`next/image` to 
+automatically 
+optimize images. This 
+may incur additional 
+usage or cost from 
+your provider. See: ht
+tps://nextjs.org/docs/
+messages/no-img-elemen
+t  @next/next/no-img-e
+lement
+
+./components/cart/cart
+-upsell.tsx
+34:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'excludeSlugs'. 
+Either include it or 
+remove the dependency 
+array.  react-hooks/ex
+haustive-deps
+34:7  Warning: React 
+Hook useEffect has a 
+complex expression in 
+the dependency array. 
+Extract it to a 
+separate variable so 
+it can be statically 
+checked.  react-hooks/
+exhaustive-deps
+
+./components/catalog/c
+atalog-sidebar.tsx
+75:3  Error: 
+'onChange' is defined 
+but never used.  @type
+script-eslint/no-unuse
+d-vars
+108:3  Error: 
+'onChange' is defined 
+but never used.  @type
+script-eslint/no-unuse
+d-vars
+
+./components/catalog/c
+atalog-view.tsx
+202:63  Error: `'` 
+can be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./components/layout/na
+vbar.tsx
+11:3  Error: 
+'ShoppingBag' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+
+./components/product/f
+loating-add-to-cart-ba
+r.tsx
+48:17  Warning: Using 
+`<img>` could result 
+in slower LCP and 
+higher bandwidth. 
+Consider using 
+`<Image />` from 
+`next/image` to 
+automatically 
+optimize images. This 
+may incur additional 
+usage or cost from 
+your provider. See: ht
+tps://nextjs.org/docs/
+messages/no-img-elemen
+t  @next/next/no-img-e
+lement
+
+./components/product/f
+requently-bought-toget
+her.tsx
+48:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'current.category'. 
+Either include it or 
+remove the dependency 
+array.  react-hooks/ex
+haustive-deps
+
+./components/product/p
+roduct-comparison.tsx
+73:6  Warning: React 
+Hook useEffect has a 
+missing dependency: 
+'slugs'. Either 
+include it or remove 
+the dependency array. 
+If 'setProducts' 
+needs the current 
+value of 'slugs', you 
+can also switch to 
+useReducer instead of 
+useState and read 
+'slugs' in the 
+reducer.  react-hooks/
+exhaustive-deps
+73:7  Warning: React 
+Hook useEffect has a 
+complex expression in 
+the dependency array. 
+Extract it to a 
+separate variable so 
+it can be statically 
+checked.  react-hooks/
+exhaustive-deps
+
+./components/product/p
+urchase-section.tsx
+7:3  Error: 
+'MessageCircle' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+10:3  Error: 
+'RotateCcw' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+45:3  Error: 'config' 
+is defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+
+./components/product/s
+ticky-add-to-cart.tsx
+87:13  Warning: Using 
+`<img>` could result 
+in slower LCP and 
+higher bandwidth. 
+Consider using 
+`<Image />` from 
+`next/image` to 
+automatically 
+optimize images. This 
+may incur additional 
+usage or cost from 
+your provider. See: ht
+tps://nextjs.org/docs/
+messages/no-img-elemen
+t  @next/next/no-img-e
+lement
+
+./components/sections/
+compatibility-banner.t
+sx
+12:76  Error: `'` can 
+be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./components/sections/
+figma-homepage.tsx
+56:78  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-esl
+int/no-explicit-any
+56:95  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-esl
+int/no-explicit-any
+71:77  Error: 
+Unexpected any. 
+Specify a different 
+type.  @typescript-esl
+int/no-explicit-any
+
+./components/sections/
+hero.tsx
+6:10  Error: 
+'ArrowRight' is 
+defined but never 
+used.  @typescript-esl
+int/no-unused-vars
+
+./components/sections/
+newsletter-block.tsx
+49:57  Error: `'` can 
+be escaped with 
+`&apos;`, `&lsquo;`, 
+`&#39;`, `&rsquo;`.  r
+eact/no-unescaped-enti
+ties
+
+./components/sections/
+trust-bar.tsx
+4:28  Error: 
+'settings' is defined 
+but never used.  @type
+script-eslint/no-unuse
+d-vars
+
+info  - Need to 
+disable some ESLint 
+rules? Learn more 
+here: https://nextjs.o
+rg/docs/basic-features
+/eslint#disabling-rule
+s

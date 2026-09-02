@@ -8,12 +8,22 @@ import {
   ChevronDown,
   Menu,
   Search,
-  ShoppingBag,
   X,
+  Watch,
+  BatteryCharging,
+  Plug,
+  Headphones,
+  Package,
+  ShoppingCart,
+  User,
+  Heart,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+  Truck
 } from "lucide-react";
 
 import { useCart } from "@/components/cart/cart-provider";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { MegaMenu } from "@/components/layout/mega-menu";
 import { FALLBACK_SHOP_TYPES, shopTypeLinks, type ShopType } from "@/lib/categories";
 import { trackSearch } from "@/lib/analytics";
@@ -50,7 +60,7 @@ function SearchForm({
     >
       <Search
         aria-hidden
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
       />
       <input
         type="search"
@@ -58,12 +68,12 @@ function SearchForm({
         autoFocus={autoFocus}
         placeholder="Search products…"
         aria-label="Search products"
-        className="h-11 w-full rounded-full border bg-muted/50 pl-9 pr-12 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:bg-background"
+        className="h-10 w-full rounded-lg border border-border bg-secondary/50 pl-10 pr-4 text-sm outline-none transition-all duration-200 placeholder:text-muted-foreground/70 focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/15"
       />
       <button
         type="submit"
         aria-label="Submit search"
-        className="absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
       >
         <ArrowRight className="h-4 w-4" />
       </button>
@@ -107,7 +117,7 @@ export function Navbar({
   const Brand = (
     <Link
       href="/"
-      className="flex min-h-11 shrink-0 items-center"
+      className="flex min-h-11 shrink-0 items-center group"
       aria-label={`${brandName} home`}
     >
       {logoUrl ? (
@@ -117,12 +127,11 @@ export function Navbar({
           width={120}
           height={32}
           priority
-          className="h-8 w-auto object-contain"
+          className="h-8 w-auto object-contain transition-transform duration-200 group-hover:scale-[1.02]"
         />
       ) : (
-        <span className="text-lg font-bold tracking-tight">
+        <span className="text-xl font-bold tracking-tight text-foreground">
           {brandName}
-          <span className="text-primary">.</span>
         </span>
       )}
     </Link>
@@ -132,9 +141,29 @@ export function Navbar({
     <button
       onClick={openCart}
       aria-label={`Open cart, ${count} item${count === 1 ? "" : "s"}`}
-      className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-accent"
+      className="relative flex flex-col items-center gap-0.5 group"
     >
-      <ShoppingBag className="h-5 w-5" />
+      <div className="relative flex items-center justify-center">
+        <ShoppingCart className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" strokeWidth={1.5} />
+        {count > 0 && (
+          <span
+            aria-hidden
+            className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 hover:bg-primary-hover text-[10px] font-bold text-primary-foreground border border-white"
+          >
+            {count}
+          </span>
+        )}
+      </div>
+      <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors tracking-wide hidden lg:block">Cart</span>
+    </button>
+  );
+
+  const MobileCartButton = (
+    <button
+      onClick={openCart}
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-foreground transition-colors duration-200 hover:bg-secondary active:scale-95"
+    >
+      <ShoppingCart className="h-5 w-5" />
       {count > 0 && (
         <span
           aria-hidden
@@ -147,81 +176,94 @@ export function Navbar({
   );
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      {/* Desktop / tablet row */}
-      <div className="hidden h-16 items-center gap-6 px-4 lg:flex lg:px-8">
-        {Brand}
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-card/95 backdrop-blur-sm">
+      {/* --- TOP BAR --- Desktop only */}
+      <div className="hidden lg:flex w-full bg-[#EAF5F4] h-10 items-center justify-between px-6 lg:px-10 text-[11px] font-bold tracking-wide text-primary border-b border-background">
+        <div className="flex items-center gap-1.5">
+          <Truck className="w-3.5 h-3.5" /> Free Delivery on orders over PKR 3,000
+        </div>
+        <div className="flex items-center gap-10">
+          <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> 1 Year Warranty</div>
+          <div className="flex items-center gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> 7 Days Easy Returns</div>
+          <div className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> COD Available</div>
+        </div>
+      </div>
 
-        <nav aria-label="Primary" className="flex items-center gap-1">
-          {/* Category dropdown — hover for desktop, click also toggles */}
-          <div
-            className="relative"
-            onMouseEnter={() => setMegaOpen(true)}
-            onMouseLeave={() => setMegaOpen(false)}
-          >
-            <button
-              onClick={() => setMegaOpen((v) => !v)}
-              className="flex min-h-11 items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-              aria-expanded={megaOpen}
-              aria-haspopup="true"
-            >
-              Shop
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${megaOpen ? "rotate-180" : ""}`}
-                aria-hidden
-              />
-            </button>
-            <MegaMenu open={megaOpen} shopTypes={shopTypes} />
-          </div>
+      {/* --- MIDDLE BAR --- Desktop */}
+      <div className="hidden lg:flex h-20 w-full max-w-[1440px] mx-auto items-center px-6 lg:px-10 bg-white justify-between gap-10 border-b border-border/40">
+        <div className="flex items-center justify-start shrink-0">
+          {Brand}
+        </div>
+        <div className="flex-1 w-full max-w-2xl">
+          <form action="/search" role="search" className="relative w-full flex items-center justify-between border-2 border-primary/20 rounded-lg overflow-hidden h-11 bg-white group focus-within:border-primary/50 transition-colors">
+              <Search className="h-4 w-4 ml-4 text-muted-foreground group-focus-within:text-primary" />
+              <input type="search" name="q" placeholder="Search for chargers, cables, hubs..." className="flex-1 h-full px-3 text-sm font-medium outline-none bg-transparent placeholder:text-muted-foreground" />
+              <button type="submit" className="h-full px-6 bg-primary text-primary-foreground font-semibold flex items-center justify-center hover:bg-primary-hover transition-colors">
+                <Search className="h-4 w-4" />
+              </button>
+          </form>
+        </div>
+        <div className="flex items-center gap-8 text-xs font-semibold text-foreground shrink-0 mt-1">
+           <Link href="/account" className="flex flex-col items-center justify-center gap-1 group">
+             <User className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" strokeWidth={1.5} />
+             <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors tracking-wide">Account</span>
+           </Link>
+           <Link href="/wishlist" className="flex flex-col items-center justify-center gap-1 group">
+             <Heart className="h-6 w-6 text-foreground group-hover:text-primary transition-colors" strokeWidth={1.5} />
+             <span className="text-[11px] font-bold text-foreground group-hover:text-primary transition-colors tracking-wide">Wishlist</span>
+           </Link>
+           {CartButton}
+        </div>
+      </div>
 
-          {PAGE_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex min-h-11 items-center rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-            >
-              {link.label}
-            </Link>
-          ))}
+      {/* --- BOTTOM BAR --- Desktop */}
+      <div className="hidden lg:flex h-[52px] w-full max-w-[1440px] mx-auto items-center xl:px-10 px-6 bg-white shadow-sm border-[0.5px] border-border/10 justify-start pb-0.5">
+        <div className="relative h-[48px] w-56 flex-shrink-0" onMouseEnter={() => setMegaOpen(true)} onMouseLeave={() => setMegaOpen(false)}>
+          <button className="flex h-full w-full items-center justify-between px-5 bg-primary text-primary-foreground hover:bg-primary-hover transition-colors rounded-t-md shadow-sm border border-primary">
+            <span className="flex items-center gap-2 font-bold text-[13px] tracking-wide"><Menu className="w-4 h-4"/> All Categories</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${megaOpen ? 'rotate-180':''}`} />
+          </button>
+          <MegaMenu open={megaOpen} onClose={() => setMegaOpen(false)} shopTypes={shopTypes} />
+        </div>
+        
+        <nav aria-label="Primary" className="flex items-center justify-center gap-6 ml-6 h-full pt-1">
+          <Link href="/products?sort=newest" className="text-[13px] font-bold tracking-wide text-foreground hover:text-primary">New Arrivals</Link>
+          <Link href="/products?sort=bestselling" className="text-[13px] font-bold tracking-wide text-foreground hover:text-primary">Best Sellers</Link>
+          <Link href="/products?tag=deals" className="text-[13px] font-bold tracking-wide text-foreground hover:text-primary">Deals</Link>
+          <Link href="/contact" className="text-[13px] font-bold tracking-wide text-foreground hover:text-primary">Support</Link>
         </nav>
-
-        <SearchForm className="ml-auto w-56 max-w-xs shrink-0 lg:w-72 xl:w-80" />
-
-        <ThemeToggle />
-        {CartButton}
       </div>
 
       {/* Mobile row */}
-      <div className="flex h-16 items-center gap-3 px-4 lg:hidden">
+      <div className="flex h-14 items-center gap-2 px-3 sm:px-4 lg:hidden">
         <button
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
           aria-expanded={drawerOpen}
           aria-controls="mobile-nav-drawer"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-5 w-5 text-foreground" />
         </button>
 
         {Brand}
 
-        <div className="ml-auto flex items-center">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <button
             onClick={() => setMobileSearchOpen((v) => !v)}
             aria-label="Toggle search"
             aria-expanded={mobileSearchOpen}
-            className="flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-accent"
+            className="flex h-10 w-10 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-5 w-5 text-foreground" />
           </button>
-          <ThemeToggle />
-          {CartButton}
+          {MobileCartButton}
         </div>
       </div>
 
       {/* Mobile inline search row */}
       {mobileSearchOpen && (
-        <div className="border-t bg-background px-4 py-3 lg:hidden">
+        <div className="border-t border-border bg-card px-4 py-3 lg:hidden">
           <SearchForm autoFocus />
         </div>
       )}
@@ -231,24 +273,24 @@ export function Navbar({
         <div
           id="mobile-nav-drawer"
           ref={drawerRef}
-          className="fixed inset-0 z-50 flex flex-col bg-background lg:hidden animate-in fade-in slide-in-from-right-4 duration-200"
+          className="fixed inset-0 z-50 flex flex-col bg-card lg:hidden animate-in fade-in slide-in-from-left-4 duration-200"
         >
-          <div className="flex h-16 shrink-0 items-center gap-3 px-4">
+          <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border px-4">
             <button
               onClick={() => setDrawerOpen(false)}
               aria-label="Close menu"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-accent"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-secondary"
             >
               <X className="h-5 w-5" />
             </button>
             {Brand}
-            <div className="ml-auto">{CartButton}</div>
+            <div className="ml-auto">{MobileCartButton}</div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 pb-8">
+          <div className="flex-1 overflow-y-auto px-4 pb-8 pt-4">
             <SearchForm onDone={() => setDrawerOpen(false)} className="mb-6" />
 
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Shop by category
             </p>
             <nav
@@ -257,34 +299,40 @@ export function Navbar({
             >
               {links.map((link) => {
                 const cat = link.href.split("/").pop()!;
-                const emoji: Record<string, string> = { smartwatch: "⌚", "power-bank": "🔋", charger: "🔌", earbuds: "🎧" };
+                const CATEGORY_ICONS: Record<string, React.ElementType> = {
+                  smartwatch: Watch,
+                  "power-bank": BatteryCharging,
+                  charger: Plug,
+                  earbuds: Headphones,
+                };
+                const Icon = CATEGORY_ICONS[cat] || Package;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setDrawerOpen(false)}
-                    className="flex items-center gap-3 rounded-xl border bg-card px-4 py-3 transition-colors hover:border-primary/50 hover:text-primary"
+                    className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-secondary"
                   >
-                    <span className="text-2xl">{emoji[cat] ?? "📦"}</span>
-                    <span className="text-sm font-semibold">{link.label}</span>
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">{link.label}</span>
                   </Link>
                 );
               })}
             </nav>
 
-            <p className="mt-8 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Explore
             </p>
             <nav
               aria-label="Pages"
-              className="mt-2 flex flex-col divide-y divide-border rounded-xl border"
+              className="mt-2 flex flex-col divide-y divide-border rounded-lg border border-border"
             >
               {PAGE_LINKS.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setDrawerOpen(false)}
-                  className="flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-colors hover:bg-accent"
+                  className="flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-colors hover:bg-secondary"
                 >
                   {link.label}
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
@@ -293,7 +341,7 @@ export function Navbar({
             </nav>
 
             {(settings?.email || settings?.phone) && (
-              <div className="mt-8 space-y-1 rounded-xl bg-muted/50 p-4 text-sm text-muted-foreground">
+              <div className="mt-8 space-y-1 rounded-lg bg-secondary p-4 text-sm text-muted-foreground">
                 {settings?.email && <p>{settings.email}</p>}
                 {settings?.phone && <p>{settings.phone}</p>}
               </div>

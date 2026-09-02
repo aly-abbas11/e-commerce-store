@@ -85,29 +85,16 @@ export function resolveTheme(
   if (previewOverride === "dark" || previewOverride === "light") {
     return previewOverride;
   }
-  return settings?.theme === "light" ? "light" : "dark";
+  return settings?.theme === "dark" ? "dark" : "light";
 }
 
 /**
  * Builds CSS custom-property overrides from the CMS brand colors.
  * Returns a string safe to inline in a <style> tag.
  */
-export function themeCssVars(settings: ThemeSettings | null): string {
-  const primary = hexToHslTriple(settings?.primaryColor);
-  const secondary = hexToHslTriple(settings?.secondaryColor);
-
-  const vars: string[] = [];
-  if (primary) {
-    vars.push(
-      `--primary: ${primary};`,
-      `--ring: ${primary};`,
-      `--primary-foreground: ${foregroundFor(settings?.primaryColor)};`
-    );
-  }
-  if (secondary) {
-    vars.push(`--secondary: ${secondary};`);
-  }
-  return vars.join("\n");
+export function themeCssVars(_settings?: unknown) {
+  void _settings;
+  return "";
 }
 
 /**

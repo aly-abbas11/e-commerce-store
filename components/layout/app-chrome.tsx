@@ -89,7 +89,6 @@ export function AppChrome({
             {demoBanner}
             <Navbar settings={settings} shopTypes={shopTypes} />
             <main className="flex-1">{children}</main>
-            <TrustBar settings={settings} />
             <Footer settings={settings} shopTypes={shopTypes} />
             {cartDrawer}
             {reviewReminder}

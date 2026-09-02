@@ -53,7 +53,21 @@ export async function POST(
     return NextResponse.json({ error: "Order not found." }, { status: 404 });
   }
 
-  const updated = await updateOrderStatus(orderId, status, note);
+  let updated;
+  if (status === "cancelled") {
+    const { cancelOrder } = await import("@/lib/order-store");
+    const cancelRes = await cancelOrder(orderId, note);
+    if (!cancelRes.ok) {
+      return NextResponse.json(
+        { error: cancelRes.error || "Could not cancel the order." },
+        { status: 500 }
+      );
+    }
+    updated = await getOrderById(orderId);
+  } else {
+    updated = await updateOrderStatus(orderId, status, note);
+  }
+
   if (!updated) {
     return NextResponse.json(
       { error: "Could not update the order. Please try again." },

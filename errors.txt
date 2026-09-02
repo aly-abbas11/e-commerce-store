@@ -1,0 +1,2 @@
+﻿components/catalog/catalog-sidebar.tsx(160,43): error TS2339: Property 'availability' does not exist on type '{ page: string; }'.
+components/catalog/catalog-sidebar.tsx(161,15): error TS2339: Property 'availability' does not exist on type '{ page: string; }'.

@@ -1,0 +1,6 @@
+
+D:\e commerce store (2)\e commerce store\app\page.tsx
+  31:21  error  'Product' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+

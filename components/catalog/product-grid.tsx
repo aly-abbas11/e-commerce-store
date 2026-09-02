@@ -10,7 +10,7 @@ import type { Product } from "@/lib/types";
 export function ProductGrid({ items }: { items: Product[] }) {
   if (items.length === 0) return null;
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 sm:gap-x-5 sm:gap-y-10">
       {items.map((product) => (
         <ProductCard key={product._id} product={product} />
       ))}

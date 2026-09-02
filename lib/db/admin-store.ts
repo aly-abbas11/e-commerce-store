@@ -406,27 +406,41 @@ export async function getAdminHero() {
 }
 
 export async function saveAdminHero(draft: Record<string, unknown>) {
-  const { error } = await db().from("hero_sections").update({ draft }).eq("id", 1);
+  const { error } = await db().from("hero_sections").upsert({ id: 1, draft }, { onConflict: "id" });
   if (error) return { ok: false as const, error: error.message, status: 500 };
   return { ok: true as const };
 }
 
 export async function publishAdminHero(doc: Record<string, unknown>) {
-  const { error } = await db()
-    .from("hero_sections")
-    .update({
-      headline: doc.headline ?? "",
-      subheadline: doc.subheadline ?? null,
-      background_image_url: doc.backgroundImage ?? null,
-      background_video: doc.backgroundVideo ?? null,
-      primary_cta: doc.primaryCta ?? null,
-      secondary_cta: doc.secondaryCta ?? null,
-      stats: doc.stats ?? null,
-      featured_product_id: doc.featuredProductId || null,
-      status: "published",
-      draft: null,
-    })
-    .eq("id", 1);
+  const backgroundImages = Array.isArray(doc.backgroundImages)
+    ? (doc.backgroundImages as string[]).filter((url): url is string => Boolean(url))
+    : doc.backgroundImage
+    ? [String(doc.backgroundImage)]
+    : [];
+  const primaryBgImage = backgroundImages[0] ?? (doc.backgroundImage ? String(doc.backgroundImage) : null);
+
+  const payload: Record<string, unknown> = {
+    id: 1,
+    headline: doc.headline ?? "",
+    subheadline: doc.subheadline ?? null,
+    background_image_url: primaryBgImage,
+    background_images: backgroundImages.length ? backgroundImages : null,
+    background_video: doc.backgroundVideo ?? null,
+    primary_cta: doc.primaryCta ?? null,
+    secondary_cta: doc.secondaryCta ?? null,
+    stats: doc.stats ?? null,
+    featured_product_id: doc.featuredProductId || null,
+    status: "published",
+    draft: null,
+  };
+
+  let { error } = await db().from("hero_sections").upsert(payload, { onConflict: "id" });
+  if (error && error.code === "42703") {
+    delete payload.background_images;
+    const fallbackRes = await db().from("hero_sections").upsert(payload, { onConflict: "id" });
+    error = fallbackRes.error;
+  }
+
   if (error) return { ok: false as const, error: error.message, status: 500 };
   revalidatePath("/");
   return { ok: true as const };
@@ -639,6 +653,7 @@ export async function getAdminSettings() {
 
 function settingsLiveRow(doc: Partial<SiteSettings> & Record<string, unknown>) {
   return {
+    id: 1,
     brand_name: doc.brandName ?? "Store",
     tagline: doc.tagline ?? null,
     logo_url: doc.logo ?? null,
@@ -668,7 +683,7 @@ function settingsLiveRow(doc: Partial<SiteSettings> & Record<string, unknown>) {
 }
 
 export async function saveAdminSettings(draft: Record<string, unknown>) {
-  const { error } = await db().from("site_settings").update({ draft }).eq("id", 1);
+  const { error } = await db().from("site_settings").upsert({ id: 1, draft }, { onConflict: "id" });
   if (error) return { ok: false as const, error: error.message, status: 500 };
   return { ok: true as const };
 }
@@ -676,8 +691,7 @@ export async function saveAdminSettings(draft: Record<string, unknown>) {
 export async function publishAdminSettings(doc: Record<string, unknown>) {
   const { error } = await db()
     .from("site_settings")
-    .update(settingsLiveRow(doc))
-    .eq("id", 1);
+    .upsert(settingsLiveRow(doc), { onConflict: "id" });
   if (error) return { ok: false as const, error: error.message, status: 500 };
   revalidatePath("/", "layout");
   return { ok: true as const };

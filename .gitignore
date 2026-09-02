@@ -29,15 +29,15 @@ server.log
 # local env files
 .env*.local
 .env
+.env*
+!.env.example
+!.env.staging.example
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-.vercel
 .env*
 !.env.example
 

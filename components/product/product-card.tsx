@@ -3,11 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
-import { ShoppingBag } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { StarRating } from "@/components/product/star-rating";
 import { QuickViewButton } from "@/components/product/quick-view";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
@@ -38,6 +34,9 @@ export function ProductCard({ product, className }: { product: Product; classNam
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
       : 0;
+  const hasRealReviews =
+    typeof product.reviewCount === "number" && product.reviewCount > 0 &&
+    typeof product.rating === "number" && product.rating > 0;
   const imgRef = useRef<HTMLImageElement>(null);
 
   return (
@@ -64,24 +63,36 @@ export function ProductCard({ product, className }: { product: Product; classNam
               No image
             </div>
           )}
-          {discount > 0 && (
-            <Badge className="absolute left-3 top-3 bg-destructive text-white">
-              -{discount}%
-            </Badge>
-          )}
           {product.badge && (
-            <Badge className="absolute right-3 top-3">{product.badge}</Badge>
+            <div className="flex items-center justify-center rounded bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
+              {product.badge}
+            </div>
           )}
-          <QuickViewButton product={product} />
-          <WishlistButton product={product} />
-          <CompareButton slug={product.slug} />
         </div>
-      </Link>
 
-      <div className="space-y-2 p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          {product.category.replace("-", " ")}
-        </p>
+        {/* Hover action icons — Top Right */}
+        <div className="absolute right-3 top-3 z-20 flex flex-col gap-1.5">
+          <WishlistButton product={product} />
+          <div className="opacity-0 transition-all duration-300 translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 focus-within:opacity-100 flex flex-col gap-1.5">
+            <QuickViewButton product={product} />
+            <CompareButton slug={product.slug} />
+          </div>
+        </div>
+      </div>
+
+      {/* Product info below image */}
+      <div className="flex flex-col flex-1 p-5 text-center items-center gap-3">
+
+        {/* Rating above title */}
+        {hasRealReviews ? (
+          <div className="flex items-center gap-1 opacity-70">
+            <StarRating rating={product.rating ?? 0} size={10} />
+          </div>
+        ) : (
+           <div className="h-[10px]" aria-hidden="true" />
+        )}
+
+        {/* Product name */}
         <Link
           href={href}
           className="line-clamp-2 font-medium leading-snug transition-colors hover:text-primary"
@@ -141,17 +152,24 @@ export function ProductCard({ product, className }: { product: Product; classNam
                       ...(defaultVariant.sku
                         ? { variantSku: defaultVariant.sku }
                         : {}),
-                    }
-                  : {}),
-              });
-              dispatchAddToCartEffect(imgRef.current);
-            }}
-          >
-            <ShoppingBag className="mr-2 h-4 w-4" />
-            Add to Cart
-          </Button>
-        )}
+                    });
+                    dispatchAddToCartEffect(imgRef.current);
+                  }}
+                >
+                  Add to Cart
+                </button>
+              ) : (
+                <Link
+                  href={`/product/${product.slug}`}
+                  className="w-full flex items-center justify-center rounded-md bg-secondary py-2.5 text-[13px] font-bold tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/80 shadow-sm"
+                >
+                  View Details
+                </Link>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }

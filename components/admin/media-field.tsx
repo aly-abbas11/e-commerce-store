@@ -70,8 +70,8 @@ export function MediaField({
       <div className="space-y-2">
         {urls.map((url, i) => (
           <div key={`${url}-${i}`} className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             {accept.startsWith("image") ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
               <img src={url} alt="" className="h-12 w-12 rounded object-cover" />
             ) : null}
             <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{url}</p>

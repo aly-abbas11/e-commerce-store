@@ -94,20 +94,20 @@ function DialogContent({
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-md">
       <div
         className={cn(
-          "relative max-h-[90vh] w-full overflow-auto rounded-2xl border bg-background shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200",
+          "relative max-h-[90vh] w-full overflow-auto rounded-[32px] border border-border/40 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)] animate-in fade-in-0 zoom-in-95 duration-300 ease-out p-6 sm:p-10",
           className
         )}
         {...props}
       >
         <button
           onClick={() => setOpen(false)}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900"
           aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
         {children}
       </div>
@@ -117,7 +117,7 @@ function DialogContent({
 }
 
 function DialogTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn("text-lg font-semibold", className)} {...props} />;
+  return <h2 className={cn("text-2xl font-extrabold tracking-tight text-slate-900", className)} {...props} />;
 }
 
 export { Dialog, DialogTrigger, DialogContent, DialogTitle };

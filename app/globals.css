@@ -3,53 +3,67 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light Minimal (white/black) ─────────────────────────────── */
+  /* ── Light Precision Tech · Cloud Teal ──────────────────────────── */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 6% 10%;
+    --background: 180 33.3% 97.1%;
+    --foreground: 180 32.1% 10.4%;
     --card: 0 0% 100%;
-    --card-foreground: 240 6% 10%;
+    --card-foreground: 180 32.1% 10.4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 10%;
-    --primary: 240 6% 10%;
+    --popover-foreground: 180 32.1% 10.4%;
+    --primary: 185.9 89.2% 29%;
+    --primary-hover: 185.9 91.1% 22%;
+    --primary-soft: 178 45.5% 87.1%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 240 6% 10%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 240 4% 40%;
-    --accent: 240 5% 94%;
-    --accent-foreground: 240 6% 10%;
-    --destructive: 0 72% 51%;
+    --secondary: 174.5 35.5% 93.9%;
+    --secondary-foreground: 180 32.1% 10.4%;
+    --muted: 174.5 35.5% 93.9%;
+    --muted-foreground: 180 6.9% 42.5%;
+    --accent: 178 45.5% 87.1%;
+    --accent-foreground: 180 32.1% 10.4%;
+    --destructive: 0 72.2% 50.6%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 6% 88%;
-    --input: 240 6% 88%;
-    --ring: 240 6% 10%;
-    --radius: 0.5rem;
-    --shadow-glow: 0 0 0 1px rgb(0 0 0 / 0.04), 0 8px 32px rgb(0 0 0 / 0.08);
+    --success: 142.4 71.8% 29.2%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32.1 94.6% 43.7%;
+    --warning-foreground: 0 0% 100%;
+    --border: 174.5 19.3% 88.8%;
+    --input: 174.5 19.3% 88.8%;
+    --ring: 185.9 89.2% 29%;
+    --deep-surface: 186.7 42.9% 8.2%;
+    --radius: 0.625rem;
+    --gold-highlight: 42 74% 53%;
   }
 
-  /* ── Dark Premium (electric blue accents) ────────────────────── */
+  /* ── Dark mode — retained infrastructure, not customer-facing ───── */
   .dark {
-    --background: 224 42% 5%;
-    --foreground: 0 0% 96%;
-    --card: 224 32% 8%;
-    --card-foreground: 0 0% 96%;
-    --popover: 224 32% 7%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 217 91% 60%;
+    --background: 186.7 42.9% 8.2%;
+    --foreground: 180 10% 92%;
+    --card: 185 25% 12%;
+    --card-foreground: 180 10% 92%;
+    --popover: 185 25% 12%;
+    --popover-foreground: 180 10% 92%;
+    --primary: 185.9 89.2% 29%;
+    --primary-hover: 185.9 75% 35%;
+    --primary-soft: 185 30% 20%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 224 24% 13%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 224 24% 12%;
-    --muted-foreground: 224 10% 62%;
-    --accent: 224 26% 15%;
-    --accent-foreground: 0 0% 96%;
+    --secondary: 185 20% 16%;
+    --secondary-foreground: 180 10% 92%;
+    --muted: 185 20% 16%;
+    --muted-foreground: 180 6% 58%;
+    --accent: 185 20% 20%;
+    --accent-foreground: 180 10% 92%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --border: 224 22% 15%;
-    --input: 224 22% 18%;
-    --ring: 217 91% 60%;
-    --shadow-glow: 0 0 24px rgb(37 99 235 / 0.35), 0 8px 40px rgb(0 0 0 / 0.5);
+    --success: 142.4 71.8% 29.2%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32.1 94.6% 43.7%;
+    --warning-foreground: 0 0% 100%;
+    --border: 185 15% 20%;
+    --input: 185 15% 20%;
+    --ring: 185.9 89.2% 29%;
+    --deep-surface: 186.7 42.9% 8.2%;
+    --gold-highlight: 42 74% 53%;
   }
 
   * {
@@ -60,6 +74,12 @@
     min-height: 100%;
     scroll-behavior: smooth;
     overflow-x: clip;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   body {
@@ -95,7 +115,7 @@
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.25);
+    background: hsl(var(--primary) / 0.18);
   }
 
   /* Custom Luxury Minimal Scrollbar */
@@ -120,8 +140,66 @@
 }
 
 @layer utilities {
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
+  /* Hides scrollbar visually while keeping scroll functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Clean Custom Scrollbar for horizontal lists */
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border) / 0.7);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.6);
+  }
+
+  /* Clean fade-in for page/section transitions */
+  .animate-premium-fade {
+    animation: premiumFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-premium-slide {
+    animation: premiumSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes premiumFade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes premiumSlide {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-premium-fade,
+    .animate-premium-slide {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
   .gadget-custom-scroll {
     scrollbar-width: thin;

@@ -1,0 +1,14 @@
+
+D:\e commerce store (2)\e commerce store\app\page.tsx
+   7:10  error  'ProductCard' is defined but never used     @typescript-eslint/no-unused-vars
+  27:31  error  'shopTypeLinks' is defined but never used   @typescript-eslint/no-unused-vars
+  54:10  error  'hasUsableImage' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\components\product\purchase-section.tsx
+  30:15  error  'PublicSiteConfig' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\e commerce store (2)\e commerce store\components\sections\trust-bar.tsx
+  2:15  error  'SiteSettings' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (5 errors, 0 warnings)
+

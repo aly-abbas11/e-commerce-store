@@ -18,7 +18,7 @@ function whisperLine(codEnabled: boolean, threshold: number): string | null {
 }
 
 const ctaClass =
-  "inline-flex min-h-11 items-center justify-center rounded-sm px-6 text-sm font-black uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-yellow-400";
+  "inline-flex min-h-11 items-center justify-center rounded-sm px-6 text-sm font-black uppercase tracking-wide focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-golden-400";
 
 const HERO_MIN = "min-h-[calc(100dvh-4rem)]";
 
@@ -58,7 +58,7 @@ export function GadgetHero({
             image ? "lg:col-span-2" : ""
           }`}
         >
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-yellow-400">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-golden-400">
             Shop the drop
           </p>
           <h1 className="mt-3 max-w-xl text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-5xl lg:text-6xl">
@@ -80,7 +80,7 @@ export function GadgetHero({
                 {off && product.compareAtPrice ? (
                   <>
                     <span className="text-lg text-zinc-500 line-through">{priceWas}</span>
-                    <span className="text-sm font-black text-yellow-400">–{off}%</span>
+                    <span className="text-sm font-black text-golden-400">–{off}%</span>
                   </>
                 ) : null}
               </p>
@@ -95,7 +95,7 @@ export function GadgetHero({
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={href}
-              className={`${ctaClass} bg-yellow-400 text-zinc-950 hover:bg-yellow-300`}
+              className={`${ctaClass} bg-golden-400 text-zinc-950 hover:bg-golden-300`}
             >
               {product ? "Shop now" : "Shop categories"}
             </Link>

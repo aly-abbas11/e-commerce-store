@@ -73,6 +73,7 @@ export function CompareBar({
     fetchStoreProducts()
       .then((all) => setProducts(all.filter((p) => slugs.includes(p.slug))))
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slugs.join(",")]);
 
   if (slugs.length === 0) return null;

@@ -84,6 +84,7 @@ export function StickyAddToCart({ product }: { product: Product }) {
       >
         <div className="container mx-auto flex items-center gap-3 px-4 py-3 lg:px-8">
           {img && (
+            /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={imageUrl(img, { w: 96 })}
               alt=""
@@ -97,7 +98,7 @@ export function StickyAddToCart({ product }: { product: Product }) {
               {formatPrice(defaultVariant?.price ?? product.price)}
             </p>
           </div>
-          <Button size="lg" className="shrink-0 px-6 sm:px-8" onClick={handleAdd}>
+          <Button size="lg" className="shrink-0 px-6 sm:px-8 shadow-sm hover:scale-[1.02] active:scale-[0.95] transition-all duration-300" onClick={handleAdd}>
             {added ? (
               <>
                 <Check className="mr-2 h-4 w-4" /> Added

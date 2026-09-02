@@ -46,28 +46,28 @@ export function ActiveFilters({
   const clearAll = buildCatalogUrl(basePath, withoutFilters, { page: "1" });
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2.5">
-      {chips.map((c) => (
-        <span
-          key={c.key}
-          className="inline-flex items-center gap-1.5 rounded-full border bg-muted px-2.5 py-0.5 text-xs"
-        >
-          {c.label}
-          <Link
-            href={remove(c.key)}
-            aria-label={`Remove ${c.label}`}
-            className="rounded-full p-0.5 hover:bg-muted-foreground/20"
-          >
-            <X className="h-3 w-3" />
-          </Link>
-        </span>
-      ))}
+    <div className="mb-6 flex flex-wrap items-center gap-3">
       <Link
         href={clearAll}
-        className="ml-auto text-xs underline-offset-2 hover:underline"
+        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
       >
         Clear all
       </Link>
+      {chips.map((c) => (
+        <span
+          key={c.key}
+          className="inline-flex items-center gap-1.5 rounded border border-input px-3 py-1 text-sm font-medium text-foreground bg-background hover:border-primary/50"
+        >
+          <Link
+            href={remove(c.key)}
+            aria-label={`Remove ${c.label}`}
+            className="flex items-center justify-center text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-3 w-3" />
+          </Link>
+          {c.label}
+        </span>
+      ))}
     </div>
   );
 }

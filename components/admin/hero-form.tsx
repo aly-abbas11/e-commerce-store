@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { MediaField } from "@/components/admin/media-field";
 import { PublishBar } from "@/components/admin/publish-bar";
 import { adminFetch, AdminAuthError } from "@/components/admin/admin-fetch";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ type HeroRow = {
   headline?: string;
   subheadline?: string;
   background_image_url?: string;
+  background_images?: string[];
   background_video?: string;
   primary_cta?: { label?: string; href?: string };
   secondary_cta?: { label?: string; href?: string };
@@ -25,10 +27,18 @@ type HeroRow = {
 
 function fromRow(row?: HeroRow | null) {
   const d = row?.draft ?? {};
+  const images = Array.isArray(d.backgroundImages)
+    ? (d.backgroundImages as string[])
+    : Array.isArray(row?.background_images)
+    ? (row?.background_images as string[])
+    : d.backgroundImage || row?.background_image_url
+    ? [String(d.backgroundImage || row?.background_image_url)]
+    : [];
+
   return {
     headline: String(d.headline ?? row?.headline ?? ""),
     subheadline: String(d.subheadline ?? row?.subheadline ?? ""),
-    backgroundImage: String(d.backgroundImage ?? row?.background_image_url ?? ""),
+    backgroundImages: images,
     backgroundVideo: String(d.backgroundVideo ?? row?.background_video ?? ""),
     primaryLabel: String((d.primaryCta as { label?: string } | undefined)?.label ?? row?.primary_cta?.label ?? ""),
     primaryHref: String((d.primaryCta as { href?: string } | undefined)?.href ?? row?.primary_cta?.href ?? ""),
@@ -58,7 +68,8 @@ export function HeroForm({ hero }: { hero?: HeroRow | null }) {
     return {
       headline: form.headline,
       subheadline: form.subheadline,
-      backgroundImage: form.backgroundImage,
+      backgroundImage: form.backgroundImages[0] || "",
+      backgroundImages: form.backgroundImages,
       backgroundVideo: form.backgroundVideo,
       primaryCta: { label: form.primaryLabel, href: form.primaryHref },
       secondaryCta: { label: form.secondaryLabel, href: form.secondaryHref },
@@ -110,13 +121,12 @@ export function HeroForm({ hero }: { hero?: HeroRow | null }) {
             onChange={(e) => setForm((f) => ({ ...f, subheadline: e.target.value }))}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label>Background image URL</Label>
-          <Input
-            value={form.backgroundImage}
-            onChange={(e) => setForm((f) => ({ ...f, backgroundImage: e.target.value }))}
-          />
-        </div>
+        <MediaField
+          label="Hero Slider Images"
+          hint="Upload or paste image URLs for the homepage hero section. Uploading 1 image displays a static hero; uploading 2 or more displays a slider carousel in the exact order shown below."
+          urls={form.backgroundImages}
+          onChange={(urls) => setForm((f) => ({ ...f, backgroundImages: urls }))}
+        />
         <div className="space-y-1.5">
           <Label>Background video URL</Label>
           <Input

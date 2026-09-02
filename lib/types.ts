@@ -65,12 +65,15 @@ export interface Product {
   featured?: boolean;
   badge?: string;
   isDemo?: boolean;
+  instagramUrl?: string;
+  tiktokUrl?: string;
 }
 
 export interface HeroSection {
   headline: string;
   subheadline?: string;
   backgroundImage?: StoreImage;
+  backgroundImages?: StoreImage[];
   backgroundVideo?: string;
   primaryCta?: { label?: string; href?: string };
   secondaryCta?: { label?: string; href?: string };
@@ -249,3 +252,22 @@ export interface MessageCampaign {
   createdAt: string;
 }
 
+export type HomepageSectionSource = "manual" | "category" | "newest" | "sale";
+export type HomepageSectionLayout = "grid" | "carousel";
+
+export interface HomepageSection {
+  id: string;
+  title: string;
+  subtitle?: string;
+  slug: string;
+  sourceType: HomepageSectionSource;
+  categoryId?: string;
+  productLimit: number;
+  layout: HomepageSectionLayout;
+  showViewAll: boolean;
+  viewAllHref?: string;
+  isActive: boolean;
+  sortOrder: number;
+  manualProductIds?: string[];
+  resolvedProducts?: Product[];
+}

@@ -8,30 +8,29 @@ export type ShopType = {
   productCount?: number;
 };
 
-/** Used when the categories table is not in the database yet. */
 export const FALLBACK_SHOP_TYPES: ShopType[] = [
   {
     name: "Smartwatches",
     slug: "smartwatch",
-    description: "Track your health, stay connected and look good doing it.",
+    description: "Track your health and stay connected.",
     sortOrder: 1,
   },
   {
     name: "Power Banks",
     slug: "power-bank",
-    description: "Portable power that keeps up with your busy day.",
+    description: "Reliable, fast portable power.",
     sortOrder: 2,
   },
   {
     name: "Chargers & Adapters",
     slug: "charger",
-    description: "Fast, safe charging for every device you own.",
+    description: "Fast, safe charging for every device.",
     sortOrder: 3,
   },
   {
     name: "Earbuds & Handsfree",
     slug: "earbuds",
-    description: "Immersive sound with all-day comfort.",
+    description: "Immersive sound. All-day comfort.",
     sortOrder: 4,
   },
   {

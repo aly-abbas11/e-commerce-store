@@ -2,7 +2,7 @@
 
 ## 1. Plain summary
 
-This local store still reads and writes **Sanity**. We already created a new Supabase project named `e-commerce-store` (ref `xkqahftdjgkwncgrdkhc`, Sydney) and linked this repo to it.
+This local store still reads and writes **Sanity**. We already created a new Supabase project named `e-commerce-store` (ref `dvdiixgojsmautkehccl`, Sydney) and linked this repo to it.
 
 T-01 moves **all current Sanity data** into that database, including images. Then we point the Next.js app at Supabase only. The site must still **look and work the same** — same pages, cart, cash-on-delivery checkout, and current theme.
 
@@ -248,7 +248,7 @@ Exact names (Postgres `public`):
 
 ## 16. Test checklist
 
-- [ ] `supabase db push` applied; tables exist on `xkqahftdjgkwncgrdkhc`.
+- [ ] `supabase db push` applied; tables exist on `dvdiixgojsmautkehccl`.
 - [ ] Migrate: Sanity counts equal Supabase counts (products, pages, orders, reviews, emails, campaigns).
 - [ ] No image URL is `cdn.sanity.io`.
 - [ ] Product list is not empty after copy.

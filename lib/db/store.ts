@@ -578,32 +578,110 @@ export async function createOrderRow(input: {
     delete (rest as { is_demo?: boolean }).is_demo;
     ({ data, error } = await db().from("orders").insert(rest).select("id").single());
   }
-  if (error) {
-    if (error.code === "23505") return null;
-    console.error("[order] create failed:", error);
-    return null;
+
+  // Check if it's a designated business error thrown by our RPC
+  if (rpcError?.message?.includes('BUSINESS_ERROR:')) {
+    console.error("[order] atomic create business rejection:", rpcError);
+    throw new Error("ATOMIC_BUSINESS_ERROR:" + rpcError.message.split('BUSINESS_ERROR:')[1]);
   }
-  if (!data) return null;
-  if (input.items.length) {
-    const { error: itemErr } = await db().from("order_items").insert(
-      input.items.map((i) => ({
-        order_id: data.id,
-        slug: i.slug,
-        name: i.name,
-        price: i.price,
-        quantity: i.quantity,
-        variant_key: i.variantKey,
-        variant_name: i.variantName,
-        variant_sku: i.variantSku,
-        line_total: i.lineTotal,
-      }))
-    );
-    if (itemErr) {
-      console.error("[order] items failed:", itemErr);
+
+  // If the RPC fails for ANY infra reason (e.g. migration pending, type mismatch 22P02, syntax error), 
+  // fallback to existing non-atomic path robustly rather than crashing.
+  if (rpcError) {
+    console.warn("[order] Atomic RPC unavailable or failed, falling back to legacy create");
+    const row: Record<string, unknown> = {
+      order_id: input.orderId,
+      customer: input.customer,
+      payment: input.payment,
+      subtotal: input.subtotal,
+      shipping: input.shipping,
+      total: input.total,
+      status: "new",
+      is_demo: Boolean(input.isDemo),
+    };
+    let { data, error } = await db().from("orders").insert(row).select("id").single();
+    if (isMissingIsDemoColumn(error)) {
+      demoColumnMissing = true;
+      const rest = { ...row };
+      delete (rest as { is_demo?: boolean }).is_demo;
+      ({ data, error } = await db().from("orders").insert(rest).select("id").single());
+    }
+    if (error) {
+      if (error.code === "23505") return null;
+      console.error("[order] create failed:", error);
       return null;
     }
+    if (!data) return null;
+    if (input.items.length) {
+      const { error: itemErr } = await db().from("order_items").insert(
+        input.items.map((i) => ({
+          order_id: data.id,
+          slug: i.slug,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          variant_key: i.variantKey,
+          variant_name: i.variantName,
+          variant_sku: i.variantSku,
+          line_total: i.lineTotal,
+        }))
+      );
+      if (itemErr) {
+        console.error("[order] items failed:", itemErr);
+        return null; // The loop will retry
+      }
+      
+      // Manually decrement inventory since we bypassed the RPC
+      for (const item of input.items) {
+        if (!item.slug) continue;
+        if (item.variantKey) {
+          const { data: pv } = await db().from("product_variants").select("id, quantity, product_id").eq("key", item.variantKey).single();
+          if (pv) {
+             const { data: p } = await db().from("products").select("slug").eq("id", pv.product_id).single();
+             if (p && p.slug === item.slug && pv.quantity != null) {
+               const qty = Math.max(0, pv.quantity - (item.quantity ?? 1));
+               await db().from("product_variants").update({ quantity: qty, stock_status: qty === 0 ? 'out-of-stock' : (qty <= 5 ? 'low-stock' : 'in-stock') }).eq("id", pv.id);
+             }
+          }
+        } else {
+          const { data: prod } = await db().from("products").select("id, quantity").eq("slug", item.slug).single();
+          if (prod && prod.quantity != null) {
+            const qty = Math.max(0, prod.quantity - (item.quantity ?? 1));
+            await db().from("products").update({ quantity: qty, stock_status: qty === 0 ? 'out-of-stock' : (qty <= 5 ? 'low-stock' : 'in-stock') }).eq("id", prod.id);
+          }
+        }
+      }
+    }
+    return input.orderId;
   }
-  return input.orderId;
+
+  // Should never be reached if rpcData is invalid AND rpcError is missing, but caught safely:
+  throw new Error("ATOMIC_INFRA_ERROR: Something went wrong placing your order.");
+}
+
+export async function cancelOrderRestoreInventoryRow(orderId: string, note: string): Promise<{ ok: boolean, error?: string }> {
+  const { data, error } = await db().rpc("cancel_order_restore_inventory", {
+    p_order_id: orderId,
+    p_note: note
+  });
+
+  if (!error && data?.ok) {
+    return { ok: true };
+  }
+
+  if (error && (error.code === 'PGRST202' || error.message?.includes('could not find') || error.code === '42883')) {
+    console.warn("[order] Atomic cancellation RPC unavailable, falling back to legacy status update");
+    const updated = await updateOrderStatusRow(orderId, 'cancelled', note);
+    if (!updated) return { ok: false, error: "Failed to update status" };
+    return { ok: true };
+  }
+
+  if (error?.message?.includes('BUSINESS_ERROR:')) {
+    return { ok: false, error: error.message.split('BUSINESS_ERROR:')[1].trim() };
+  }
+
+  console.error("[order] atomic cancellation infra failed:", error);
+  return { ok: false, error: 'Cancellation failed due to a system error.' };
 }
 
 export async function updateOrderAttributionRow(
@@ -681,6 +759,22 @@ export async function updateOrderStatusRow(
     at: now,
   });
   return getOrderByPublicId(orderId);
+}
+
+export async function deleteOrderRow(orderId: string): Promise<boolean> {
+  const current = await getOrderByPublicId(orderId);
+  if (!current) return false;
+
+  // Manual cleanup to ensure no orphaned rows regardless of FK constraint policies
+  await db().from("order_status_history").delete().eq("order_id", current._id);
+  await db().from("order_items").delete().eq("order_id", current._id);
+  
+  const { error } = await db().from("orders").delete().eq("id", current._id);
+  if (error) {
+    console.error("[orders] delete failed:", error);
+    return false;
+  }
+  return true;
 }
 
 export async function enqueueEmailEventRow(

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const categoryOptions = [
   { title: "Smartwatches", value: "smartwatch" },
   { title: "Power Banks", value: "power-bank" },

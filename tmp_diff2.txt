@@ -1,0 +1,109 @@
+warning: in the working copy of '.env.example', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/checkout/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/api/orders/[orderId]/status/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/checkout/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/globals.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/not-found.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/product/[slug]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/track/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/warranty/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/admin/admin-shell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/cart/cart-drawer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/catalog/active-filters.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/catalog/catalog-view.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/catalog/product-grid.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/catalog/sort-select.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/effects/confetti.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/app-chrome.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/footer.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/mega-menu.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/navbar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/layout/theme-toggle.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/messaging/broadcast-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/orders/track-order.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/product/product-card.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/product/purchase-section.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/product/sticky-add-to-cart.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/hero.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/recently-viewed.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/testimonial-section.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/sections/trust-bar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/badge.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/button.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/card.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/dialog.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/input.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/sheet.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'components/ui/skeleton.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/categories.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/db/admin-store.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/db/store.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/order-store.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/theme.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'next.config.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tailwind.config.ts', LF will be replaced by CRLF the next time Git touches it
+.env.example
+.gitignore
+app/api/checkout/route.ts
+app/api/orders/[orderId]/status/route.ts
+app/checkout/page.tsx
+app/globals.css
+app/home2/page.tsx
+app/layout.tsx
+app/not-found.tsx
+app/page.tsx
+app/product/[slug]/page.tsx
+app/track/page.tsx
+app/warranty/page.tsx
+components/admin/admin-shell.tsx
+components/admin/hero-form.tsx
+components/cart/cart-drawer.tsx
+components/catalog/active-filters.tsx
+components/catalog/catalog-view.tsx
+components/catalog/product-grid.tsx
+components/catalog/sort-select.tsx
+components/effects/confetti.tsx
+components/gadget/gadget-buy-box.tsx
+components/gadget/gadget-footer.tsx
+components/gadget/gadget-hero.tsx
+components/gadget/gadget-navbar.tsx
+components/layout/app-chrome.tsx
+components/layout/footer.tsx
+components/layout/mega-menu.tsx
+components/layout/navbar.tsx
+components/layout/theme-toggle.tsx
+components/messaging/broadcast-manager.tsx
+components/orders/track-order.tsx
+components/product/product-card.tsx
+components/product/purchase-section.tsx
+components/product/sticky-add-to-cart.tsx
+components/sections/hero.tsx
+components/sections/recently-viewed.tsx
+components/sections/testimonial-section.tsx
+components/sections/trust-bar.tsx
+components/ui/badge.tsx
+components/ui/button.tsx
+components/ui/card.tsx
+components/ui/dialog.tsx
+components/ui/input.tsx
+components/ui/sheet.tsx
+components/ui/skeleton.tsx
+docs/plans/2026-08-26-t01-supabase-replace-sanity-plan.md
+lib/categories.ts
+lib/db/admin-store.ts
+lib/db/map.ts
+lib/db/migration-rules.test.ts
+lib/db/store.ts
+lib/order-store.ts
+lib/theme.ts
+lib/types.ts
+next.config.mjs
+package-lock.json
+package.json
+tailwind.config.ts

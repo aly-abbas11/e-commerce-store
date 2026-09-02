@@ -25,12 +25,15 @@ export function useConfetti() {
       const rotation = Math.random() * 720 - 360;
       const size = 6 + Math.random() * 6;
 
-      el.textContent = ["🎉", "✨", "⚡", "🌟", "🔥"][i % 5];
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
       el.style.cssText = `
         position:absolute;
         left:${originX}px;
         top:${originY}px;
-        font-size:${size}px;
+        width:${size}px;
+        height:${size}px;
+        background-color:${colors[i % 5]};
+        border-radius:50%;
         pointer-events:none;
         will-change:transform,opacity;
         animation:confetti-burst 0.7s cubic-bezier(.25,.46,.45,.94) forwards;

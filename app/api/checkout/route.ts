@@ -221,6 +221,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Checkout error:", error);
+    if (error instanceof Error && error.message.includes("ATOMIC_BUSINESS_ERROR:")) {
+      const msg = error.message.split("ATOMIC_BUSINESS_ERROR:")[1]?.trim() || "Inventory no longer available.";
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    // For ATOMIC_INFRA_ERROR or any other unknown error, we return a generic 500 without leaking DB details
     return NextResponse.json(
       { error: "Something went wrong placing your order." },
       { status: 500 }
