@@ -227,12 +227,12 @@
   --g-sage: #8fa888;
   --g-charcoal: #1a1a1a;
   --g-white: #ffffff;
-  --g-taupe: #8a8578;
+  --g-taupe: #4a5568;
   /* Accessories Hub Conversion & Brand Tokens */
   --g-amber: #f5a623;
   --g-amber-hover: #e0951c;
-  --g-amber-text: #b36b00; /* WCAG AAA compliant darker bronze-amber text on white */
-  --g-price-strike: #b5b0a4;
+  --g-amber-text: #7a4500; /* WCAG AAA compliant deep bronze text */
+  --g-price-strike: #64748b;
   --g-card-border: #e8e3d8;
   --g-terracotta: #c87a4b;
   --g-gold: #f5a623;

@@ -95,14 +95,16 @@ export function GadgetHero({
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <Link
               href={href}
-              className={`${ctaClass} bg-golden-400 text-zinc-950 hover:bg-golden-300`}
+              aria-label={product ? `Shop ${product.name} now` : "Shop all electronic categories"}
+              className={`${ctaClass} bg-golden-400 text-zinc-950 hover:bg-golden-300 min-h-[44px]`}
             >
               {product ? "Shop now" : "Shop categories"}
             </Link>
             {product ? (
               <Link
-                href="/products"
-                className={`${ctaClass} border border-zinc-600 hover:border-white`}
+                href="/products2"
+                aria-label="Browse all electronics catalog"
+                className={`${ctaClass} border border-zinc-600 hover:border-white min-h-[44px]`}
               >
                 Browse all
               </Link>

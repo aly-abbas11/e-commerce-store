@@ -238,7 +238,7 @@ export function GadgetFooter({
             <p>
               © {new Date().getFullYear()} {brandName}. All rights reserved.
             </p>
-            <Link href="/products2" className="min-h-10 inline-flex items-center transition hover:text-[var(--g-white)]">
+            <Link href="/products2" aria-label="Shop all electronic products in catalog" className="min-h-10 inline-flex items-center transition hover:text-[var(--g-white)]">
               Shop all products
             </Link>
           </div>

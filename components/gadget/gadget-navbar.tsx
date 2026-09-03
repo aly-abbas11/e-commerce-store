@@ -227,16 +227,16 @@ export function GadgetNavbar({
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-3 xl:gap-4">
-            <Link href="/track" className="transition hover:text-[var(--g-white)]">
+            <Link href="/track" aria-label="Track your order" className="transition hover:text-[var(--g-white)]">
               Track order
             </Link>
-            <Link href="/warranty" className="transition hover:text-[var(--g-white)]">
+            <Link href="/warranty" aria-label="View warranty policy" className="transition hover:text-[var(--g-white)]">
               Warranty
             </Link>
-            <Link href="/contact" className="transition hover:text-[var(--g-white)]">
+            <Link href="/contact" aria-label="Get customer support" className="transition hover:text-[var(--g-white)]">
               Help
             </Link>
-            <Link href="/blog" className="hidden transition hover:text-[var(--g-white)] xl:inline">
+            <Link href="/blog" aria-label="Read our tech blog" className="hidden transition hover:text-[var(--g-white)] xl:inline">
               Blog
             </Link>
           </div>
