@@ -162,13 +162,13 @@ export function GadgetArrivalCard({
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0 flex-1 flex flex-col justify-end leading-tight overflow-hidden">
               {priceWas ? (
-                <span className="block truncate text-[10.5px] font-medium text-[var(--g-price-strike)] line-through sm:text-[11.5px]">
+                <span className="block truncate text-[11px] font-semibold text-[var(--g-price-strike)] line-through sm:text-[11.5px]">
                   {priceWas}
                 </span>
               ) : (
                 <span className="block h-[14px]" aria-hidden />
               )}
-              <span className="block truncate text-[0.9rem] font-black tabular-nums text-[var(--g-amber-text)] sm:text-[1.05rem]">
+              <span className="block truncate text-[1.05rem] sm:text-[1.15rem] font-extrabold tabular-nums text-emerald-700">
                 {priceNow}
               </span>
             </div>

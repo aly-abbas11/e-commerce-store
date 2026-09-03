@@ -30,6 +30,7 @@ import { getVariantStockState } from "@/lib/stock";
 import type { Product, ProductVariant } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 import { dispatchAddToCartEffect } from "@/components/effects/cart-effects";
+import { ProductSocialVideoModal } from "@/components/product/product-social-video-modal";
 
 function defaultVariant(product: Product): ProductVariant | null {
   const variants = product.variants ?? [];
@@ -147,6 +148,12 @@ export function PurchaseSection({
                   </span>
                 </a>
               )}
+
+              <ProductSocialVideoModal
+                productName={product.name}
+                instagramUrl={product.instagramUrl}
+                tiktokUrl={product.tiktokUrl}
+              />
             </div>
           </div>
 

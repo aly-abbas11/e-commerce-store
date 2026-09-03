@@ -414,7 +414,7 @@ export const TRIPODS_DATA = [
       "Jmary Phone Clamp Mount",
       "Jmary Branded Travel Bag"
     ],
-    image: "/gadget/products/tripod-jmary-kp2207.png"
+    image: "/gadget/products/tripod-jmary-kp2207.webp"
   },
   {
     name: "Plokama Auto A20 AI Smart Tracking Gimbal Tripod",
@@ -450,7 +450,7 @@ export const TRIPODS_DATA = [
       "USB-C Charging Cable",
       "User Manual"
     ],
-    image: "/gadget/products/tripod-plokama-a20.png"
+    image: "/gadget/products/tripod-plokama-a20.webp"
   },
   {
     name: "Bluks BX 391 Heavy Duty Studio Tripod",
@@ -484,7 +484,7 @@ export const TRIPODS_DATA = [
       "Phone Mount Adapter",
       "Carrying Case"
     ],
-    image: "/gadget/products/tripod-bluks-bx391.png"
+    image: "/gadget/products/tripod-bluks-bx391.webp"
   }
 ];
 

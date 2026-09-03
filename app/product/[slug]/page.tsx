@@ -8,6 +8,7 @@ import { PurchaseSection } from "@/components/product/purchase-section";
 import { FrequentlyBoughtTogether } from "@/components/product/frequently-bought-together";
 import { RelatedProducts } from "@/components/product/related-products";
 import { ProductViewTracker } from "@/components/product/product-view-tracker";
+import { ProductVideoModal } from "@/components/product/product-video-modal";
 import {
   CompatibilitySection,
   DescriptionSection,
@@ -220,7 +221,10 @@ export default async function ProductPage({
         </span>
       </nav>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <ProductVideoModal productName={product.name} />
+        </div>
         <PurchaseSection product={productWithReviews} />
       </div>
 

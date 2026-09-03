@@ -17,6 +17,9 @@ import { cn } from "@/lib/utils";
 import type { SiteSettings } from "@/lib/types";
 import "./globals.css";
 
+import { StorefrontAnnouncementBar } from "@/components/promotions/announcement-bar";
+import { PromoPopupModal } from "@/components/promotions/promo-popup-modal";
+
 const CartDrawer = dynamic(
   () =>
     import("@/components/cart/cart-drawer").then((m) => m.CartDrawer),
@@ -238,6 +241,8 @@ export default async function RootLayout({
             compareBar={<CompareBarWrapper />}
             demoBanner={<DemoBanner />}
           >
+            <StorefrontAnnouncementBar />
+            <PromoPopupModal />
             {children}
           </AppChrome>
         </Suspense>
