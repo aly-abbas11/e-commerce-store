@@ -26,9 +26,10 @@ import {
   Home,
   Mail,
   Calendar,
+  Trash2,
 } from "lucide-react";
 
-
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,7 +105,8 @@ export default function CheckoutPage() {
 
   // step: 0 = Cart, 1 = Information, 2 = Review, 3 = Complete (implicit on placedOrder)
   const [step, setStep] = useState(0);
-  const [payment] = useState<PaymentMethod>("cod");
+  const [payment, setPayment] = useState<PaymentMethod>("cod");
+  const [orderNotes, setOrderNotes] = useState("");
   const [placing, setPlacing] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<string | null>(null);
   const [placedTotal, setPlacedTotal] = useState<number | null>(null);

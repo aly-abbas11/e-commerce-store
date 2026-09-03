@@ -9,12 +9,14 @@ import { isDemoSession } from "@/lib/demo";
 import { imageUrl } from "@/lib/sanity/image";
 import type { Page } from "@/lib/types";
 
+import { FALLBACK_BLOG_POSTS } from "@/lib/blog-data";
+
 export const metadata: Metadata = {
-  title: "Blog & Guides",
-  description: "Guides, news and tips from our team.",
+  title: "Blog & Buying Guides",
+  description: "Electronics buying guides, tech news and tips from VoltGear.",
   openGraph: {
-    title: "Blog & Guides | VoltGear",
-    description: "Guides, news and tips from our team.",
+    title: "Blog & Buying Guides | VoltGear",
+    description: "Electronics buying guides, tech news and tips from VoltGear.",
     type: "website",
   },
 };
@@ -27,6 +29,10 @@ export default async function BlogPage() {
     posts = await fetchBlogPosts(isDemoSession());
   } catch {
     posts = [];
+  }
+
+  if (posts.length === 0) {
+    posts = FALLBACK_BLOG_POSTS;
   }
 
   return (

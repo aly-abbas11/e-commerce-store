@@ -12,6 +12,9 @@ import { ORDER_STATUS_VALUES } from "@/lib/db/order-rules";
 import type { Order, OrderStatus } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
+import { PostExChitModal } from "@/components/admin/postex-chit-modal";
+import { Printer, Truck } from "lucide-react";
+
 const STATUS_LABEL: Record<OrderStatus, string> = {
   new: "New",
   processing: "Processing",
@@ -28,11 +31,13 @@ function formatDate(iso?: string | null): string {
   });
 }
 
-export function OrderDetail({ order }: { order: Order }) {
+export function OrderDetail({ order }: { order: Order & { postex_tracking_number?: string } }) {
   const router = useRouter();
   const [status, setStatus] = useState<OrderStatus>(order.status ?? "new");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bookingPostEx, setBookingPostEx] = useState(false);
+  const [showChitModal, setShowChitModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 
@@ -42,6 +47,29 @@ export function OrderDetail({ order }: { order: Order }) {
 
   const customer = order.customer ?? {};
   const history = order.statusHistory ?? [];
+
+  async function handleBookPostEx() {
+    setBookingPostEx(true);
+    setError(null);
+    setOk(null);
+    try {
+      const res = await fetch("/api/admin/postex/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.orderId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to book PostEx shipment.");
+      }
+      setOk(`PostEx booked! Tracking #: ${data.trackingNumber}`);
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || "Could not book PostEx shipment.");
+    } finally {
+      setBookingPostEx(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -98,19 +126,49 @@ export function OrderDetail({ order }: { order: Order }) {
         <Link href="/admin/orders" className="text-sm text-muted-foreground hover:underline">
           ← Orders
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold">
-          Order <span className="tabular-nums">{order.orderId}</span>
-          {order.isDemo ? (
-            <span className="ml-2 align-middle rounded bg-amber-400 px-1.5 py-0.5 text-xs font-semibold uppercase text-black">
-              Demo
-            </span>
-          ) : null}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Placed {formatDate(order.createdAt)}
-          {order.statusUpdatedAt ? ` · Updated ${formatDate(order.statusUpdatedAt)}` : ""}
-        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold">
+              Order <span className="tabular-nums">{order.orderId}</span>
+              {order.isDemo ? (
+                <span className="ml-2 align-middle rounded bg-amber-400 px-1.5 py-0.5 text-xs font-semibold uppercase text-black">
+                  Demo
+                </span>
+              ) : null}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Placed {formatDate(order.createdAt)}
+              {order.statusUpdatedAt ? ` · Updated ${formatDate(order.statusUpdatedAt)}` : ""}
+            </p>
+          </div>
+
+          {/* PostEx Dispatch Actions */}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={bookingPostEx}
+              onClick={handleBookPostEx}
+              className="inline-flex items-center gap-1.5 border-[#1F3626] text-[#1F3626] hover:bg-[#1F3626]/10"
+            >
+              <Truck className="h-4 w-4" />
+              {bookingPostEx ? "Booking PostEx…" : "Book with PostEx"}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => setShowChitModal(true)}
+              className="inline-flex items-center gap-1.5 bg-[#1F3626] text-white hover:bg-[#2a4633]"
+            >
+              <Printer className="h-4 w-4" />
+              Print PostEx Chit
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {showChitModal && (
+        <PostExChitModal order={order} onClose={() => setShowChitModal(false)} />
+      )}
 
       <section className="rounded-lg border p-4">
         <h2 className="text-sm font-semibold">Customer</h2>

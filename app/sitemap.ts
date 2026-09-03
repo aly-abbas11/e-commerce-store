@@ -6,10 +6,20 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://voltgear.pk";
 
-  const [products, shopTypes] = await Promise.all([
-    fetchAllProducts().catch(() => []),
-    fetchShopTypes().catch(() => []),
-  ]);
+  let products: any[] = [];
+  let shopTypes: any[] = [];
+
+  try {
+    const res = await Promise.all([
+      fetchAllProducts().catch(() => []),
+      fetchShopTypes().catch(() => []),
+    ]);
+    products = res[0] || [];
+    shopTypes = res[1] || [];
+  } catch {
+    products = [];
+    shopTypes = [];
+  }
 
   const now = new Date();
 

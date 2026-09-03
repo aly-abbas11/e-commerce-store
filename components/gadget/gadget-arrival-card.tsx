@@ -187,18 +187,18 @@ export function GadgetArrivalCard({
                   ref={btnRef}
                   type="button"
                   onClick={handleBuy}
-                  title="Add to cart"
-                  aria-label="Add to cart"
-                  className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-[var(--g-amber)] px-3 text-[11px] font-bold text-[var(--g-charcoal)] shadow-sm transition duration-200 hover:bg-[var(--g-amber-hover)] hover:shadow-md active:scale-95 sm:h-8.5 sm:px-3.5 sm:text-[11.5px]"
+                  title={`Add ${product.name} to cart`}
+                  aria-label={`Add ${product.name} to cart`}
+                  className="inline-flex min-h-[44px] min-w-[88px] items-center justify-center gap-1.5 rounded-full bg-[var(--g-amber)] px-4 text-[12px] font-bold text-[var(--g-charcoal)] shadow-sm transition duration-200 hover:bg-[var(--g-amber-hover)] hover:shadow-md active:scale-95 sm:min-h-[44px] sm:px-4.5 sm:text-[12.5px]"
                 >
                   {added ? (
                     <>
-                      <Check className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden />
+                      <Check className="h-4 w-4 stroke-[2.5]" aria-hidden />
                       <span>Added</span>
                     </>
                   ) : (
                     <>
-                      <ShoppingBag className="h-3.5 w-3.5 stroke-[2.5]" aria-hidden />
+                      <ShoppingBag className="h-4 w-4 stroke-[2.5]" aria-hidden />
                       <span>Add</span>
                     </>
                   )}
@@ -207,7 +207,7 @@ export function GadgetArrivalCard({
             </div>
           </div>
 
-          <p className="border-t border-[var(--g-line)] pt-2 text-[10px] font-medium text-[var(--g-taupe)]">
+          <p className="border-t border-[var(--g-line)] pt-2 text-[10.5px] font-semibold text-[#4A5568]">
             Free delivery · COD available
           </p>
         </div>

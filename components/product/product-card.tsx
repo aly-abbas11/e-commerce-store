@@ -4,6 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRef } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { StarRating } from "@/components/product/star-rating";
 import { QuickViewButton } from "@/components/product/quick-view";
 import { WishlistButton } from "@/components/wishlist/wishlist-button";
@@ -30,10 +33,6 @@ export function ProductCard({ product, className }: { product: Product; classNam
   const variantPurchasable =
     defaultVariant && getStockState(defaultVariant.stockStatus).purchasable;
   const canDirectAdd = !hasVariants || variantPurchasable;
-  const discount =
-    product.compareAtPrice && product.compareAtPrice > product.price
-      ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-      : 0;
   const hasRealReviews =
     typeof product.reviewCount === "number" && product.reviewCount > 0 &&
     typeof product.rating === "number" && product.rating > 0;
@@ -78,18 +77,17 @@ export function ProductCard({ product, className }: { product: Product; classNam
             <CompareButton slug={product.slug} />
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Product info below image */}
       <div className="flex flex-col flex-1 p-5 text-center items-center gap-3">
-
         {/* Rating above title */}
         {hasRealReviews ? (
           <div className="flex items-center gap-1 opacity-70">
             <StarRating rating={product.rating ?? 0} size={10} />
           </div>
         ) : (
-           <div className="h-[10px]" aria-hidden="true" />
+          <div className="h-[10px]" aria-hidden="true" />
         )}
 
         {/* Product name */}
@@ -116,8 +114,8 @@ export function ProductCard({ product, className }: { product: Product; classNam
             )}
         </div>
 
-        <div className="flex items-center justify-between gap-2 pt-1">
-          <div className="flex flex-col">
+        <div className="flex items-center justify-between gap-2 pt-1 w-full">
+          <div className="flex flex-col text-left">
             <span className="font-semibold">{formatPrice(product.price)}</span>
             {product.compareAtPrice && (
               <span className="text-xs text-muted-foreground line-through">
@@ -152,24 +150,16 @@ export function ProductCard({ product, className }: { product: Product; classNam
                       ...(defaultVariant.sku
                         ? { variantSku: defaultVariant.sku }
                         : {}),
-                    });
-                    dispatchAddToCartEffect(imgRef.current);
-                  }}
-                >
-                  Add to Cart
-                </button>
-              ) : (
-                <Link
-                  href={`/product/${product.slug}`}
-                  className="w-full flex items-center justify-center rounded-md bg-secondary py-2.5 text-[13px] font-bold tracking-wide text-secondary-foreground transition-colors hover:bg-secondary/80 shadow-sm"
-                >
-                  View Details
-                </Link>
-              )}
-            </>
-          )}
-        </div>
+                    }
+                  : {}),
+              });
+              dispatchAddToCartEffect(imgRef.current);
+            }}
+          >
+            Add to Cart
+          </Button>
+        )}
       </div>
-    </div>
+    </Card>
   );
 }

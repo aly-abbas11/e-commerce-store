@@ -5,4 +5,5 @@ export const headingFont = Sora({
   weight: ["600", "700", "800"],
   variable: "--font-heading",
   display: "swap",
+  preload: false,
 });

@@ -38,7 +38,7 @@ function FooterLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="block py-1.5 text-[13px] text-white/70 transition hover:text-[var(--g-white)]"
+      className="block py-1.5 text-[13px] text-white/85 transition hover:text-[var(--g-white)] min-h-[36px] flex items-center"
     >
       {label}
     </Link>

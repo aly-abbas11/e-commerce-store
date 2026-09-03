@@ -13,14 +13,17 @@ import { publicSiteUrl } from "@/lib/deploy-rules";
 import { imageUrl } from "@/lib/sanity/image";
 import type { ContentBlock, Page } from "@/lib/types";
 
+import { FALLBACK_BLOG_POSTS } from "@/lib/blog-data";
+
 export const revalidate = 60;
 
 export async function generateStaticParams() {
   try {
     const posts = await fetchBlogPosts();
-    return posts.map((post) => ({ slug: post.slug }));
+    const list = posts.length > 0 ? posts : FALLBACK_BLOG_POSTS;
+    return list.map((post) => ({ slug: post.slug }));
   } catch {
-    return [];
+    return FALLBACK_BLOG_POSTS.map((post) => ({ slug: post.slug }));
   }
 }
 
@@ -50,6 +53,9 @@ export async function generateMetadata({
   } catch {
     post = null;
   }
+  if (!post) {
+    post = FALLBACK_BLOG_POSTS.find((p) => p.slug === params.slug) ?? null;
+  }
   if (!post) return {};
   const cover = post.coverImage ? imageUrl(post.coverImage, { w: 1200 }) : null;
   return {
@@ -78,6 +84,10 @@ export default async function BlogPostPage({
     post = await fetchPageBySlug(params.slug, isDemoSession());
   } catch {
     post = null;
+  }
+
+  if (!post) {
+    post = FALLBACK_BLOG_POSTS.find((p) => p.slug === params.slug) ?? null;
   }
 
   if (!post || post.pageType !== "blog") notFound();

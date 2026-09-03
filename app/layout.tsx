@@ -210,6 +210,13 @@ export default async function RootLayout({
             />
           </>
         )}
+        {process.env.NEXT_PUBLIC_ADSENSE_PUB_ID && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUB_ID}`}
+            crossOrigin="anonymous"
+          />
+        )}
         {loadClarity && (
           <script
             type="text/javascript"

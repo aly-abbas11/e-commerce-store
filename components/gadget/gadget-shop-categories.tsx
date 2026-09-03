@@ -137,18 +137,18 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
                 onClick={() => scrollByDir(-1)}
                 disabled={!canPrev}
                 aria-label="Previous categories"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
               <button
                 type="button"
                 onClick={() => scrollByDir(1)}
                 disabled={!canNext}
                 aria-label="Next categories"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[var(--g-line)] bg-white text-[var(--g-charcoal)] shadow-xs transition disabled:opacity-30"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -159,11 +159,11 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
           ref={scrollerRef}
           className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none sm:gap-6 lg:gap-8"
         >
-          {slides.map((tile) => (
+          {slides.map((tile, idx) => (
             <Link
               key={tile.key}
               href={tile.href}
-              className="group flex flex-col items-center gap-2.5 shrink-0 text-center transition focus:outline-none"
+              className="group flex flex-col items-center gap-2.5 shrink-0 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--g-forest)] rounded-xl p-1 min-h-[44px]"
             >
               {/* Circle Avatar Stage */}
               <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-[#eaefe8] p-3 transition duration-300 group-hover:scale-105 group-hover:bg-[#e1e9de] group-hover:shadow-md sm:h-24 sm:w-24 sm:p-4">
@@ -172,8 +172,9 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
                     src={tile.image}
                     alt={tile.label}
                     fill
-                    quality={92}
-                    sizes="96px"
+                    priority={idx < 4}
+                    quality={90}
+                    sizes="(max-width: 640px) 80px, 96px"
                     className="object-contain p-2 transition duration-300 group-hover:scale-110"
                   />
                 ) : tile.glyph ? (
@@ -184,7 +185,7 @@ export function GadgetShopCategories({ tiles }: { tiles: CategoryIconTile[] }) {
               </div>
 
               {/* Label */}
-              <span className="w-20 text-xs font-bold leading-snug text-[var(--g-charcoal)] transition duration-300 group-hover:text-[var(--g-forest)] sm:w-24 sm:text-[13px]">
+              <span className="w-20 text-xs font-bold leading-snug text-[#1A202C] transition duration-300 group-hover:text-[var(--g-forest)] sm:w-24 sm:text-[13px]">
                 {tile.label}
               </span>
             </Link>

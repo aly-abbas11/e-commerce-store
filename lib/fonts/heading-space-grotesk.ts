@@ -5,4 +5,5 @@ export const headingFont = Space_Grotesk({
   weight: ["500", "600", "700"],
   variable: "--font-heading",
   display: "swap",
+  preload: false,
 });

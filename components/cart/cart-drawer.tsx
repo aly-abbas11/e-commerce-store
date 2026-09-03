@@ -201,6 +201,7 @@ export function CartDrawer() {
   const { items, isOpen, closeCart, subtotal, updateQuantity, removeItem, clearCart } =
     useCart();
   const config = useSiteConfig();
+  const [orderNote, setOrderNote] = useState("");
   const [confirmKey, setConfirmKey] = useState<string | null>(null);
   const confirmItem = confirmKey ? items.find((i) => cartLineKey(i) === confirmKey) : null;
 
