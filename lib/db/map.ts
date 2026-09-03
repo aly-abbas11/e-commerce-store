@@ -89,6 +89,12 @@ export function mapProduct(
           poster: (row.product_video as { poster?: string }).poster,
         }
       : undefined,
+    instagramUrl: row.product_video
+      ? (row.product_video as { instagramUrl?: string }).instagramUrl
+      : undefined,
+    tiktokUrl: row.product_video
+      ? (row.product_video as { tiktokUrl?: string }).tiktokUrl
+      : undefined,
     variants,
     productFaq: Array.isArray(row.product_faq)
       ? (row.product_faq as Product["productFaq"])

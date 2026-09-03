@@ -33,7 +33,7 @@ export function KeyFeaturesSection({ product }: { product: Product }) {
   if (!features.length) return null;
   return (
     <section className="mt-14" aria-labelledby="key-features">
-      <SectionHeading eyebrow="Key Features" title="Key Features" />
+      <SectionHeading title="Why you'll like it" />
       <ul className="grid gap-2 sm:grid-cols-2">
         {features.map((feature, i) => (
           <li
@@ -202,66 +202,68 @@ export function ReviewsSection({
 
       {real.length ? (
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
-          <div className="h-fit rounded-xl border bg-card p-6 text-center">
-            <p className="text-4xl font-bold">
+          <div className="h-fit rounded-2xl border border-border/40 bg-card p-8 text-center shadow-lg shadow-black/5 ring-1 ring-black/5">
+            <p className="text-5xl font-black tracking-tighter">
               {(avg ?? rating ?? 0).toFixed(1)}
             </p>
-            <StarRating rating={avg ?? rating ?? 0} className="mt-2 justify-center" size={18} />
-            <p className="mt-2 text-sm text-muted-foreground">
+            <StarRating rating={avg ?? rating ?? 0} className="mt-3 justify-center text-amber-500" size={20} />
+            <p className="mt-2 text-sm font-medium text-muted-foreground">
               Based on {real.length} review{real.length === 1 ? "" : "s"}
             </p>
-            <div className="mt-4 space-y-1.5">
+            <div className="mt-6 space-y-2">
               {distribution.map((count, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="w-6 text-right">{5 - i}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                <div key={i} className="flex items-center gap-3 text-sm font-medium">
+                  <span className="w-4 text-right text-muted-foreground">{5 - i}</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted/60 shadow-inner">
                     <div
-                      className="h-full rounded-full bg-amber-400"
+                      className="h-full rounded-full bg-amber-500 shadow-sm"
                       style={{ width: `${(count / real.length) * 100}%` }}
                     />
                   </div>
-                  <span className="w-4 text-right text-muted-foreground">{count}</span>
+                  <span className="w-4 text-left text-muted-foreground/70">{count}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <ul className="space-y-4">
+          <ul className="space-y-6">
             {real.map((review, i) => (
-              <li key={`${review.name}-${i}`} className="rounded-xl border bg-card p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{review.name}</span>
-                    {review.verified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                        <BadgeCheck className="h-3 w-3" />
-                        Verified purchase
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <StarRating rating={review.rating} size={14} />
+              <li key={`${review.name}-${i}`} className="rounded-2xl border border-border/40 bg-card p-6 md:p-8 shadow-sm transition-shadow hover:shadow-md">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/30 pb-4">
+                  <div className="flex flex-col gap-1.5 leading-none">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground text-base tracking-tight">{review.name}</span>
+                      {review.verified ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                          <BadgeCheck className="h-3 w-3" />
+                          Verified
+                        </span>
+                      ) : null}
+                    </div>
                     {review.date && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {new Date(review.date).toLocaleDateString("en-US", {
-                          month: "short",
+                          month: "long",
                           day: "numeric",
                           year: "numeric",
                         })}
                       </span>
                     )}
                   </div>
+                  <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-full">
+                    <StarRating rating={review.rating} size={14} className="text-amber-500" />
+                  </div>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-5 text-[15px] leading-relaxed text-foreground/80 font-medium">
                   {review.comment}
                 </p>
                 {review.image && (
-                  <div className="mt-4">
+                  <div className="mt-5">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={review.image}
                       alt={`Photo from ${review.name ?? "customer"}`}
-                      className="max-h-56 rounded-lg border object-cover"
+                      className="max-h-64 rounded-xl border border-border/50 object-cover shadow-sm bg-muted/20"
                       loading="lazy"
                     />
                   </div>

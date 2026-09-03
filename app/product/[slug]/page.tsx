@@ -222,53 +222,15 @@ export default async function ProductPage({
       </nav>
 
       <div className="mt-4 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <ProductVideoModal productName={product.name} />
-        </div>
+        <ProductVideoModal 
+          productName={product.name} 
+          videoUrl={product.productVideo?.url}
+          tiktokUrl={product.tiktokUrl}
+          instagramUrl={product.instagramUrl}
+        />
         <PurchaseSection product={productWithReviews} />
       </div>
 
-      {/* Figma requested Feature Specifications Grid (4-block grid) */}
-      <div className="mt-8 border-y border-border/50 py-8 w-full overflow-hidden">
-         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 max-w-[1440px] mx-auto px-4">
-            <div className="flex items-start gap-4">
-               <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-               </div>
-               <div>
-                  <h4 className="text-[15px] font-bold text-foreground">33W Max Output</h4>
-                  <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed pr-2">Charge phones & tablets at high speed.</p>
-               </div>
-            </div>
-            <div className="flex items-start gap-4">
-               <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-               </div>
-               <div>
-                  <h4 className="text-[15px] font-bold text-foreground">PowerIQ 3.0</h4>
-                  <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed pr-2">Intelligent power allocation for safer charging.</p>
-               </div>
-            </div>
-            <div className="flex items-start gap-4">
-               <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><circle cx="12" cy="14" r="4"></circle><line x1="12" y1="6" x2="12.01" y2="6"></line></svg>
-               </div>
-               <div>
-                  <h4 className="text-[15px] font-bold text-foreground">Ultra Compact</h4>
-                  <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed pr-2">Small enough to fit in your pocket and travel anywhere.</p>
-               </div>
-            </div>
-            <div className="flex items-start gap-4">
-               <div className="w-10 h-10 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-               </div>
-               <div>
-                  <h4 className="text-[15px] font-bold text-foreground">Advanced Safety</h4>
-                  <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed pr-2">MultiProtect safety system keeps you and your devices safe.</p>
-               </div>
-            </div>
-         </div>
-      </div>
 
       {/* Figma Desktop Layout wrapper for Description/Specs (Side by Side) */}
       <div className="mt-12 mb-8 bg-white border border-border/40 rounded-xl overflow-hidden shadow-sm">
@@ -296,7 +258,6 @@ export default async function ProductPage({
          </div>
       </div>
 
-      <ProductVideoSection product={productWithReviews} />
       <ReviewsSection
         product={productWithReviews}
         reviews={productWithReviews.reviews ?? []}

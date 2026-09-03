@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
+
+import { StringArrayInput } from "@/components/admin/string-array-input";
+import { ObjectArrayInput } from "@/components/admin/object-array-input";
 
 import { MediaField } from "@/components/admin/media-field";
 import { PublishBar } from "@/components/admin/publish-bar";
@@ -193,12 +196,21 @@ export function ProductForm({
             onChange={(images) => set("images", images)}
           />
           <div className="space-y-1.5">
-            <Label htmlFor="video-url">Video link (TikTok, Instagram, or MP4)</Label>
+            <Label htmlFor="tiktok-url">TikTok Video Link</Label>
             <Input
-              id="video-url"
-              value={doc.productVideo?.url ?? ""}
-              onChange={(e) => set("productVideo", { ...doc.productVideo, url: e.target.value })}
-              placeholder="Paste a link"
+              id="tiktok-url"
+              value={doc.tiktokUrl ?? ""}
+              onChange={(e) => set("tiktokUrl", e.target.value)}
+              placeholder="https://www.tiktok.com/..."
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="instagram-url">Instagram Reel Link</Label>
+            <Input
+              id="instagram-url"
+              value={doc.instagramUrl ?? ""}
+              onChange={(e) => set("instagramUrl", e.target.value)}
+              placeholder="https://www.instagram.com/reel/..."
             />
           </div>
           <MediaField
@@ -221,6 +233,33 @@ export function ProductForm({
               rows={8}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          
+          <div className="pt-4 space-y-8 border-t">
+            <h2 className="text-lg font-semibold">Additional Details</h2>
+            <StringArrayInput
+              label="Why you'll like it (Features)"
+              values={doc.features ?? []}
+              onChange={(val) => set("features", val)}
+              placeholder="e.g. Always-On Retina Display"
+            />
+            <ObjectArrayInput
+              label="Specifications"
+              values={doc.specifications ?? []}
+              onChange={(val) => set("specifications", val)}
+            />
+            <StringArrayInput
+              label="What's in the Box"
+              values={doc.inTheBox ?? []}
+              onChange={(val) => set("inTheBox", val)}
+              placeholder="e.g. USB-C Charging Cable"
+            />
+            <StringArrayInput
+              label="Compatibility (Works With)"
+              values={doc.compatibility ?? []}
+              onChange={(val) => set("compatibility", val)}
+              placeholder="e.g. iPhone 15 Series"
             />
           </div>
         </div>

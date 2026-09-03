@@ -66,10 +66,10 @@ export function ReviewForm({ slug }: { slug: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 rounded-xl border bg-card p-5">
+    <form onSubmit={onSubmit} className="space-y-5 rounded-2xl border border-border/40 bg-card p-6 md:p-8 shadow-sm">
       <div>
-        <Label>Your rating *</Label>
-        <div className="mt-1.5 flex items-center gap-1">
+        <Label className="text-base font-bold">Your rating *</Label>
+        <div className="mt-2 flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}

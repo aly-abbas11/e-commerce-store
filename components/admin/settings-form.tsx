@@ -46,6 +46,18 @@ function fromRow(row?: SettingsRow | null) {
       (d.announcement as { message?: string } | undefined)?.message ??
         (row?.announcement as { message?: string } | undefined)?.message
     ),
+    announcementCountdownEnabled: Boolean(
+      (d.announcement as { countdownEnabled?: boolean } | undefined)?.countdownEnabled ??
+        (row?.announcement as { countdownEnabled?: boolean } | undefined)?.countdownEnabled
+    ),
+    announcementStartsAt: str(
+      (d.announcement as { startsAt?: string } | undefined)?.startsAt ??
+        (row?.announcement as { startsAt?: string } | undefined)?.startsAt
+    ),
+    announcementEndsAt: str(
+      (d.announcement as { endsAt?: string } | undefined)?.endsAt ??
+        (row?.announcement as { endsAt?: string } | undefined)?.endsAt
+    ),
     seoTitle: str((d.seo as { title?: string } | undefined)?.title ?? (row?.seo as { title?: string } | undefined)?.title),
     seoDescription: str(
       (d.seo as { description?: string } | undefined)?.description ??
@@ -81,7 +93,13 @@ export function SettingsForm({ settings }: { settings?: SettingsRow | null }) {
       returnPolicy: form.returnPolicy,
       warrantyInfo: form.warrantyInfo,
       socialLinks,
-      announcement: { enabled: form.announcementEnabled, message: form.announcementMessage },
+      announcement: { 
+        enabled: form.announcementEnabled, 
+        message: form.announcementMessage,
+        countdownEnabled: form.announcementCountdownEnabled,
+        startsAt: form.announcementStartsAt || null,
+        endsAt: form.announcementEndsAt || null
+      },
       seo: { title: form.seoTitle, description: form.seoDescription },
     };
   }
@@ -164,20 +182,64 @@ export function SettingsForm({ settings }: { settings?: SettingsRow | null }) {
             onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm sm:col-span-2">
-          <input
-            type="checkbox"
-            checked={form.announcementEnabled}
-            onChange={(e) => setForm((f) => ({ ...f, announcementEnabled: e.target.checked }))}
-          />
-          Announcement enabled
-        </label>
-        <div className="sm:col-span-2 space-y-1.5">
-          <Label>Announcement message</Label>
-          <Input
-            value={form.announcementMessage}
-            onChange={(e) => setForm((f) => ({ ...f, announcementMessage: e.target.value }))}
-          />
+        <div className="sm:col-span-2 space-y-4 rounded-lg border p-4 bg-muted/20">
+          <h3 className="font-semibold text-base mb-1">Campaign / Announcement Bar</h3>
+          
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={form.announcementEnabled}
+              onChange={(e) => setForm((f) => ({ ...f, announcementEnabled: e.target.checked }))}
+              className="h-4 w-4 rounded"
+            />
+            Show announcement bar
+          </label>
+          
+          {form.announcementEnabled && (
+            <div className="space-y-4 mt-3">
+              <div className="space-y-1.5">
+                <Label>Announcement Message</Label>
+                <Input
+                  placeholder="e.g. Blessed Friday: Up to 50% OFF!"
+                  value={form.announcementMessage}
+                  onChange={(e) => setForm((f) => ({ ...f, announcementMessage: e.target.value }))}
+                />
+              </div>
+
+              <div className="pt-4 border-t mt-4 space-y-4">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    checked={form.announcementCountdownEnabled}
+                    onChange={(e) => setForm((f) => ({ ...f, announcementCountdownEnabled: e.target.checked }))}
+                    className="h-4 w-4 rounded"
+                  />
+                  Enable countdown timer
+                </label>
+                
+                {form.announcementCountdownEnabled && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>Starts At</Label>
+                      <Input
+                        type="datetime-local"
+                        value={form.announcementStartsAt}
+                        onChange={(e) => setForm((f) => ({ ...f, announcementStartsAt: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Ends At</Label>
+                      <Input
+                        type="datetime-local"
+                        value={form.announcementEndsAt}
+                        onChange={(e) => setForm((f) => ({ ...f, announcementEndsAt: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

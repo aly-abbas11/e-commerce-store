@@ -46,6 +46,8 @@ export interface ProductDocument {
   badge?: string;
   isDemo?: boolean;
   costPrice?: number;
+  tiktokUrl?: string;
+  instagramUrl?: string;
 }
 
 export function shopVisible(status: unknown): boolean {
@@ -105,6 +107,8 @@ export function mergeProductForm(
     reviews: existing?.reviews,
     rating: existing?.rating,
     reviewCount: existing?.reviewCount,
+    tiktokUrl: form.tiktokUrl ?? existing?.tiktokUrl,
+    instagramUrl: form.instagramUrl ?? existing?.instagramUrl,
   };
 }
 
@@ -176,7 +180,7 @@ export function toLiveProductRow(doc: ProductDocument) {
     specifications: doc.specifications ?? [],
     compatibility: doc.compatibility ?? [],
     in_the_box: doc.inTheBox ?? [],
-    product_video: doc.productVideo ?? null,
+    product_video: { ...(doc.productVideo ?? {}), tiktokUrl: doc.tiktokUrl ?? null, instagramUrl: doc.instagramUrl ?? null },
     product_faq: doc.productFaq ?? [],
     stock_status: doc.stockStatus || "in-stock",
     rating: doc.rating ?? null,

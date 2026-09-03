@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/analytics", label: "Analytics" },
       { href: "/admin/settings", label: "Settings" },
+      { href: "/admin/autopilot/settings", label: "Autopilot" },
     ],
   },
 ];
